@@ -1,0 +1,30 @@
+spec_version: "0.1.0"
+name: requirements-agent
+version: 0.1.0
+description: Requirements Agent - expert in requirements engineering
+author: Aleksander Nitka
+license: MIT
+model:
+  preferred: anthropic/claude-opus-4.6
+  fallback:
+    - openai/gpt-5.2
+    - openai/gpt-oss-20b
+    - google/gemma-4-31b
+  constraints:
+    temperature: 0.1
+    top_p: 0.9
+  skills:
+    - project-init
+    - project-update
+    - refine-requirements
+    - review-requirements
+    - status-report
+    - meeting-agent
+  runtime:
+    max_turns: 20
+    timeout: 600
+  tags:
+    - requirements
+    - plan
+    - software
+    - engineer
