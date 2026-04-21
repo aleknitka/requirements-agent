@@ -20,11 +20,65 @@ model:
     - review-requirements
     - status-report
     - meeting-agent
-  runtime:
-    max_turns: 20
-    timeout: 600
-  tags:
-    - requirements
-    - plan
-    - software
-    - engineer
+tools: []
+delegation:
+  mode: auto
+runtime:
+  max_turns: 100
+  timeout: 300
+compliance:
+  risk_tier: standard
+  frameworks: []
+  supervision:
+    designated_supervisor: null
+    review_cadence: quarterly
+    human_in_the_loop: conditional
+    escalation_triggers:
+      - confidence_below: 0.7
+      - error_detected: true
+    override_capability: true
+    kill_switch: true
+  recordkeeping:
+    audit_logging: true
+    log_format: structured_json
+    retention_period: 6y
+    log_contents:
+      - prompts_and_responses
+      - tool_calls
+      - decision_pathways
+      - model_version
+      - timestamps
+    immutable: true
+  model_risk:
+    inventory_id: null
+    validation_cadence: annual
+    validation_type: full
+    conceptual_soundness: null
+    ongoing_monitoring: true
+    outcomes_analysis: true
+    drift_detection: true
+    parallel_testing: false
+  data_governance:
+    pii_handling: redact
+    data_classification: confidential
+    consent_required: true
+    cross_border: false
+    bias_testing: true
+    lda_search: false
+  communications:
+    type: correspondence
+    pre_review_required: false
+    fair_balanced: true
+    no_misleading: true
+    disclosures_required: false
+  vendor_management:
+    due_diligence_complete: false
+    soc_report_required: false
+    vendor_ai_notification: true
+    subcontractor_assessment: false
+tags:
+  - requirements
+  - plan
+  - software
+  - engineer
+metadata: {}
