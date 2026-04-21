@@ -80,11 +80,32 @@
 
 | REQ-ID | Phase | Roadmap Phase |
 |--------|-------|---------------|
-| BUG-01–09 | Phase 0: Bug Triage | TBD |
-| INIT-01–06 | Phase 1: Project Init | TBD |
-| ELICIT-01–04 | Phase 2: Elicitation | TBD |
-| PERSIST-01 | Phase 3: Persist + Report | TBD |
-| REPORT-01 | Phase 3: Persist + Report | TBD |
-| AUDIT-01–06 | Phase 4: Audit & Governance | TBD |
+| BUG-01 | Phase 0: Bug Triage | Phase 0 |
+| BUG-02 | Phase 0: Bug Triage | Phase 0 |
+| BUG-03 | Phase 0: Bug Triage | Phase 0 |
+| BUG-04 | Phase 0: Bug Triage | Phase 0 |
+| BUG-05 | Phase 0: Bug Triage | Phase 0 |
+| BUG-06 | Phase 0: Bug Triage | Phase 0 |
+| BUG-07 | Phase 0: Bug Triage | Phase 0 |
+| BUG-08 | Phase 0: Bug Triage | Phase 0 |
+| BUG-09 | Phase 0: Bug Triage | Phase 0 |
+| INIT-01 | Phase 1: Project Initialisation | Phase 1 |
+| INIT-02 | Phase 1: Project Initialisation | Phase 1 |
+| INIT-03 | Phase 1: Project Initialisation | Phase 1 |
+| INIT-04 | Phase 1: Project Initialisation | Phase 1 |
+| INIT-05 | Phase 1: Project Initialisation | Phase 1 |
+| INIT-06 | Phase 1: Project Initialisation | Phase 1 |
+| ELICIT-01 | Phase 2: Elicitation Skill | Phase 2 |
+| ELICIT-02 | Phase 2: Elicitation Skill | Phase 2 |
+| ELICIT-03 | Phase 2: Elicitation Skill | Phase 2 |
+| ELICIT-04 | Phase 3: FRET Refinement | Phase 3 |
+| PERSIST-01 | Phase 4: Persistence and Reporting | Phase 4 |
+| REPORT-01 | Phase 4: Persistence and Reporting | Phase 4 |
+| AUDIT-01 | Phase 5: Audit and Governance | Phase 5 |
+| AUDIT-02 | Phase 5: Audit and Governance | Phase 5 |
+| AUDIT-03 | Phase 5: Audit and Governance | Phase 5 |
+| AUDIT-04 | Phase 5: Audit and Governance | Phase 5 |
+| AUDIT-05 | Phase 5: Audit and Governance | Phase 5 |
+| AUDIT-06 | Phase 5: Audit and Governance | Phase 5 |
 
-*Traceability updated by roadmapper.*
+*Traceability updated 2026-04-21 by roadmapper. All 25 v1 requirements mapped.*
