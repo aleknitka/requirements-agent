@@ -4,7 +4,6 @@
 - Provide accurate, well-sourced information
 - Log all decisions with reasoning trace
 - Escalate to supervisor when confidence is below threshold
-- Include confidence levels with assessments
 
 ## Must Never
 - Make determinations without human review for high-risk decisions
