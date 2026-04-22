@@ -26,27 +26,26 @@ The requirements-agent delivers a conversational requirements engineering loop: 
 **Requirements**: BUG-01, BUG-02, BUG-03, BUG-04, BUG-05, BUG-06, BUG-07, BUG-08, BUG-09
 **Success Criteria** (what must be TRUE):
   1. `python -c "import shared.db"` runs without any error from repo root
-  2. `uv run python skills/project-init/scripts/init.py --help` exits 0 with usage output
-  3. `uv run pytest` passes all existing tests with `create_autospec` mocks (no MagicMock auto-attribute creation)
+  2. `uv run python skills/new-project-initiation/scripts/init.py --help` exits 0 with usage output
+  3. `uv run pytest` passes with real-SQLite tests (no MagicMock auto-attribute creation)
   4. `RequirementIn(title="x", description="y", req_type="FUN")` instantiates without NameError or AttributeError
-  5. `uv run python skills/status-report/scripts/report.py --help` exits 0 (file renamed, imports clean)
-**Plans**: TBD
+  5. `uv run python skills/status-report/scripts/report.py --help` exits 0 (imports clean)
+**Plans**: 6 plans
 
 Plans:
-- [ ] 00-01: Fix `shared/db.py` — remove `C.DB_PATH` default, align public API (`list_projects`, `get_project`, `search_requirements`)
-- [ ] 00-02: Fix `shared/models.py` — remove `RequirementArea`, convert `RequirementType` to `str` Enum, remove `req_type.id_prefix`
-- [ ] 00-03: Fix import bindings across all skill scripts — `import shared.db as db` everywhere
-- [ ] 00-04: Add `fret_statement` + `fret_fields` columns to SQLite schema and all CRUD functions
-- [ ] 00-05: Fix `refine.py` argument order for `update_requirement(conn, req_id, changes)`
-- [ ] 00-06: Add `slug` column to `projects` table; align all callers
-- [ ] 00-07: Rename `report.py.py` to `report.py`; add real-SQLite unit tests using `create_autospec`
+- [ ] 00-01-PLAN.md — Fix `shared/db.py` core: remove `C.DB_PATH` default, fix `_make_req_id` to use `.value`
+- [ ] 00-02-PLAN.md — Fix `shared/models.py`: `RequirementType` str Enum, `RequirementTypeMeta` NamedTuple, remove `RequirementArea` and fret fields
+- [ ] 00-03-PLAN.md — Fix import chain: `init.py` bare imports (D-09), `project_session.py` API alignment
+- [ ] 00-04-PLAN.md — Fix callers: `req_ops.py` (EXTRA-02/03/04), `refine.py` (BUG-07)
+- [ ] 00-05-PLAN.md — Add `slug` column to `projects` table; `get_project_by_slug`; align `project_session`
+- [ ] 00-06-PLAN.md — Write tests: `test_db.py` (real-SQLite), `test_models.py`, replace `test_init.py` with subprocess tests
 
 ### Phase 1: Project Initialisation
 **Goal**: `init.py new` runs end-to-end, creating a project DB and PROJECT.md in `projects/<slug>/`, and the `.active` sentinel enables auto-selection in multi-project environments.
 **Depends on**: Phase 0
 **Requirements**: INIT-01, INIT-02, INIT-03, INIT-04, INIT-05, INIT-06
 **Success Criteria** (what must be TRUE):
-  1. `uv run python skills/project-init/scripts/init.py new --name "Test Project"` creates `projects/test-project/test-project.db` and `projects/test-project/PROJECT.md`, exits 0
+  1. `uv run python skills/new-project-initiation/scripts/init.py new --name "Test Project"` creates `projects/test-project/test-project.db` and `projects/test-project/PROJECT.md`, exits 0
   2. Running `init.py new` a second time with the same slug prints a message and does not overwrite the existing project
   3. `projects/.active` contains the slug of the most recently created or selected project
   4. `project_session.resolve()` returns the active project without prompting when `.active` exists
@@ -141,7 +140,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Bug Triage | 0/7 | Not started | - |
+| 0. Bug Triage | 0/6 | Not started | - |
 | 1. Project Initialisation | 0/4 | Not started | - |
 | 2. Elicitation Skill | 0/5 | Not started | - |
 | 3. FRET Refinement | 0/4 | Not started | - |
