@@ -11,6 +11,7 @@ The requirements-agent delivers a conversational requirements engineering loop: 
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [ ] **Phase 0: Bug Triage** - Fix all 9 cascading runtime bugs so every skill can import and run without error
+- [ ] **Phase 0.5: Package Scaffold** - Move skill scripts into installable `requirements_agent` package; set up pdoc + pre-commit doc rendering; establish agent fallback pattern
 - [ ] **Phase 1: Project Initialisation** - `init.py new` runs end-to-end, writes DB + PROJECT.md, auto-selects via .active sentinel
 - [ ] **Phase 2: Elicitation Skill** - New `elicit-requirements` skill interviews user, captures context, elicits and classifies requirements
 - [ ] **Phase 3: FRET Refinement** - Field-by-field FRET protocol resolves ambiguities and produces a confirmed, typed requirement
