@@ -36,7 +36,7 @@ def _pj(raw, label):
 def cmd_add(args):
     slug, conn, meta = ps.resolve(args.project)
     req_in = RequirementIn(
-        req_type=RequirementType(args.type.upper()) if args.type else RequirementType.CORE,
+        req_type=RequirementType(args.type.upper()) if args.type else RequirementType.FUN,
         title=args.title,
         description=args.description or "",
         priority=RequirementPriority(args.priority) if args.priority else RequirementPriority.MEDIUM,
@@ -47,7 +47,7 @@ def cmd_add(args):
         dependencies  =[Dependency(**d)     for d in _pj(args.dependencies,   "dependencies")],
         external_links=[ExternalLink(**l)   for l in _pj(args.external_links, "external-links")],
     )
-    row = db.insert_requirement(conn, req_in, created_by=args.by)
+    row = db.insert_requirement(conn, meta.project_id, req_in, created_by=args.by)
     ps.refresh_md(slug, conn)
     _ok({"id": row.id, "req_type": row.req_type.value, "title": row.title,
          "status": row.status.value, "priority": row.priority.value,
@@ -78,7 +78,7 @@ def cmd_update(args):
     if not changes:
         _err("No fields to update provided.")
     try:
-        row = db.update_requirement(conn, args.id, changes, args.by, args.summary)
+        row = db.update_requirement(conn, args.id, meta.project_id, changes, args.by, args.summary)
     except (KeyError, ValueError) as e:
         _err(str(e))
     ps.refresh_md(slug, conn)
@@ -94,13 +94,12 @@ def cmd_get(args):
 
 
 def cmd_list(args):
-    _, conn, _ = ps.resolve(args.project)
+    _, conn, meta = ps.resolve(args.project)
     rows = db.search_requirements(
-        conn,
+        conn, meta.project_id,
         status=args.status, priority=args.priority,
         req_type=args.type, owner=args.owner,
         tag=args.tag, keyword=args.keyword,
-        has_fret=True if args.has_fret else (False if args.no_fret else None),
     )
     _ok({
         "count": len(rows),
@@ -108,7 +107,7 @@ def cmd_list(args):
             {"id": r.id, "req_type": r.req_type.value, "title": r.title,
              "status": r.status.value, "priority": r.priority.value,
              "owner": r.owner, "tags": r.tags,
-             "has_fret": bool(r.fret_statement),
+             "has_fret": False,
              "has_embedding": r.has_embedding,
              "updated_at": r.updated_at.isoformat()}
             for r in rows
@@ -117,8 +116,8 @@ def cmd_list(args):
 
 
 def cmd_search(args):
-    _, conn, _ = ps.resolve(args.project)
-    rows = db.search_requirements(conn, keyword=args.query)
+    _, conn, meta = ps.resolve(args.project)
+    rows = db.search_requirements(conn, meta.project_id, keyword=args.query)
     _ok({"query": args.query, "count": len(rows),
          "requirements": [{"id": r.id, "req_type": r.req_type.value,
                            "title": r.title, "status": r.status.value} for r in rows]})
@@ -144,8 +143,8 @@ def cmd_vector(args):
     from CONSTANTS import EMBEDDING_API_KEY
     if not EMBEDDING_API_KEY:
         _err("EMBEDDING_API_KEY not set. Vector search unavailable.")
-    _, conn, _ = ps.resolve(args.project)
-    results = db.vector_search(conn, args.query, top_k=args.top_k)
+    _, conn, meta = ps.resolve(args.project)
+    results = db.vector_search(conn, meta.project_id, args.query, top_k=args.top_k)
     _ok({
         "query": args.query,
         "results": [{"id": r.id, "req_type": r.req_type.value,
@@ -167,7 +166,7 @@ def build_parser():
     add = sub.add_parser("add")
     add.add_argument("--title",          required=True)
     add.add_argument("--by",             required=True)
-    add.add_argument("--type",           choices=TYPES, default="CORE")
+    add.add_argument("--type",           choices=TYPES, default="FUN")
     add.add_argument("--description",    default="")
     add.add_argument("--priority",       choices=PRIOS, default="medium")
     add.add_argument("--owner")
@@ -198,8 +197,6 @@ def build_parser():
     ls.add_argument("--type",            choices=TYPES)
     ls.add_argument("--owner");          ls.add_argument("--tag")
     ls.add_argument("--keyword")
-    ls.add_argument("--has-fret",   dest="has_fret",  action="store_true")
-    ls.add_argument("--no-fret",    dest="no_fret",   action="store_true")
 
     sr = sub.add_parser("search");       sr.add_argument("--query", required=True)
 

@@ -211,5 +211,6 @@ __marimo__/
 
 credentials.json
 
-# Permission workaround artifact — root-owned backup of original shared/ (cannot be deleted)
+# Permission workaround artifacts — root-owned backup directories (cannot be deleted)
 shared.bak/
+skills/project-update/scripts.bak/
