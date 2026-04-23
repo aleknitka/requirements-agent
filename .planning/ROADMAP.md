@@ -35,7 +35,7 @@ The requirements-agent delivers a conversational requirements engineering loop: 
 Plans:
 - [x] 00-01-PLAN.md — Fix `shared/db.py` core: remove `C.DB_PATH` default, fix `_make_req_id` to use `.value`
 - [x] 00-02-PLAN.md — Fix `shared/models.py`: `RequirementType` str Enum, `RequirementTypeMeta` NamedTuple, remove `RequirementArea` and fret fields
-- [ ] 00-03-PLAN.md — Fix import chain: `init.py` bare imports (D-09), `project_session.py` API alignment
+- [x] 00-03-PLAN.md — Fix import chain: `init.py` bare imports (D-09), `project_session.py` API alignment
 - [ ] 00-04-PLAN.md — Fix callers: `req_ops.py` (EXTRA-02/03/04), `refine.py` (BUG-07)
 - [ ] 00-05-PLAN.md — Add `slug` column to `projects` table; `get_project_by_slug`; align `project_session`
 - [ ] 00-06-PLAN.md — Write tests: `test_db.py` (real-SQLite), `test_models.py`, replace `test_init.py` with subprocess tests
@@ -140,7 +140,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Bug Triage | 2/6 | In progress | - |
+| 0. Bug Triage | 3/6 | In progress | - |
 | 1. Project Initialisation | 0/4 | Not started | - |
 | 2. Elicitation Skill | 0/5 | Not started | - |
 | 3. FRET Refinement | 0/4 | Not started | - |
