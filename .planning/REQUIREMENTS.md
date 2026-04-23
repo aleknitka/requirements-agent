@@ -4,11 +4,11 @@
 
 ### Bug Fixes (BUG) — Phase 0 prerequisite
 
-- [ ] **BUG-01**: `db.py` imports cleanly — `C.DB_PATH` default removed or constant added to `CONSTANTS.py`
+- [x] **BUG-01**: `db.py` imports cleanly — `C.DB_PATH` default removed or constant added to `CONSTANTS.py`
 - [ ] **BUG-02**: `init.py` and all callers bind `db` correctly — `import db` via `sys.path`, not `import shared.db`
-- [ ] **BUG-03**: API aligned — all callers use `db.list_projects(conn)`, not `db.list_all_projects()`
-- [ ] **BUG-04**: `get_project(conn, slug)` called with both required args throughout all skills
-- [ ] **BUG-05**: `RequirementArea` reference removed from `models.py`; `RequirementIn` instantiates without error
+- [x] **BUG-03**: API aligned — all callers use `db.list_projects(conn)`, not `db.list_all_projects()` *(db.py side fixed; caller fixes in 00-03/00-04)*
+- [x] **BUG-04**: `get_project(conn, slug)` called with both required args throughout all skills *(`_make_req_id` fixed; caller arg fixes in 00-03/00-04)*
+- [x] **BUG-05**: `RequirementArea` reference removed from `models.py`; `RequirementIn` instantiates without error *(fixed as Rule 3 deviation in 00-01)*
 - [ ] **BUG-06**: `fret_statement` + `fret_fields` columns added to `requirements` table and included in `update_requirement` updatable set
 - [ ] **BUG-07**: `refine.py` argument order fixed for `update_requirement(conn, req_id, changes)`
 - [ ] **BUG-08**: `projects` table has `slug` column; all callers consistent

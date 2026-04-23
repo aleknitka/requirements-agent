@@ -210,3 +210,6 @@ __marimo__/
 .gitagent/
 
 credentials.json
+
+# Permission workaround artifact — root-owned backup of original shared/ (cannot be deleted)
+shared.bak/
