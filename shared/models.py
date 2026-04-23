@@ -8,9 +8,9 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime, timezone
 from enum import Enum
-from typing import Any, Literal, Optional
+from typing import Any, Literal, NamedTuple, Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field, model_validator
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class RequirementStatus(str, Enum):
+    BACKLOG     = "backlog"
     OPEN        = "open"
     IN_PROGRESS = "in-progress"
     DONE        = "done"
@@ -30,19 +31,86 @@ class RequirementPriority(str, Enum):
     HIGH     = "high"
     CRITICAL = "critical"
 
-
 class RequirementType(str, Enum):
-    CORE       = "CORE"
-    DATA       = "DATA"
-    MODEL      = "MODEL"
-    INFRA      = "INFRA"
-    OPS        = "OPS"
-    UX         = "UX"
-    COMPLIANCE = "COMPLIANCE"
+    """Three-letter codes for requirement types. Value == code string."""
+    BUS = "BUS"
+    USR = "USR"
+    FUN = "FUN"
+    DAT = "DAT"
+    MOD = "MOD"
+    MLP = "MLP"
+    MET = "MET"
+    NFR = "NFR"
+    PER = "PER"
+    SCL = "SCL"
+    SEC = "SEC"
+    PRV = "PRV"
+    COM = "COM"
+    ETH = "ETH"
+    EXP = "EXP"
+    ROB = "ROB"
+    OPS = "OPS"
+    DEP = "DEP"
+    INT = "INT"
+    UIX = "UIX"
+    TST = "TST"
+    MON = "MON"
+    AUD = "AUD"
+    GOV = "GOV"
+    LGL = "LGL"
+    RES = "RES"
+    ENV = "ENV"
+    MAI = "MAI"
+    REL = "REL"
+    CON = "CON"
+    ASM = "ASM"
+    RSK = "RSK"
+    DOC = "DOC"
+    TRN = "TRN"
 
-    @property
-    def id_prefix(self) -> str:
-        return self.value
+
+class RequirementTypeMeta(NamedTuple):
+    code: str
+    name: str
+    description: str
+
+
+REQUIREMENT_TYPE_METADATA: list[RequirementTypeMeta] = [
+    RequirementTypeMeta("BUS", "Business",       "Business goals, expected value, success criteria, and strategic objectives."),
+    RequirementTypeMeta("USR", "User",            "User needs, personas, workflows, pain points, and expected outcomes."),
+    RequirementTypeMeta("FUN", "Functional",      "System behaviours and capabilities the solution must provide."),
+    RequirementTypeMeta("DAT", "Data",            "Data sources, schema, quality, lineage, retention, ownership, and availability."),
+    RequirementTypeMeta("MOD", "Model",           "Model outputs, behaviour, retraining expectations, and model-specific constraints."),
+    RequirementTypeMeta("MLP", "ML Pipeline",     "Training, validation, feature engineering, orchestration, and deployment pipeline requirements."),
+    RequirementTypeMeta("MET", "Metrics",         "Success metrics, evaluation measures, thresholds, and acceptance criteria."),
+    RequirementTypeMeta("NFR", "Non-Functional",  "Cross-cutting quality attributes such as maintainability, usability, and operability."),
+    RequirementTypeMeta("PER", "Performance",     "Latency, throughput, response times, training duration, and processing windows."),
+    RequirementTypeMeta("SCL", "Scalability",     "Ability to handle growth in users, traffic, data volume, and compute demand."),
+    RequirementTypeMeta("SEC", "Security",        "Authentication, authorisation, encryption, secret handling, and secure operations."),
+    RequirementTypeMeta("PRV", "Privacy",         "PII handling, consent, anonymisation, minimisation, and privacy-preserving controls."),
+    RequirementTypeMeta("COM", "Compliance",      "Regulatory, policy, audit, and standards obligations the solution must satisfy."),
+    RequirementTypeMeta("ETH", "Ethics",          "Fairness, bias mitigation, transparency, accountability, and responsible AI considerations."),
+    RequirementTypeMeta("EXP", "Explainability",  "Interpretability needs, explanations, reason codes, and user-facing transparency."),
+    RequirementTypeMeta("ROB", "Robustness",      "Tolerance to noisy, missing, drifting, or adversarial inputs and changing conditions."),
+    RequirementTypeMeta("OPS", "Operations",      "Run-time support, alerting, incident response, and service management expectations."),
+    RequirementTypeMeta("DEP", "Deployment",      "Hosting, release process, environment promotion, and production rollout requirements."),
+    RequirementTypeMeta("INT", "Integration",     "Interfaces, APIs, external dependencies, and interoperability with other systems."),
+    RequirementTypeMeta("UIX", "User Experience", "Interface behaviour, usability, accessibility support, and workflow clarity."),
+    RequirementTypeMeta("TST", "Testing",         "Testing strategy including unit, integration, data validation, and model validation requirements."),
+    RequirementTypeMeta("MON", "Monitoring",      "Monitoring of service health, model drift, data drift, and business outcome signals."),
+    RequirementTypeMeta("AUD", "Auditability",    "Traceability, reproducibility, versioning, and evidence for review or audit."),
+    RequirementTypeMeta("GOV", "Governance",      "Ownership, stewardship, approval flows, and change-control responsibilities."),
+    RequirementTypeMeta("LGL", "Legal",           "Legal obligations such as licensing, IP restrictions, and contractual constraints."),
+    RequirementTypeMeta("RES", "Resources",       "Budget, staffing, infrastructure, storage, and compute resource requirements."),
+    RequirementTypeMeta("ENV", "Environment",     "Development, test, staging, and production environment requirements and reproducibility."),
+    RequirementTypeMeta("MAI", "Maintainability", "Ease of modification, supportability, documentation quality, and code health expectations."),
+    RequirementTypeMeta("REL", "Reliability",     "Availability, fault tolerance, recoverability, and stability requirements."),
+    RequirementTypeMeta("CON", "Constraints",     "Limits imposed by time, budget, architecture, technology, vendors, or policy."),
+    RequirementTypeMeta("ASM", "Assumptions",     "Conditions believed to be true for planning, design, or estimation purposes."),
+    RequirementTypeMeta("RSK", "Risks",           "Known uncertainties or threats affecting delivery, adoption, performance, or compliance."),
+    RequirementTypeMeta("DOC", "Documentation",   "Documentation deliverables such as model cards, runbooks, user guides, and technical docs."),
+    RequirementTypeMeta("TRN", "Training",        "Training and enablement needs for users, operators, or administrators."),
+]
 
 
 class ProjectPhase(str, Enum):
@@ -99,26 +167,19 @@ class Stakeholder(BaseModel):
 # Requirements
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def make_req_id(req_type: RequirementType) -> str:
-    return f"REQ-{req_type.id_prefix}-{str(uuid.uuid4())[:8].upper()}"
-
-
 class RequirementIn(BaseModel):
     """Validated input for creating a requirement."""
-    req_type:       RequirementType    = RequirementType.CORE
+    req_type:       RequirementType     = RequirementType.FUN
     title:          str
-    description:    str                = ""
-    status:         RequirementStatus  = RequirementStatus.OPEN
+    description:    str                 = ""
+    status:         RequirementStatus   = RequirementStatus.OPEN
     priority:       RequirementPriority = RequirementPriority.MEDIUM
-    owner:          Optional[str]      = None
-    stakeholders:   list[Stakeholder]  = Field(default_factory=list)
-    predecessors:   list[Dependency]   = Field(default_factory=list)
-    dependencies:   list[Dependency]   = Field(default_factory=list)
-    external_links: list[ExternalLink] = Field(default_factory=list)
-    tags:           list[str]          = Field(default_factory=list)
-    # FRET-structured description (populated by refine-requirements skill)
-    fret_statement: Optional[str]      = None
-    fret_fields:    Optional[dict]     = None  # scope/condition/component/timing/response
+    owner:          Optional[str]       = None
+    stakeholders:   list[Stakeholder]   = Field(default_factory=list)
+    predecessors:   list[Dependency]    = Field(default_factory=list)
+    dependencies:   list[Dependency]    = Field(default_factory=list)
+    external_links: list[ExternalLink]  = Field(default_factory=list)
+    tags:           list[str]           = Field(default_factory=list)
 
 
 class RequirementRow(RequirementIn):
