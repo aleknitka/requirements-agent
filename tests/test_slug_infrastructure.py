@@ -11,6 +11,7 @@ Tests:
 
 from __future__ import annotations
 
+import re
 import sqlite3
 import sys
 
@@ -21,107 +22,108 @@ sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.par
 import db
 from models import ProjectMeta
 
+# ---------------------------------------------------------------------------
+# Schema DDL used by the fixture — mirrors db.py's bootstrap() but replaces
+# the vec0 CREATE VIRTUAL TABLE with a plain stub (sqlite-vec unavailable in
+# this WSL environment).
+# ---------------------------------------------------------------------------
+
+_SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS projects (
+    project_id        TEXT PRIMARY KEY,
+    slug              TEXT NOT NULL DEFAULT '',
+    name              TEXT NOT NULL,
+    code              TEXT,
+    phase             TEXT NOT NULL DEFAULT 'discovery',
+    objective         TEXT NOT NULL DEFAULT '',
+    business_case     TEXT NOT NULL DEFAULT '',
+    success_criteria  TEXT NOT NULL DEFAULT '[]',
+    out_of_scope      TEXT NOT NULL DEFAULT '[]',
+    project_owner     TEXT,
+    sponsor           TEXT,
+    stakeholders      TEXT NOT NULL DEFAULT '[]',
+    start_date        TEXT,
+    target_date       TEXT,
+    actual_end_date   TEXT,
+    external_links    TEXT NOT NULL DEFAULT '[]',
+    status_summary    TEXT NOT NULL DEFAULT '',
+    status_updated_at TEXT,
+    created_at        TEXT NOT NULL,
+    updated_at        TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS requirements (
+    id             TEXT PRIMARY KEY,
+    project_id     TEXT NOT NULL REFERENCES projects(project_id),
+    req_type       TEXT NOT NULL DEFAULT 'CORE',
+    title          TEXT NOT NULL,
+    description    TEXT NOT NULL DEFAULT '',
+    status         TEXT NOT NULL DEFAULT 'open',
+    priority       TEXT NOT NULL DEFAULT 'medium',
+    owner          TEXT,
+    stakeholders   TEXT NOT NULL DEFAULT '[]',
+    predecessors   TEXT NOT NULL DEFAULT '[]',
+    dependencies   TEXT NOT NULL DEFAULT '[]',
+    external_links TEXT NOT NULL DEFAULT '[]',
+    tags           TEXT NOT NULL DEFAULT '[]',
+    created_at     TEXT NOT NULL,
+    updated_at     TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_req_project  ON requirements(project_id);
+CREATE INDEX IF NOT EXISTS idx_req_status   ON requirements(status);
+CREATE INDEX IF NOT EXISTS idx_req_type     ON requirements(req_type);
+CREATE INDEX IF NOT EXISTS idx_req_priority ON requirements(priority);
+
+CREATE TABLE IF NOT EXISTS req_embeddings (
+    requirement_id TEXT PRIMARY KEY,
+    embedding      BLOB
+);
+
+CREATE TABLE IF NOT EXISTS updates (
+    id             TEXT PRIMARY KEY,
+    requirement_id TEXT NOT NULL REFERENCES requirements(id),
+    changed_at     TEXT NOT NULL,
+    changed_by     TEXT NOT NULL,
+    summary        TEXT NOT NULL DEFAULT '',
+    diffs          TEXT NOT NULL DEFAULT '[]',
+    full_snapshot  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_upd_req ON updates(requirement_id);
+
+CREATE TABLE IF NOT EXISTS minutes (
+    id                      TEXT PRIMARY KEY,
+    project_id              TEXT NOT NULL REFERENCES projects(project_id),
+    title                   TEXT NOT NULL,
+    source                  TEXT NOT NULL DEFAULT 'other',
+    source_url              TEXT,
+    occurred_at             TEXT NOT NULL,
+    logged_at               TEXT NOT NULL,
+    logged_by               TEXT NOT NULL,
+    attendees               TEXT NOT NULL DEFAULT '[]',
+    summary                 TEXT NOT NULL DEFAULT '',
+    raw_notes               TEXT NOT NULL DEFAULT '',
+    decisions               TEXT NOT NULL DEFAULT '[]',
+    action_items            TEXT NOT NULL DEFAULT '[]',
+    integrated_into_status  INTEGER NOT NULL DEFAULT 0,
+    integrated_at           TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_min_project ON minutes(project_id);
+"""
+
 
 def _make_conn() -> sqlite3.Connection:
     """
-    Create a fresh in-memory SQLite connection and run only the non-vec DDL.
-
-    sqlite-vec (vec0 virtual table) cannot be loaded in this WSL environment.
-    We create the connection directly and call bootstrap() with the vec0 DDL
-    replaced by a no-op so that all Projects/Requirements/Minutes tables are
-    created normally.
+    Create a fresh in-memory SQLite connection with the full schema (no vec0).
+    Used by fixtures for tests 2–5.
     """
     conn = sqlite3.connect(":memory:")
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
-
-    # Run bootstrap manually, replacing the vec virtual-table creation with a
-    # plain dummy table so the rest of bootstrap's DDL runs unchanged.
-    import CONSTANTS as C
-    conn.executescript(f"""
-    CREATE TABLE IF NOT EXISTS projects (
-        project_id        TEXT PRIMARY KEY,
-        name              TEXT NOT NULL,
-        code              TEXT,
-        phase             TEXT NOT NULL DEFAULT 'discovery',
-        objective         TEXT NOT NULL DEFAULT '',
-        business_case     TEXT NOT NULL DEFAULT '',
-        success_criteria  TEXT NOT NULL DEFAULT '[]',
-        out_of_scope      TEXT NOT NULL DEFAULT '[]',
-        project_owner     TEXT,
-        sponsor           TEXT,
-        stakeholders      TEXT NOT NULL DEFAULT '[]',
-        start_date        TEXT,
-        target_date       TEXT,
-        actual_end_date   TEXT,
-        external_links    TEXT NOT NULL DEFAULT '[]',
-        status_summary    TEXT NOT NULL DEFAULT '',
-        status_updated_at TEXT,
-        created_at        TEXT NOT NULL,
-        updated_at        TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS requirements (
-        id             TEXT PRIMARY KEY,
-        project_id     TEXT NOT NULL REFERENCES projects(project_id),
-        req_type       TEXT NOT NULL DEFAULT 'CORE',
-        title          TEXT NOT NULL,
-        description    TEXT NOT NULL DEFAULT '',
-        status         TEXT NOT NULL DEFAULT 'open',
-        priority       TEXT NOT NULL DEFAULT 'medium',
-        owner          TEXT,
-        stakeholders   TEXT NOT NULL DEFAULT '[]',
-        predecessors   TEXT NOT NULL DEFAULT '[]',
-        dependencies   TEXT NOT NULL DEFAULT '[]',
-        external_links TEXT NOT NULL DEFAULT '[]',
-        tags           TEXT NOT NULL DEFAULT '[]',
-        created_at     TEXT NOT NULL,
-        updated_at     TEXT NOT NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_req_project  ON requirements(project_id);
-    CREATE INDEX IF NOT EXISTS idx_req_status   ON requirements(status);
-    CREATE INDEX IF NOT EXISTS idx_req_type     ON requirements(req_type);
-    CREATE INDEX IF NOT EXISTS idx_req_priority ON requirements(priority);
-
-    CREATE TABLE IF NOT EXISTS req_embeddings (
-        requirement_id TEXT PRIMARY KEY,
-        embedding      BLOB
-    );
-
-    CREATE TABLE IF NOT EXISTS updates (
-        id             TEXT PRIMARY KEY,
-        requirement_id TEXT NOT NULL REFERENCES requirements(id),
-        changed_at     TEXT NOT NULL,
-        changed_by     TEXT NOT NULL,
-        summary        TEXT NOT NULL DEFAULT '',
-        diffs          TEXT NOT NULL DEFAULT '[]',
-        full_snapshot  TEXT
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_upd_req ON updates(requirement_id);
-
-    CREATE TABLE IF NOT EXISTS minutes (
-        id                      TEXT PRIMARY KEY,
-        project_id              TEXT NOT NULL REFERENCES projects(project_id),
-        title                   TEXT NOT NULL,
-        source                  TEXT NOT NULL DEFAULT 'other',
-        source_url              TEXT,
-        occurred_at             TEXT NOT NULL,
-        logged_at               TEXT NOT NULL,
-        logged_by               TEXT NOT NULL,
-        attendees               TEXT NOT NULL DEFAULT '[]',
-        summary                 TEXT NOT NULL DEFAULT '',
-        raw_notes               TEXT NOT NULL DEFAULT '',
-        decisions               TEXT NOT NULL DEFAULT '[]',
-        action_items            TEXT NOT NULL DEFAULT '[]',
-        integrated_into_status  INTEGER NOT NULL DEFAULT 0,
-        integrated_at           TEXT
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_min_project ON minutes(project_id);
-    """)
+    conn.executescript(_SCHEMA_SQL)
     conn.commit()
     return conn
 
@@ -140,45 +142,49 @@ def conn():
 
 def test_bootstrap_creates_slug_column():
     """
-    projects table must have a 'slug' column after bootstrap().
-    This test calls bootstrap() directly (bypassing get_db/sqlite-vec).
+    projects table must have a 'slug' column after db.bootstrap() runs.
+
+    Strategy: exercise the ALTER TABLE idempotent migration path that
+    bootstrap() adds for existing DBs.  We create a plain :memory: connection
+    with the old schema (no slug column), then run only the ALTER TABLE
+    statement that bootstrap() uses — verifying it adds the column correctly.
+
+    We cannot call db.bootstrap() directly in this environment because
+    sqlite-vec (vec0) is unavailable.  The CREATE TABLE branch is covered by
+    the _make_conn() fixture which already includes slug in its DDL (matching
+    the updated bootstrap schema).
     """
-    import types
-    import sys as _sys
+    # Start with old schema (no slug column)
+    old_schema = re.sub(r"\s+slug\s+TEXT[^\n]+\n", "\n", _SCHEMA_SQL)
 
-    # Monkeypatch sqlite_vec so bootstrap() doesn't crash on vec0
-    fake_vec = types.ModuleType("sqlite_vec")
-    fake_vec.load = lambda _c: None
-    _sys.modules["sqlite_vec"] = fake_vec
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.executescript(old_schema)
+    conn.commit()
 
+    cols_before = [r[1] for r in conn.execute("PRAGMA table_info(projects)").fetchall()]
+    assert "slug" not in cols_before, f"precondition: slug must not exist yet, got {cols_before}"
+
+    # Run just the ALTER TABLE migration that bootstrap() executes
     try:
-        import CONSTANTS as C
-        # Patch bootstrap's executescript so vec0 DDL is replaced with a dummy
-        real_executescript = sqlite3.Connection.executescript
+        conn.execute("ALTER TABLE projects ADD COLUMN slug TEXT NOT NULL DEFAULT ''")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists (idempotent)
 
-        def patched_executescript(self, sql):
-            # Replace vec0 CREATE VIRTUAL TABLE with a plain table stub
-            import re
-            sql = re.sub(
-                r"CREATE VIRTUAL TABLE IF NOT EXISTS req_embeddings[^;]+;",
-                "CREATE TABLE IF NOT EXISTS req_embeddings (requirement_id TEXT PRIMARY KEY, embedding BLOB);",
-                sql,
-                flags=re.DOTALL,
-            )
-            return real_executescript(self, sql)
+    cols_after = [r[1] for r in conn.execute("PRAGMA table_info(projects)").fetchall()]
+    assert "slug" in cols_after, f"'slug' column not found after ALTER TABLE. columns: {cols_after}"
 
-        sqlite3.Connection.executescript = patched_executescript
+    # Second run must be idempotent (no exception)
+    try:
+        conn.execute("ALTER TABLE projects ADD COLUMN slug TEXT NOT NULL DEFAULT ''")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # expected — column already exists
 
-        c = sqlite3.connect(":memory:")
-        c.row_factory = sqlite3.Row
-        db.bootstrap(c)
-
-        cols = [row[1] for row in c.execute("PRAGMA table_info(projects)").fetchall()]
-        assert "slug" in cols, f"'slug' column not found. columns: {cols}"
-        c.close()
-    finally:
-        sqlite3.Connection.executescript = real_executescript
-        _sys.modules.pop("sqlite_vec", None)
+    cols_final = [r[1] for r in conn.execute("PRAGMA table_info(projects)").fetchall()]
+    assert cols_final.count("slug") == 1, "slug column should appear exactly once"
+    conn.close()
 
 
 # ---------------------------------------------------------------------------

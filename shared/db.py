@@ -9,8 +9,9 @@ Public API (used by CLI scripts)
 
   # Projects
   upsert_project(conn, meta)
-  get_project(conn, project_id) → ProjectMeta | None
-  list_projects(conn)           → list[ProjectMeta]
+  get_project(conn, project_id)      → ProjectMeta | None
+  get_project_by_slug(conn, slug)    → ProjectMeta | None
+  list_projects(conn)                → list[ProjectMeta]
 
   # Requirements
   insert_requirement(conn, project_id, req_in, created_by) → RequirementRow
@@ -116,6 +117,7 @@ def bootstrap(conn: sqlite3.Connection) -> None:
     -- ── Projects ──────────────────────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS projects (
         project_id        TEXT PRIMARY KEY,
+        slug              TEXT NOT NULL DEFAULT '',
         name              TEXT NOT NULL,
         code              TEXT,
         phase             TEXT NOT NULL DEFAULT 'discovery',
@@ -203,6 +205,13 @@ def bootstrap(conn: sqlite3.Connection) -> None:
     """)
     conn.commit()
 
+    # Add slug column to existing DBs (idempotent — OperationalError if already exists)
+    try:
+        conn.execute("ALTER TABLE projects ADD COLUMN slug TEXT NOT NULL DEFAULT ''")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Serialisation helpers
@@ -275,6 +284,7 @@ def _row_to_project(row: sqlite3.Row) -> ProjectMeta:
     d = dict(row)
     return ProjectMeta(
         project_id=d["project_id"],
+        slug=d.get("slug", ""),
         name=d["name"],
         code=d.get("code"),
         phase=d["phase"],
@@ -301,17 +311,20 @@ def _row_to_project(row: sqlite3.Row) -> ProjectMeta:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def upsert_project(conn: sqlite3.Connection, meta: ProjectMeta) -> ProjectMeta:
+    if not meta.slug:
+        meta.slug = C.slugify(meta.name)
     now = _now()
     meta.updated_at = datetime.now(timezone.utc)
     conn.execute("""
         INSERT INTO projects VALUES (
-            :project_id,:name,:code,:phase,:objective,:business_case,
+            :project_id,:slug,:name,:code,:phase,:objective,:business_case,
             :success_criteria,:out_of_scope,:project_owner,:sponsor,
             :stakeholders,:start_date,:target_date,:actual_end_date,
             :external_links,:status_summary,:status_updated_at,
             :created_at,:updated_at
         )
         ON CONFLICT(project_id) DO UPDATE SET
+            slug=excluded.slug,
             name=excluded.name, code=excluded.code, phase=excluded.phase,
             objective=excluded.objective, business_case=excluded.business_case,
             success_criteria=excluded.success_criteria,
@@ -326,6 +339,7 @@ def upsert_project(conn: sqlite3.Connection, meta: ProjectMeta) -> ProjectMeta:
             updated_at=excluded.updated_at
     """, {
         "project_id":        meta.project_id,
+        "slug":              meta.slug,
         "name":              meta.name,
         "code":              meta.code,
         "phase":             meta.phase.value,
@@ -352,6 +366,14 @@ def upsert_project(conn: sqlite3.Connection, meta: ProjectMeta) -> ProjectMeta:
 def get_project(conn: sqlite3.Connection, project_id: str) -> Optional[ProjectMeta]:
     row = conn.execute(
         "SELECT * FROM projects WHERE project_id = ?", (project_id,)
+    ).fetchone()
+    return _row_to_project(row) if row else None
+
+
+def get_project_by_slug(conn: sqlite3.Connection, slug: str) -> Optional[ProjectMeta]:
+    """Look up a project by its slug. Returns None if not found."""
+    row = conn.execute(
+        "SELECT * FROM projects WHERE slug = ?", (slug,)
     ).fetchone()
     return _row_to_project(row) if row else None
 
