@@ -46,7 +46,7 @@ def resolve(slug_or_name: Optional[str] = None) -> tuple[str, sqlite3.Connection
 
     slug = slug_or_name
     conn = db.get_db(str(C.db_path(slug)))
-    meta = db.get_project(conn, slug)
+    meta = db.get_project_by_slug(conn, slug)
     if not meta:
         _err(f"Project '{slug}' not found. Run project-init new --name '<name>' first.")
     return slug, conn, meta
@@ -54,7 +54,7 @@ def resolve(slug_or_name: Optional[str] = None) -> tuple[str, sqlite3.Connection
 
 def refresh_md(slug: str, conn: sqlite3.Connection) -> Path:
     """Recompute all stats and regenerate PROJECT.md. Call after every write."""
-    meta  = db.get_project(conn, slug)
+    meta  = db.get_project_by_slug(conn, slug)
     reqs  = db.search_requirements(conn, meta.project_id) if meta else []
 
     req_counts:    dict = {}
