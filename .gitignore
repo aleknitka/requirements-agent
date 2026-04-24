@@ -214,3 +214,4 @@ credentials.json
 # Permission workaround artifacts — root-owned backup directories (cannot be deleted)
 shared.bak/
 skills/project-update/scripts.bak/
+skills/refine-requirements/scripts.bak/

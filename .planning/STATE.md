@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 ## Current Position
 
 Phase: 0 of 5 (Bug Triage)
-Plan: 3 of 6 in current phase (00-03 complete)
+Plan: 4 of 6 in current phase (00-04 complete)
 Status: In progress
-Last activity: 2026-04-23 — Plan 00-03 executed: fixed init.py bare imports (BUG-02/D-09), fixed project_session.py API calls (EXTRA-01); init.py --help exits 0
+Last activity: 2026-04-24 — Plan 00-04 executed: fixed refine.py call-signature bugs (BUG-07/D-05/D-14); req_ops.py fixes (EXTRA-02/03/04) were pre-applied; both --help exits 0
 
-Progress: [███░░░░░░░] 12%
+Progress: [████░░░░░░] 16%
 
 ## Performance Metrics
 
@@ -74,6 +74,6 @@ Topics: AI governance reqs, conflict detection, external links, FRET formalisati
 
 ## Session Continuity
 
-Last session: 2026-04-23
-Stopped at: Completed 00-03-PLAN.md — init.py bare imports fixed, project_session.py API calls corrected. Ready for plan 00-04.
+Last session: 2026-04-24
+Stopped at: Completed 00-04-PLAN.md — refine.py call-signature bugs fixed (BUG-07), req_ops.py pre-applied fixes verified. Ready for plan 00-05.
 Resume file: None
