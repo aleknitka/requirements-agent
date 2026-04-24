@@ -37,7 +37,7 @@ Plans:
 - [x] 00-02-PLAN.md — Fix `shared/models.py`: `RequirementType` str Enum, `RequirementTypeMeta` NamedTuple, remove `RequirementArea` and fret fields
 - [x] 00-03-PLAN.md — Fix import chain: `init.py` bare imports (D-09), `project_session.py` API alignment
 - [x] 00-04-PLAN.md — Fix callers: `req_ops.py` (EXTRA-02/03/04), `refine.py` (BUG-07)
-- [ ] 00-05-PLAN.md — Add `slug` column to `projects` table; `get_project_by_slug`; align `project_session`
+- [x] 00-05-PLAN.md — Add `slug` column to `projects` table; `get_project_by_slug`; align `project_session`
 - [ ] 00-06-PLAN.md — Write tests: `test_db.py` (real-SQLite), `test_models.py`, replace `test_init.py` with subprocess tests
 
 ### Phase 1: Project Initialisation

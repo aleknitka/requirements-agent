@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 ## Current Position
 
 Phase: 0 of 5 (Bug Triage)
-Plan: 4 of 6 in current phase (00-04 complete)
+Plan: 5 of 6 in current phase (00-05 complete)
 Status: In progress
-Last activity: 2026-04-24 — Plan 00-04 executed: fixed refine.py call-signature bugs (BUG-07/D-05/D-14); req_ops.py fixes (EXTRA-02/03/04) were pre-applied; both --help exits 0
+Last activity: 2026-04-24 — Plan 00-05 executed: slug column infrastructure added to db.py (BUG-08); get_project_by_slug added; project_session uses slug-based lookup
 
-Progress: [████░░░░░░] 16%
+Progress: [█████░░░░░] 20%
 
 ## Performance Metrics
 
@@ -51,6 +51,7 @@ Recent decisions affecting current work:
 - 00-01: shared/ was root-owned; workaround via parent-dir rename; shared.bak/ left on disk, gitignored
 - 00-02: All models.py must-haves verified correct (pre-applied by 00-01); RequirementType str Enum (34 codes), RequirementTypeMeta NamedTuple, RequirementIn clean (no RequirementArea, no fret fields)
 - 00-03: init.py bare imports applied (D-09); project_session.py resolve() and refresh_md() API-aligned; list_decisions/list_minutes use meta.project_id not slug
+- 00-05: D-06 slug column TEXT NOT NULL DEFAULT '' in projects table; D-07 get_project_by_slug uses parameterized WHERE slug=?; D-08 upsert_project auto-derives slug via C.slugify(meta.name)
 
 ### Pending Todos
 
@@ -75,5 +76,5 @@ Topics: AI governance reqs, conflict detection, external links, FRET formalisati
 ## Session Continuity
 
 Last session: 2026-04-24
-Stopped at: Completed 00-04-PLAN.md — refine.py call-signature bugs fixed (BUG-07), req_ops.py pre-applied fixes verified. Ready for plan 00-05.
+Stopped at: Completed 00-05-PLAN.md — slug column + get_project_by_slug added to db.py (BUG-08); project_session wired to get_project_by_slug. Ready for plan 00-06.
 Resume file: None
