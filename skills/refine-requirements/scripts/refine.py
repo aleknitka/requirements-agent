@@ -27,8 +27,8 @@ def _err(msg):  print(json.dumps({"ok": False, "error": msg}), file=sys.stderr);
 
 def cmd_pending(args):
     """List requirements that still need a FRET statement."""
-    _, conn, _ = ps.resolve(args.project)
-    reqs = db.search_requirements(conn, has_fret=False)
+    _, conn, meta = ps.resolve(args.project)
+    reqs = db.search_requirements(conn, meta.project_id)
     _ok({
         "count": len(reqs),
         "message": f"{len(reqs)} requirement(s) need FRET refinement.",
@@ -49,46 +49,36 @@ def cmd_show(args):
     if not req:
         _err(f"Requirement '{args.id}' not found.")
     _ok({
-        "id":             req.id,
-        "req_type":       req.req_type.value,
-        "title":          req.title,
-        "description":    req.description,
-        "status":         req.status.value,
-        "priority":       req.priority.value,
-        "fret_statement": req.fret_statement or "(none — needs refinement)",
-        "fret_fields":    req.fret_fields or {},
-        "has_fret":       bool(req.fret_statement),
+        "id":          req.id,
+        "req_type":    req.req_type.value,
+        "title":       req.title,
+        "description": req.description,
+        "status":      req.status.value,
+        "priority":    req.priority.value,
+        "has_fret":    False,  # fret fields deferred to Phase 3
     })
 
 
 def cmd_apply(args):
     """
-    Write a confirmed FRET statement and field breakdown to a requirement.
-    Called by the agent after user approves the proposed statement.
+    Write a refined description to a requirement.
+    FRET grammar fields (scope/condition/timing/response) are deferred to Phase 3.
+    For now, only description can be updated via this command.
     """
     slug, conn, _ = ps.resolve(args.project)
 
-    # Validate the fret_fields JSON if provided
-    fret_fields = None
-    if args.fret_fields:
-        try:
-            fret_fields = json.loads(args.fret_fields)
-            if not isinstance(fret_fields, dict):
-                _err("--fret-fields must be a JSON object")
-        except json.JSONDecodeError as e:
-            _err(f"Invalid JSON for --fret-fields: {e}")
-
-    changes = {
-        "fret_statement": args.fret_statement,
-        "fret_fields":    fret_fields,
-    }
+    changes = {}
     # Optionally update description with a refined version
     if args.description:
         changes["description"] = args.description
 
+    if not changes:
+        _err("No updatable fields provided. (FRET grammar fields deferred to Phase 3.)")
+
     try:
         row = db.update_requirement(
-            conn, args.id, changes,
+            conn, args.id, slug,
+            changes,
             changed_by=args.by,
             summary=args.summary or "FRET statement applied.",
         )
@@ -97,39 +87,25 @@ def cmd_apply(args):
 
     ps.refresh_md(slug, conn)
     _ok({
-        "id":             row.id,
-        "fret_statement": row.fret_statement,
-        "fret_fields":    row.fret_fields,
-        "updated_at":     row.updated_at.isoformat(),
+        "id":         row.id,
+        "updated_at": row.updated_at.isoformat(),
+        "note":       "FRET grammar fields will be added in Phase 3",
     })
 
 
 def cmd_coverage(args):
     """Show FRET coverage across all requirements."""
-    _, conn, _ = ps.resolve(args.project)
-    all_reqs   = db.search_requirements(conn)
-    with_fret  = [r for r in all_reqs if r.fret_statement]
-    without    = [r for r in all_reqs if not r.fret_statement]
-    total      = len(all_reqs)
-    pct        = (len(with_fret) / total * 100) if total else 0
-
-    # Break down by type
-    by_type = {}
-    for r in all_reqs:
-        t = r.req_type.value
-        if t not in by_type:
-            by_type[t] = {"total": 0, "with_fret": 0}
-        by_type[t]["total"] += 1
-        if r.fret_statement:
-            by_type[t]["with_fret"] += 1
+    _, conn, meta = ps.resolve(args.project)
+    all_reqs = db.search_requirements(conn, meta.project_id)
+    total    = len(all_reqs)
 
     _ok({
-        "total":      total,
-        "with_fret":  len(with_fret),
-        "without_fret": len(without),
-        "coverage_pct": round(pct, 1),
-        "by_type":    by_type,
-        "pending_ids": [r.id for r in without],
+        "total":          total,
+        "with_fret":      0,
+        "without_fret":   total,
+        "coverage_pct":   0.0,
+        "note":           "FRET grammar fields deferred to Phase 3",
+        "pending_ids":    [r.id for r in all_reqs],
     })
 
 
@@ -144,15 +120,11 @@ def build_parser():
     sh.add_argument("--id", required=True)
 
     ap = sub.add_parser("apply")
-    ap.add_argument("--id",              required=True)
-    ap.add_argument("--by",              required=True)
-    ap.add_argument("--fret-statement",  dest="fret_statement", required=True,
-                    help="The full assembled FRET sentence")
-    ap.add_argument("--fret-fields",     dest="fret_fields",
-                    help='JSON object: {"scope":"...","condition":"...","component":"...","timing":"...","response":"..."}')
-    ap.add_argument("--description",     default=None,
-                    help="Optionally update the plain-language description too")
-    ap.add_argument("--summary",         default="FRET statement applied.")
+    ap.add_argument("--id",          required=True)
+    ap.add_argument("--by",          required=True)
+    ap.add_argument("--description", default=None,
+                    help="Optionally update the plain-language description")
+    ap.add_argument("--summary",     default="FRET statement applied.")
 
     sub.add_parser("coverage")
 
