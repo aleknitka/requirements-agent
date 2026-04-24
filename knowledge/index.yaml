@@ -1,1 +1,6 @@
-documents: []
+documents:
+  - path: ai-act-summary.md
+    tags: [ai compliance, rules, ai systems]
+    priority: high
+    always_load: true
+  

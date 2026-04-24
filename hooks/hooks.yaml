@@ -1,7 +1,7 @@
 hooks:
   on_session_start:
-    - script: scripts/on-start.sh
-      description: Initialize session context
+    - script: scripts/load-project-on-start.sh
+      description: Initialize session context - load project details
       timeout: 10
       compliance: false
       fail_open: true

@@ -6,7 +6,7 @@ layers:
   - name: archive
     path: archive/
     format: yaml
-    rotation: monthly
+    rotation: quarterly
 update_triggers:
   - on_session_end
   - on_explicit_save

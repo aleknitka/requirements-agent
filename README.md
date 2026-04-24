@@ -1,8 +1,6 @@
 # Requirements Agent
 
-A multi-skill agent for managing software and AI project requirements,
-meetings, and status reporting. Built on SQLite + sqlite-vec with Pydantic
-validation and optional OpenAI-compatible embedding for semantic search.
+A multi-skill agent for managing software and AI project requirements, meetings, and status reporting. Built on SQLite + sqlite-vec with Pydantic validation and optional OpenAI-compatible embedding for semantic search.
 
 ---
 
@@ -35,106 +33,10 @@ requirements-agent/
 
 ---
 
-## Quick start
-
-### 1. Install dependencies
-
-```bash
-uv sync
-```
-
-For vector/semantic search (optional):
-```bash
-export OPENAI_API_KEY="sk-..."          # or any OpenAI-compatible key
-```
-
-To use a local embedding model (Ollama, LM Studio, etc.), set env vars or edit `shared/CONSTANTS.py`:
-```bash
-export EMBEDDING_API_BASE="http://localhost:11434/v1"
-export EMBEDDING_MODEL="nomic-embed-text"
-export EMBEDDING_DIM="768"
-```
-
-### 2. Create a project
-
-The agent should interview the user and collect:
-- Name, code, objective, business case
-- Success criteria, out of scope
-- Project owner, sponsor, key stakeholders
-- Target dates, external links (Confluence, Jira, etc.)
-
-```bash
-python skills/project-init/scripts/init.py new \
-  --name "My Project" \
-  --code "PROJ-25" \
-  --objective "..." \
-  --business-case "..." \
-  --project-owner "alice" \
-  --sponsor "cto-office" \
-  --success-criteria '["criterion 1","criterion 2"]' \
-  --stakeholders '[{"name":"Alice","role":"sponsor","contact":"alice@co.com"}]'
-```
-
-### 3. Add requirements
-
-```bash
-python skills/project-update/scripts/req_ops.py add \
-  --type DATA \
-  --title "Ingest clickstream events in real-time" \
-  --by "alice" \
-  --priority critical \
-  --description "Consume Kafka topic at 100k events/sec."
-```
-
-### 4. Refine with FRET
-
-```bash
-# Find requirements needing refinement
-python skills/refine-requirements/scripts/refine.py pending
-
-# Apply a FRET statement (after user confirms)
-python skills/refine-requirements/scripts/refine.py apply \
-  --id REQ-DATA-XXXX \
-  --by "alice" \
-  --fret-statement "the data pipeline shall within 500ms ingest and deduplicate the event" \
-  --fret-fields '{"component":"the data pipeline","timing":"within 500ms","response":"ingest and deduplicate the event"}'
-```
-
-### 5. Review
-
-```bash
-python skills/review-requirements/scripts/review.py report
-```
-
-### 6. Log a meeting
-
-```bash
-python skills/meeting-agent/scripts/meeting.py log \
-  --title "Sprint 1 planning" \
-  --by "agent-001" \
-  --source teams \
-  --summary "Team aligned on architecture." \
-  --decisions '[{"title":"Use Kafka","made_by":["Alice"],"status":"open","affects_reqs":["REQ-DATA-XXXX"]}]' \
-  --action-items '[{"description":"Provision S3 buckets","owner":"Bob","due_date":"2025-05-01"}]'
-```
-
-### 7. Generate a status report
-
-```bash
-# Preview
-python skills/status-report/scripts/report.py generate --format md
-
-# Save timestamped copy
-python skills/status-report/scripts/report.py save
-```
-
----
-
 ## Skills reference
 
 | Skill | Script | Key commands |
 |-------|--------|--------------|
-| project-init | `init.py` | `new` `list` `update` |
 | project-update | `req_ops.py` | `add` `update` `get` `list` `search` `history` `vector` |
 | refine-requirements | `refine.py` | `pending` `show` `apply` `coverage` |
 | review-requirements | `review.py` | `report` `gaps` `conflicts` `coverage` |
