@@ -10,7 +10,7 @@ The requirements-agent delivers a conversational requirements engineering loop: 
 - Integer phases (0, 1, 2, 3, 4, 5): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 0: Bug Triage** - Fix all 9 cascading runtime bugs so every skill can import and run without error
+- [x] **Phase 0: Bug Triage** - Fix all 9 cascading runtime bugs so every skill can import and run without error
 - [ ] **Phase 0.5: Package Scaffold** - Move skill scripts into installable `requirements_agent` package; set up pdoc + pre-commit doc rendering; establish agent fallback pattern
 - [ ] **Phase 1: Project Initialisation** - `init.py new` runs end-to-end, writes DB + PROJECT.md, auto-selects via .active sentinel
 - [ ] **Phase 2: Elicitation Skill** - New `elicit-requirements` skill interviews user, captures context, elicits and classifies requirements
@@ -38,7 +38,7 @@ Plans:
 - [x] 00-03-PLAN.md — Fix import chain: `init.py` bare imports (D-09), `project_session.py` API alignment
 - [x] 00-04-PLAN.md — Fix callers: `req_ops.py` (EXTRA-02/03/04), `refine.py` (BUG-07)
 - [x] 00-05-PLAN.md — Add `slug` column to `projects` table; `get_project_by_slug`; align `project_session`
-- [ ] 00-06-PLAN.md — Write tests: `test_db.py` (real-SQLite), `test_models.py`, replace `test_init.py` with subprocess tests
+- [x] 00-06-PLAN.md — Write tests: `test_db.py` (real-SQLite), `test_models.py`, replace `test_init.py` with subprocess tests
 
 ### Phase 1: Project Initialisation
 **Goal**: `init.py new` runs end-to-end, creating a project DB and PROJECT.md in `projects/<slug>/`, and the `.active` sentinel enables auto-selection in multi-project environments.
@@ -140,7 +140,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Bug Triage | 4/6 | In progress | - |
+| 0. Bug Triage | 6/6 | Complete | 2026-04-24 |
 | 1. Project Initialisation | 0/4 | Not started | - |
 | 2. Elicitation Skill | 0/5 | Not started | - |
 | 3. FRET Refinement | 0/4 | Not started | - |

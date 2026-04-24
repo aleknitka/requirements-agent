@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 ## Current Position
 
 Phase: 0 of 5 (Bug Triage)
-Plan: 5 of 6 in current phase (00-05 complete)
-Status: In progress
-Last activity: 2026-04-24 — Plan 00-05 executed: slug column infrastructure added to db.py (BUG-08); get_project_by_slug added; project_session uses slug-based lookup
+Plan: 6 of 6 in current phase (00-06 complete — Phase 0 DONE)
+Status: Phase 0 complete — ready for Phase 1
+Last activity: 2026-04-24 — Plan 00-06 executed: test suite written proving all 9 Phase 0 bugs fixed; 74 tests passing
 
-Progress: [█████░░░░░] 20%
+Progress: [██████░░░░] 24%
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Recent decisions affecting current work:
 - 00-02: All models.py must-haves verified correct (pre-applied by 00-01); RequirementType str Enum (34 codes), RequirementTypeMeta NamedTuple, RequirementIn clean (no RequirementArea, no fret fields)
 - 00-03: init.py bare imports applied (D-09); project_session.py resolve() and refresh_md() API-aligned; list_decisions/list_minutes use meta.project_id not slug
 - 00-05: D-06 slug column TEXT NOT NULL DEFAULT '' in projects table; D-07 get_project_by_slug uses parameterized WHERE slug=?; D-08 upsert_project auto-derives slug via C.slugify(meta.name)
+- 00-06: Test suite with 74 passing tests; sys.modules injection + bootstrap patch used to isolate sqlite_vec/vec0 dependency in test environment; test_init.py fully replaced (wrong agents/ path removed, no MagicMock for db/ps)
 
 ### Pending Todos
 
@@ -61,7 +62,7 @@ Topics: AI governance reqs, conflict detection, external links, FRET formalisati
 
 ### Blockers/Concerns
 
-- Phase 0 must complete before any feature work; test suite currently hides all bugs via over-permissive MagicMock patching
+- `fret_grammar.md` type names misalign with `RequirementType` Enum codes — must be corrected before Phase 3 (pre-existing, deferred)
 - `fret_grammar.md` type names misalign with `RequirementType` Enum codes — must be corrected before Phase 3
 
 ## Deferred Items
@@ -76,5 +77,5 @@ Topics: AI governance reqs, conflict detection, external links, FRET formalisati
 ## Session Continuity
 
 Last session: 2026-04-24
-Stopped at: Completed 00-05-PLAN.md — slug column + get_project_by_slug added to db.py (BUG-08); project_session wired to get_project_by_slug. Ready for plan 00-06.
+Stopped at: Completed 00-06-PLAN.md — test suite written; 74 tests passing; Phase 0 complete. Ready for Phase 1.
 Resume file: None
