@@ -54,7 +54,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 00-5-01: Update all 6 SKILL.md files to use `uv run <entry-point>` and document all sub-commands; remove `skills/*/scripts/` directories
+- [x] 00.5-01: Update all 6 SKILL.md files to use `uv run <entry-point>` and document all sub-commands; remove `skills/*/scripts/` directories — DONE 2026-04-28
 - [ ] 00-5-02: Add pdoc as dev dep; generate `docs/` (HTML + Markdown) from full package; commit output
 - [ ] 00-5-03: Configure `.pre-commit-config.yaml` with 8 hooks (ruff, ty, bandit, interrogate, pdoc, pytest, detect-private-key); add dev deps
 - [ ] 00-5-04: Update CLAUDE.md — new package structure, entry-point commands, agent fallback pattern, clean Known Issues
@@ -160,7 +160,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 0. Bug Triage | 6/6 | Complete | 2026-04-24 |
-| 0.5. Package Scaffold | 0/4 | Not started | - |
+| 0.5. Package Scaffold | 1/2 | In progress | - |
 | 1. Project Initialisation | 0/4 | Not started | - |
 | 2. Elicitation Skill | 0/5 | Not started | - |
 | 3. FRET Refinement | 0/4 | Not started | - |
