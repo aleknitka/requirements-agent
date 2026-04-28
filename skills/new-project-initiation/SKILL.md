@@ -16,7 +16,7 @@ Creates or updates a project: SQLite DB + PROJECT.md in `projects/<slug>/`.
 ## Interview checklist (run before `init.py new`)
  
 Collect ALL of these before creating:
-1. Project name and short code (e.g. MLPLAT-25)
+1. Project name and slug (e.g. MLPLAT-25)
 2. One-paragraph objective
 3. Business case — why are we doing this?
 4. Success criteria (list of measurable outcomes)
@@ -31,7 +31,7 @@ Collect ALL of these before creating:
  
 ```bash
 # Create
-python agents/project-initiation-assistant/skills/new-project-initiation/scripts/init.py new \
+uv run skills/new-project-initiation/scripts/init.py new \
   --name "<n>" [--code "PROJ-25"] \
   [--phase discovery|definition|development|testing|deployment|operations|closed] \
   [--objective "<text>"] [--business-case "<text>"] \

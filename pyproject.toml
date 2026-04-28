@@ -1,10 +1,12 @@
 [project]
 name = "requirements-agent"
 version = "0.1.0"
-description = "Add your description here"
+description = "Enterprise agent for autonomous requirements management."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "click>=8.3.3",
+    "loguru>=0.7.3",
     "openai>=2.32.0",
     "prek>=0.3.9",
     "pydantic>=2.13.3",
@@ -12,3 +14,23 @@ dependencies = [
     "ruff>=0.15.11",
     "sqlite-vec>=0.1.9",
 ]
+
+[project.scripts]
+init-project = "requirements_agent_tools.init_project:main"
+refine = "requirements_agent_tools.refine:main"
+req-ops = "requirements_agent_tools.req_ops:main"
+review = "requirements_agent_tools.review:main"
+report = "requirements_agent_tools.report:main"
+meeting = "requirements_agent_tools.meeting:main"
+db = "requirements_agent_tools.db.cli:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/requirements_agent_tools"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

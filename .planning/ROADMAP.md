@@ -40,6 +40,25 @@ Plans:
 - [x] 00-05-PLAN.md — Add `slug` column to `projects` table; `get_project_by_slug`; align `project_session`
 - [x] 00-06-PLAN.md — Write tests: `test_db.py` (real-SQLite), `test_models.py`, replace `test_init.py` with subprocess tests
 
+### Phase 0.5: Package Scaffold
+**Goal**: Solidify `requirements_agent_tools` as the canonical CLI package: update all 6 skill command surfaces to use installed entry points, remove dead `scripts/` directories, add a documentation toolchain (pdoc + committed `docs/`), configure a comprehensive pre-commit pipeline, verify the agent.yaml fallback pattern, and update CLAUDE.md to reflect the new package structure.
+**Depends on**: Phase 0
+**Requirements**: PKG-01, PKG-02, PKG-03, PKG-04, PKG-05, PKG-06
+**Success Criteria** (what must be TRUE):
+  1. `uv run init-project --help`, `uv run refine --help`, `uv run req-ops --help`, `uv run review --help`, `uv run report --help`, `uv run meeting --help` all exit 0
+  2. `find skills -name 'scripts' -type d` returns nothing (all `skills/*/scripts/` directories removed)
+  3. `docs/requirements_agent_tools/index.html` exists and `docs/requirements_agent_tools.md` exists (pdoc HTML + Markdown output committed)
+  4. `.pre-commit-config.yaml` exists with hooks for ruff-format, ruff-check, ty, bandit, detect-private-key, interrogate (≥90%), pdoc, pytest
+  5. `CLAUDE.md` references `src/requirements_agent_tools/` (not `shared/`) and uses `uv run <entry-point>` invocations; Known Issues section cleaned of fixed items
+  6. `uv run interrogate -v --fail-under 90 src/requirements_agent_tools/` exits 0
+**Plans**: TBD
+
+Plans:
+- [ ] 00-5-01: Update all 6 SKILL.md files to use `uv run <entry-point>` and document all sub-commands; remove `skills/*/scripts/` directories
+- [ ] 00-5-02: Add pdoc as dev dep; generate `docs/` (HTML + Markdown) from full package; commit output
+- [ ] 00-5-03: Configure `.pre-commit-config.yaml` with 8 hooks (ruff, ty, bandit, interrogate, pdoc, pytest, detect-private-key); add dev deps
+- [ ] 00-5-04: Update CLAUDE.md — new package structure, entry-point commands, agent fallback pattern, clean Known Issues
+
 ### Phase 1: Project Initialisation
 **Goal**: `init.py new` runs end-to-end, creating a project DB and PROJECT.md in `projects/<slug>/`, and the `.active` sentinel enables auto-selection in multi-project environments.
 **Depends on**: Phase 0
@@ -141,6 +160,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 0. Bug Triage | 6/6 | Complete | 2026-04-24 |
+| 0.5. Package Scaffold | 0/4 | Not started | - |
 | 1. Project Initialisation | 0/4 | Not started | - |
 | 2. Elicitation Skill | 0/5 | Not started | - |
 | 3. FRET Refinement | 0/4 | Not started | - |

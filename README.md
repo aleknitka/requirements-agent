@@ -2,112 +2,41 @@
 
 A multi-skill agent for managing software and AI project requirements, meetings, and status reporting. Built on SQLite + sqlite-vec with Pydantic validation and optional OpenAI-compatible embedding for semantic search.
 
----
+# Overview of functionaility
 
-## Structure
+- Requirements agent is an expert in management of requirements for Data Science, ML and AI projects which cannot take advantage of a skilled professional. 
+- Agent uses gitagent framework allowing it to be platform (Claude Code, Pi, Codex, etc) agnostic - agent can be converted to any major harnes using the command line tools.
+- The agent can manage multiple projects, stored in `projects` directory, each project is refered to using the project `slug`.
+    - Each project must consits of a `<SLUG>.db` and sqllite db with
+    - `PROJECT.md` human readable summary of the project aims, stakeholders and progress. `PROJECT.md` must follow a certain template and be used by the agent to onboard itself each time we start up.
+    - `logs` storage of daily logs, with no retention period (indefinate).
+- Agent uses cli tools implemented in `src/requirements_agent_tools` to operate on databse. 
+- Interaction with the agent happens via chat, in later stages an async analysis of transcripts, emails and documents will be implemented. 
+- In later stages the agent will be given tools to join meetings and summarise multi-user chat conversation as well as transcripts. 
+- Agent asks claryfing questions to obtain information about the project from the user. 
+- Key askepct of the interview is to get as much information as possible from the user to eliminate all assumption and clarify requirements for the application. 
+- once the interview is concluded agent will refine the requirement and once user approves the requirement is saved to the databse.
+- all operations on database are logged into daily log, as well as into the updates table of the db, alongside the diff of changes.
+- IN LATER Stage we will implement mechanisms of formalisation such as FRET, however this is out of scope for this phase.
+- AIMS for PHASE 1:
+1. implement db cli and enable it's use be the agent, in particular:
+    a. agent should be able to detect if there are any valid projects in the projects folder, and create a new one if there aren't any, if a single project exists then inform user that we are talking about the project, and allow user to select roject if there are multiple ones present. 
+    b. user should be able to initiate a new project via conversation
+    c. each new project must result in required files and intervew by the agent
+    d. agent must be able to create, update and search the requirements in the db
+    e. all operations agent takes with cli MUST be logged to daily log file and updates loged into the updates table in the db
+    f. agent must be able to read from the updates table based on multiple criteria (data, type, id, etc)
+    g. agent is able to get a human-readable full stock of requiremens from the db, each with all fields printed and updates made. This should be handled with jinja or other template and return a pdf - for audit purposes. 
+    x. see code in the src as most of the functionality in cli has been updated - however ensure that all code is maintainable and easy to follow as well as documented well with google docstrings
 
-```
-requirements-agent/
-├── README.md
-├── shared/                        ← imported by all skills
-│   ├── CONSTANTS.py               ← all config: paths, embedding backend
-│   ├── models.py                  ← Pydantic models (validation gate)
-│   ├── db.py                      ← SQLite persistence + sqlite-vec
-│   ├── md_writer.py               ← PROJECT.md generation
-│   └── project_session.py         ← session resolution (which project?)
-│
-├── projects/                      ← created automatically
-│   └── <project-slug>/
-│       ├── <project-slug>.db      ← SQLite database
-│       ├── PROJECT.md             ← auto-generated header + protected notes
-│       └── STATUS-<timestamp>.md  ← saved status reports (optional)
-│
-└── skills/
-    ├── project-init/              ← create / update project metadata
-    ├── project-update/            ← requirement CRUD + search
-    ├── refine-requirements/       ← FRET grammar refinement
-    ├── review-requirements/       ← gap analysis, conflicts, coverage
-    ├── meeting-agent/             ← log minutes, decisions, actions
-    └── status-report/             ← generate project status reports
-```
+- AIMS for PHASE 2:
+    a. implement ability for an agent to review open/new requirements and record issues for that can be addressed with stakeholders - add ISSUES table (create a good schema first), this will be used as a todo list and periodically reviewed by the agent for answers.
+    b. formalisation - we will create a skills and methods for few formalisation methods - user will be able to select a method and agent will formalise teh requirements, save them in the database
 
----
+- AIMS for PHASE 3:
+    a. agent is able to ingest unstructured information from text files (md, txt, pdf, etc) as well as email. It can use this information to update requirements, logs and issues. Evidecne is linked and recorded in teh DB. 
+    b. agent has an ability to work in autonomous way - some kind of wake up daily and standard task performance (ideation, reasearch)
+    c. implementation of the async autonomous work (see b)
 
-## Skills reference
-
-| Skill | Script | Key commands |
-|-------|--------|--------------|
-| project-update | `req_ops.py` | `add` `update` `get` `list` `search` `history` `vector` |
-| refine-requirements | `refine.py` | `pending` `show` `apply` `coverage` |
-| review-requirements | `review.py` | `report` `gaps` `conflicts` `coverage` |
-| meeting-agent | `meeting.py` | `log` `get` `list` `decisions` `update_decision` `close_action` `integrate` |
-| status-report | `report.py` | `generate` `save` |
-
-All scripts accept `--project <slug-or-partial-name>` to select the active project.
-If only one project exists, it is selected automatically.
-
----
-
-## Configuration (`shared/CONSTANTS.py`)
-
-| Variable | Default | Override |
-|----------|---------|----------|
-| `PROJECTS_DIR` | `<agent-root>/projects` | `PROJECTS_DIR` env var (absolute path) |
-| `EMBEDDING_API_BASE` | `https://api.openai.com/v1` | `EMBEDDING_API_BASE` env var |
-| `EMBEDDING_API_KEY` | `$OPENAI_API_KEY` | `OPENAI_API_KEY` env var |
-| `EMBEDDING_MODEL` | `text-embedding-3-small` | `EMBEDDING_MODEL` env var |
-| `EMBEDDING_DIM` | `1536` | `EMBEDDING_DIM` env var |
-
----
-
-## Database layout
-
-Each project has its own SQLite file at `projects/<slug>/<slug>.db`.
-
-| Table | Contents |
-|-------|----------|
-| `project` | One row — all project metadata |
-| `requirements` | One row per requirement, with JSON columns for lists |
-| `req_embeddings` | sqlite-vec virtual table for vector search |
-| `updates` | Append-only change log with field diffs + status-transition snapshots |
-| `minutes` | Meeting records with embedded decisions and action items |
-
----
-
-## Requirement IDs
-
-Requirements get typed IDs derived from their category:
-
-| Type | ID prefix | Use for |
-|------|-----------|---------|
-| `CORE` | `REQ-CORE-` | Cross-cutting, foundational |
-| `DATA` | `REQ-DATA-` | Pipelines, storage, data quality |
-| `MODEL` | `REQ-MODEL-` | ML training, inference, evaluation |
-| `INFRA` | `REQ-INFRA-` | Cloud, networking, infrastructure |
-| `OPS` | `REQ-OPS-` | Monitoring, alerting, operations |
-| `UX` | `REQ-UX-` | User experience, UI |
-| `COMPLIANCE` | `REQ-COMPLIANCE-` | Risk, ethics, EU AI Act |
-
-Requirements are **never deleted** — only their status changes
-(`open → in-progress → done / rejected`).
-
----
-
-## FRET grammar
-
-FRET (NASA Formal Requirements Elicitation Tool) produces unambiguous,
-machine-checkable requirements in the form:
-
-```
-[SCOPE] [CONDITION] the COMPONENT shall [TIMING] RESPONSE
-```
-
-Full reference: `skills/refine-requirements/references/fret_grammar.md`
-
----
-
-## Migrating to remote storage
-
-Change `PROJECTS_DIR` in `shared/CONSTANTS.py` or via the `PROJECTS_DIR`
-environment variable to any mounted path (NFS, S3 via rclone, etc.).
-No skill code changes are required.
+- AIMS for PHASE 4:
+    a. agent is able to join chats on Slack, MS Teams, Telegram and summarise conversations and assign decisions - MEETINGS table is created and stores updates from the meetings for full audit trial. 

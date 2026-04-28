@@ -14,17 +14,10 @@ Also verifies:
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(_ROOT / "shared"))
-
-from models import (  # noqa: E402
+from requirements_agent_tools.models import (
     REQUIREMENT_TYPE_METADATA,
     ProjectMeta,
     RequirementIn,
-    RequirementRow,
     RequirementType,
     RequirementTypeMeta,
 )
@@ -39,6 +32,7 @@ class TestRequirementTypeEnum:
     def test_requirement_type_is_str_enum(self):
         """BUG-05: RequirementType must be a str Enum."""
         from enum import Enum
+
         assert issubclass(RequirementType, str)
         assert issubclass(RequirementType, Enum)
 
@@ -55,11 +49,40 @@ class TestRequirementTypeEnum:
     def test_all_34_codes_present(self):
         """All 34 three-letter requirement type codes must be present."""
         expected = {
-            "BUS", "USR", "FUN", "DAT", "MOD", "MLP", "MET", "NFR",
-            "PER", "SCL", "SEC", "PRV", "COM", "ETH", "EXP", "ROB",
-            "OPS", "DEP", "INT", "UIX", "TST", "MON", "AUD", "GOV",
-            "LGL", "RES", "ENV", "MAI", "REL", "CON", "ASM", "RSK",
-            "DOC", "TRN",
+            "BUS",
+            "USR",
+            "FUN",
+            "DAT",
+            "MOD",
+            "MLP",
+            "MET",
+            "NFR",
+            "PER",
+            "SCL",
+            "SEC",
+            "PRV",
+            "COM",
+            "ETH",
+            "EXP",
+            "ROB",
+            "OPS",
+            "DEP",
+            "INT",
+            "UIX",
+            "TST",
+            "MON",
+            "AUD",
+            "GOV",
+            "LGL",
+            "RES",
+            "ENV",
+            "MAI",
+            "REL",
+            "CON",
+            "ASM",
+            "RSK",
+            "DOC",
+            "TRN",
         }
         actual = {rt.value for rt in RequirementType}
         assert actual == expected
@@ -147,17 +170,23 @@ class TestRequirementInInstantiation:
 
     def test_no_requirement_area_in_module(self):
         """D-04: RequirementArea must not be importable from models."""
-        import models
+        from requirements_agent_tools import models
+
         assert not hasattr(models, "RequirementArea")
 
     def test_no_make_req_id_in_module(self):
         """D-04: module-level make_req_id must be removed from models."""
-        import models
+        from requirements_agent_tools import models
+
         assert not hasattr(models, "make_req_id")
 
     def test_required_fields_have_correct_types(self):
         """RequirementIn fields must be typed correctly after instantiation."""
-        from models import RequirementPriority, RequirementStatus
+        from requirements_agent_tools.models import (
+            RequirementPriority,
+            RequirementStatus,
+        )
+
         req = RequirementIn(title="type check")
         assert isinstance(req.status, RequirementStatus)
         assert isinstance(req.priority, RequirementPriority)

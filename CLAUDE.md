@@ -51,7 +51,7 @@ All skills import from `shared/` using `sys.path.insert(0, str(_ROOT / "shared")
 
 - **`CONSTANTS.py`** — single source of truth for paths (`PROJECTS_DIR`), embedding config, and path helper functions (`project_dir`, `db_path`, `md_path`, `slugify`)
 - **`models.py`** — Pydantic validation models (`RequirementIn`, `RequirementRow`, `ProjectMeta`, `MinuteIn`, `UpdateRecord`, etc.); nothing writes to the DB without going through these first
-- **`db.py`** — SQLite persistence layer; all CRUD and query functions; uses `sqlite-vec` for vector search
+- **`db/`** — SQLite persistence layer split into focused submodules: `connection` (open/bootstrap), `schema` (DDL + reference seeds), `projects`, `requirements`, `minutes`, `updates`, `embeddings` (sqlite-vec), plus private `_serialization` and `_logging` helpers. A click CLI is exposed via `db = "requirements_agent_tools.db.cli:cli"` (full CRUD over a `--project <slug>` DB). All log calls go through loguru — stderr (level via `REQ_AGENT_LOG_LEVEL`, default `INFO`) plus a per-project daily-rotated file at `projects/<slug>/logs/db-{date}.log` at `DEBUG` (sink installed lazily by `get_db()`). Import directly from the submodule you need (`from requirements_agent_tools.db.requirements import insert_requirement`); the package does not re-export.
 - **`md_writer.py`** — generates and maintains `PROJECT.md` (auto header + protected `<!-- NOTES:BEGIN/END -->` block)
 - **`project_session.py`** — `resolve(slug_or_name)` auto-selects the active project; `refresh_md()` should be called after every write
 

@@ -13,14 +13,12 @@ from __future__ import annotations
 
 import re
 import sqlite3
-import sys
 
 import pytest
 
-sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent / "shared"))
-
-import db
-from models import ProjectMeta
+from requirements_agent_tools.db import _serialization as db_ser
+from requirements_agent_tools.db import projects as db_projects
+from requirements_agent_tools.models import ProjectMeta
 
 # ---------------------------------------------------------------------------
 # Schema DDL used by the fixture — mirrors db.py's bootstrap() but replaces
@@ -82,7 +80,8 @@ CREATE TABLE IF NOT EXISTS req_embeddings (
 
 CREATE TABLE IF NOT EXISTS updates (
     id             TEXT PRIMARY KEY,
-    requirement_id TEXT NOT NULL REFERENCES requirements(id),
+    entity_type    TEXT NOT NULL CHECK (entity_type IN ('requirement', 'project_md')),
+    entity_id      TEXT NOT NULL,
     changed_at     TEXT NOT NULL,
     changed_by     TEXT NOT NULL,
     summary        TEXT NOT NULL DEFAULT '',
@@ -90,7 +89,7 @@ CREATE TABLE IF NOT EXISTS updates (
     full_snapshot  TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_upd_req ON updates(requirement_id);
+CREATE INDEX IF NOT EXISTS idx_upd_entity ON updates(entity_type, entity_id);
 
 CREATE TABLE IF NOT EXISTS minutes (
     id                      TEXT PRIMARY KEY,
@@ -140,6 +139,7 @@ def conn():
 # Test 1: bootstrap creates a slug column
 # ---------------------------------------------------------------------------
 
+
 def test_bootstrap_creates_slug_column():
     """
     projects table must have a 'slug' column after db.bootstrap() runs.
@@ -163,7 +163,9 @@ def test_bootstrap_creates_slug_column():
     conn.commit()
 
     cols_before = [r[1] for r in conn.execute("PRAGMA table_info(projects)").fetchall()]
-    assert "slug" not in cols_before, f"precondition: slug must not exist yet, got {cols_before}"
+    assert "slug" not in cols_before, (
+        f"precondition: slug must not exist yet, got {cols_before}"
+    )
 
     # Run just the ALTER TABLE migration that bootstrap() executes
     try:
@@ -173,7 +175,9 @@ def test_bootstrap_creates_slug_column():
         pass  # column already exists (idempotent)
 
     cols_after = [r[1] for r in conn.execute("PRAGMA table_info(projects)").fetchall()]
-    assert "slug" in cols_after, f"'slug' column not found after ALTER TABLE. columns: {cols_after}"
+    assert "slug" in cols_after, (
+        f"'slug' column not found after ALTER TABLE. columns: {cols_after}"
+    )
 
     # Second run must be idempotent (no exception)
     try:
@@ -191,12 +195,15 @@ def test_bootstrap_creates_slug_column():
 # Test 2: upsert_project auto-derives slug from name
 # ---------------------------------------------------------------------------
 
+
 def test_upsert_project_auto_derives_slug(conn):
     """When meta.slug is empty, upsert_project should set slug to slugified name."""
     meta = ProjectMeta(name="My Project")
     assert meta.slug == "", "Precondition: meta.slug should start empty"
-    returned = db.upsert_project(conn, meta)
-    assert returned.slug == "my-project", f"Expected 'my-project', got '{returned.slug}'"
+    returned = db_projects.upsert_project(conn, meta)
+    assert returned.slug == "my-project", (
+        f"Expected 'my-project', got '{returned.slug}'"
+    )
     # Also verify the in-memory meta was mutated
     assert meta.slug == "my-project"
 
@@ -205,12 +212,13 @@ def test_upsert_project_auto_derives_slug(conn):
 # Test 3: get_project_by_slug returns correct ProjectMeta
 # ---------------------------------------------------------------------------
 
+
 def test_get_project_by_slug_returns_correct_row(conn):
     """get_project_by_slug should return a ProjectMeta matching the inserted row."""
     meta = ProjectMeta(name="Test Project")
-    db.upsert_project(conn, meta)
+    db_projects.upsert_project(conn, meta)
 
-    fetched = db.get_project_by_slug(conn, "test-project")
+    fetched = db_projects.get_project_by_slug(conn, "test-project")
     assert fetched is not None, "Expected a ProjectMeta, got None"
     assert fetched.name == "Test Project"
     assert fetched.slug == "test-project"
@@ -220,9 +228,10 @@ def test_get_project_by_slug_returns_correct_row(conn):
 # Test 4: get_project_by_slug returns None for unknown slug
 # ---------------------------------------------------------------------------
 
+
 def test_get_project_by_slug_returns_none_for_missing(conn):
     """get_project_by_slug should return None when slug does not exist."""
-    result = db.get_project_by_slug(conn, "nonexistent-slug")
+    result = db_projects.get_project_by_slug(conn, "nonexistent-slug")
     assert result is None, f"Expected None, got {result}"
 
 
@@ -230,14 +239,17 @@ def test_get_project_by_slug_returns_none_for_missing(conn):
 # Test 5: _row_to_project populates slug from DB row
 # ---------------------------------------------------------------------------
 
+
 def test_row_to_project_populates_slug(conn):
     """_row_to_project must read slug from the DB row."""
     meta = ProjectMeta(name="Row Slug Test")
-    db.upsert_project(conn, meta)
+    db_projects.upsert_project(conn, meta)
 
     row = conn.execute(
         "SELECT * FROM projects WHERE project_id = ?", (meta.project_id,)
     ).fetchone()
     assert row is not None
-    project = db._row_to_project(row)
-    assert project.slug == "row-slug-test", f"Expected 'row-slug-test', got '{project.slug}'"
+    project = db_ser.row_to_project(row)
+    assert project.slug == "row-slug-test", (
+        f"Expected 'row-slug-test', got '{project.slug}'"
+    )
