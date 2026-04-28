@@ -1,11 +1,12 @@
 ---
 name: project-init
 description: >
-    Create a new project. Use this skill whenever there are no projects in the `projects` directory or the user wants to start a new project, asks "can you create a project for me", wants to update project-level information (sponsor, phase, objectives,success criteria), or asks to list existing projects. The agent MUST interviewthe user to collect project metadata before calling init.py. Trigger on:"new project", "create project", "initialise project", "set up a project","update project details", "change project phase", "list projects".
+    Create a new project. Use this skill whenever there are no projects in the `projects` directory or the user wants to start a new project, asks "can you create a project for me", wants to update project-level information (sponsor, phase, objectives, success criteria), or asks to list existing projects. The agent MUST interview the user to collect project metadata before calling `uv run init-project new`. Trigger on: "new project", "create project", "initialise project", "set up a project", "update project details", "change project phase", "list projects".
 license: MIT
+allowed-tools: Read Edit Grep Glob
 metadata:
   author: aleksander nitka
-  version: 1.0.0
+  version: "1.0.0"
   category: requirements
 ---
 
@@ -13,7 +14,7 @@ metadata:
  
 Creates or updates a project: SQLite DB + PROJECT.md in `projects/<slug>/`.
  
-## Interview checklist (run before `init.py new`)
+## Interview checklist (run before `uv run init-project new`)
  
 Collect ALL of these before creating:
 1. Project name and slug (e.g. MLPLAT-25)
@@ -31,7 +32,7 @@ Collect ALL of these before creating:
  
 ```bash
 # Create
-uv run skills/new-project-initiation/scripts/init.py new \
+uv run init-project new \
   --name "<n>" [--code "PROJ-25"] \
   [--phase discovery|definition|development|testing|deployment|operations|closed] \
   [--objective "<text>"] [--business-case "<text>"] \
@@ -39,13 +40,16 @@ uv run skills/new-project-initiation/scripts/init.py new \
   [--success-criteria '["c1","c2"]'] [--out-of-scope '["o1"]'] \
   [--stakeholders '[{"name":"Alice","role":"sponsor","contact":"alice@co.com"}]'] \
   [--external-links '[{"system":"Confluence","label":"Charter","url":"..."}]']
- 
+
 # List all projects
-python skills/project-init/scripts/init.py list
- 
+uv run init-project list
+
 # Update metadata
-python skills/project-init/scripts/init.py update \
-  --project "<slug or name>" [--phase ...] [--objective ...] [...]
+uv run init-project update \
+  --project "<slug or name>" [--phase ...] [--objective ...] [--business-case ...] \
+  [--project-owner ...] [--sponsor ...] [--start-date ...] [--target-date ...] \
+  [--actual-end-date ...] [--status-summary ...] [--success-criteria ...] \
+  [--out-of-scope ...] [--stakeholders ...] [--external-links ...]
 ```
  
 ## Output

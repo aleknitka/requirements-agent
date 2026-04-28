@@ -27,7 +27,7 @@ process. Read it in full before interacting with the user.
  
 ## Interactive refinement loop
  
-1. Run `pending` to find requirements needing refinement
+1. Run `uv run refine pending` to find requirements needing refinement
 2. Pick the highest-priority one (or let user choose)
 3. Run `show` to read the current title and description
 4. Follow the FRET refinement process in fret_grammar.md:
@@ -36,15 +36,17 @@ process. Read it in full before interacting with the user.
    - Propose a FRET statement
    - Confirm with user
 5. Run `apply` to write the confirmed statement
+
 ## Commands
  
 ```bash
-python skills/refine-requirements/scripts/refine.py pending    # what needs refinement
-python skills/refine-requirements/scripts/refine.py show   --id REQ-DATA-XXXX
-python skills/refine-requirements/scripts/refine.py apply  \
+uv run refine pending [--project <slug>]           # what needs refinement
+uv run refine show   --id REQ-DATA-XXXX [--project <slug>]
+uv run refine apply  \
   --id REQ-DATA-XXXX --by "<agent>" \
   --fret-statement "the X shall within 100ms do Y" \
   --fret-fields '{"scope":"","condition":"","component":"the X","timing":"within 100ms","response":"do Y"}' \
-  [--description "<updated plain language description>"]
-python skills/refine-requirements/scripts/refine.py coverage   # % with FRET
+  [--description "<updated plain language description>"] \
+  [--project <slug>]
+uv run refine coverage [--project <slug>]          # % with FRET
 ```
