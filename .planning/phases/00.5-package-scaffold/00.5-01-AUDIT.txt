@@ -1,0 +1,37 @@
+=== SKILL DIRECTORY AUDIT (Phase 0.5 Plan 01 Task 3) ===
+Date: 2026-04-28T11:50:52Z
+
+--- find skills -name scripts -type d ---
+(empty — no scripts/ directories found)
+
+--- find skills -type f -not -name 'SKILL.md' -not -path '*/references/*' ---
+(empty — no orphan files found)
+
+--- per-skill listing ---
+skills/meeting-agent/          : SKILL.md
+skills/new-project-initiation/ : SKILL.md
+skills/project-update/         : SKILL.md
+skills/refine-requirements/    : SKILL.md  references/
+skills/review-requirements/    : SKILL.md
+skills/status-report/          : SKILL.md
+
+--- skill grep for stale uv run skills/ or python skills/ patterns ---
+(empty — no stale python skills/.../scripts/ or uv run skills/.../scripts/ references found)
+
+--- ownership check ---
+-rw-r--r-- 1 root       root       65781 Apr 28 08:59 skills/elicit-requirements/SKILL.md
+-rw-rw-r-- 1 aleksander aleksander  1950 Apr 28 13:48 skills/meeting-agent/SKILL.md
+-rw-r--r-- 1 aleksander aleksander  2436 Apr 28 13:48 skills/new-project-initiation/SKILL.md
+-rw-rw-r-- 1 aleksander aleksander  2400 Apr 28 13:49 skills/project-update/SKILL.md
+-rw-rw-r-- 1 aleksander aleksander  2092 Apr 28 13:48 skills/refine-requirements/SKILL.md
+-rw-rw-r-- 1 aleksander aleksander  1247 Apr 28 13:49 skills/review-requirements/SKILL.md
+-rw-rw-r-- 1 aleksander aleksander  1154 Apr 28 13:50 skills/status-report/SKILL.md
+
+Notes:
+- skills/elicit-requirements/SKILL.md is root-owned but is OUT OF SCOPE for plan 00.5-01
+  (not in files_modified list). Flagged for future attention.
+- The 6 in-scope SKILL.md files (meeting-agent, new-project-initiation, project-update,
+  refine-requirements, review-requirements, status-report) are all aleksander-owned after
+  Tasks 1 and 2 completed chown via rename+create pattern (sudo not available in CI context).
+
+=== END AUDIT ===
