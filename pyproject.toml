@@ -34,3 +34,36 @@ packages = ["src/requirements_agent_tools"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "lazydocs>=0.4.8",
+    "pre-commit>=4.6.0",
+    "ty>=0.0.32",
+    "bandit>=1.9.4",
+    "interrogate>=1.7.0",
+]
+
+[tool.interrogate]
+fail-under = 90
+ignore-init-method = true
+ignore-init-module = true
+ignore-magic = true
+ignore-private = true
+ignore-semiprivate = false
+verbose = 0
+quiet = false
+color = true
+exclude = ["tests", "docs"]
+
+[tool.ty.environment]
+python-version = "3.13"
+
+[tool.ty.src]
+include = ["src/requirements_agent_tools"]
+
+[tool.ty.rules]
+# ty flags sqlite3.Row dict-style access as invalid-argument-type
+# because the inferred type is Any | tuple[Any, ...].
+# Suppress as warn until sqlite-vec ships type stubs.
+invalid-argument-type = "warn"
