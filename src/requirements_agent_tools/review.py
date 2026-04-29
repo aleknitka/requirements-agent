@@ -22,6 +22,19 @@ from .models import RequirementType
 
 
 def _check_gaps(reqs, meta) -> dict:
+    """Identify gaps in requirement coverage across type, fields, and FRET.
+
+    Flags: missing requirement types, requirements without descriptions,
+    requirements without an owner, requirements without a FRET statement,
+    and open critical requirements.
+
+    Args:
+        reqs: List of RequirementRow objects from the active project.
+        meta: ProjectMeta for the active project.
+
+    Returns:
+        Dict with gap_count (int) and gaps (list of issue dicts).
+    """
     issues = []
     present_types = {r.req_type.value for r in reqs}
     all_types = {t.value for t in RequirementType}
@@ -155,10 +168,20 @@ def _check_conflicts(reqs) -> dict:
 
 
 def _check_coverage(reqs, meta) -> dict:
-    """
-    Cross-check success criteria against requirements.
-    For each criterion, look for requirements whose title/description/fret_statement
-    contains keywords from the criterion.
+    """Cross-check project success criteria against existing requirements.
+
+    Extracts keywords from each criterion and checks whether any
+    requirement's title, description, or FRET statement contains those
+    keywords.
+
+    Args:
+        reqs: List of RequirementRow objects from the active project.
+        meta: ProjectMeta containing the success_criteria list.
+
+    Returns:
+        Dict with criteria_total, criteria_covered, uncovered list,
+        and per-criterion detail. Returns a skipped dict if no criteria
+        are defined.
     """
     if not meta.success_criteria:
         return {
@@ -196,24 +219,44 @@ def _check_coverage(reqs, meta) -> dict:
 
 
 def cmd_gaps(args):
+    """Run gap analysis and output identified issues as JSON.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     _, conn, meta = ps.resolve(args.project)
     reqs = search_requirements(conn)
     _ok(_check_gaps(reqs, meta))
 
 
 def cmd_conflicts(args):
+    """Run conflict detection and output flagged conflicts as JSON.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     _, conn, _ = ps.resolve(args.project)
     reqs = search_requirements(conn)
     _ok(_check_conflicts(reqs))
 
 
 def cmd_coverage(args):
+    """Run success criteria coverage check and output results as JSON.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     _, conn, meta = ps.resolve(args.project)
     reqs = search_requirements(conn)
     _ok(_check_coverage(reqs, meta))
 
 
 def cmd_report(args):
+    """Run all review checks and output a combined review report as JSON.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     _, conn, meta = ps.resolve(args.project)
     reqs = search_requirements(conn)
 
@@ -247,6 +290,12 @@ def cmd_report(args):
 
 
 def build_parser():
+    """Build and return the review argument parser.
+
+    Returns:
+        Configured ArgumentParser with gaps, conflicts, coverage,
+        and report subcommands.
+    """
     p = argparse.ArgumentParser(description="Requirements review and gap analysis")
     p.add_argument("--project", default=None)
     sub = p.add_subparsers(dest="command", required=True)
@@ -258,6 +307,7 @@ def build_parser():
 
 
 def main():
+    """Entry point for the review CLI."""
     args = build_parser().parse_args()
     {
         "gaps": cmd_gaps,

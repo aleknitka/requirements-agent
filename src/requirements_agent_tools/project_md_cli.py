@@ -20,6 +20,19 @@ from ._cli_io import ok as _ok
 
 
 def _resolve_content(inline: str | None, file_path: str | None, label: str) -> str:
+    """Resolve inline content or a file path to a string.
+
+    Exactly one of inline or file_path must be provided; providing both
+    or neither causes an error exit.
+
+    Args:
+        inline: Inline content string, or None.
+        file_path: Path to a file to read, or None.
+        label: CLI option name used in error messages (e.g. "content").
+
+    Returns:
+        The resolved content string.
+    """
     if inline is not None and file_path is not None:
         _err(f"Pass either --{label} or --{label}-file, not both.")
     if file_path is not None:
@@ -33,6 +46,11 @@ def _resolve_content(inline: str | None, file_path: str | None, label: str) -> s
 
 
 def cmd_save(args: argparse.Namespace) -> None:
+    """Write the full PROJECT.md content, creating or replacing the file.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     slug, conn, _ = ps.resolve(args.project)
     content = _resolve_content(args.content, args.content_file, "content")
     path = project_md.save(
@@ -42,6 +60,11 @@ def cmd_save(args: argparse.Namespace) -> None:
 
 
 def cmd_append(args: argparse.Namespace) -> None:
+    """Append a markdown section to the existing PROJECT.md.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     slug, conn, _ = ps.resolve(args.project)
     section = _resolve_content(args.section, args.section_file, "section")
     try:
@@ -60,6 +83,11 @@ def cmd_append(args: argparse.Namespace) -> None:
 
 
 def cmd_read(args: argparse.Namespace) -> None:
+    """Print the current PROJECT.md content to stdout.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     slug, _, _ = ps.resolve(args.project)
     body = project_md.read(slug)
     if body is None:
@@ -68,6 +96,11 @@ def cmd_read(args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build and return the project-md-cli argument parser.
+
+    Returns:
+        Configured ArgumentParser with save, append, and read subcommands.
+    """
     p = argparse.ArgumentParser(description="PROJECT.md persistence")
     p.add_argument("--project", default=None, help="Project slug")
     sub = p.add_subparsers(dest="command", required=True)
@@ -94,6 +127,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    """Entry point for the project_md_cli CLI."""
     args = build_parser().parse_args()
     {"save": cmd_save, "append": cmd_append, "read": cmd_read}[args.command](args)
 

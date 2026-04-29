@@ -33,6 +33,11 @@ from .models import ActionItem, Decision, DecisionStatus, MeetingSource, MinuteI
 
 
 def cmd_log(args):
+    """Log a meeting with its title, summary, decisions, and action items.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     _, conn, _ = ps.resolve(args.project)
     minute_in = MinuteIn(
         title=args.title,
@@ -60,6 +65,11 @@ def cmd_log(args):
 
 
 def cmd_get(args):
+    """Fetch and display a single meeting record.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     _, conn, _ = ps.resolve(args.project)
     row = get_minute(conn, args.id)
     if not row:
@@ -68,6 +78,11 @@ def cmd_get(args):
 
 
 def cmd_list(args):
+    """List meetings with optional source, integration, and date filters.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     _, conn, _ = ps.resolve(args.project)
     rows = list_minutes(
         conn, source=args.source, unintegrated=args.unintegrated, since=args.since
@@ -95,12 +110,22 @@ def cmd_list(args):
 
 
 def cmd_decisions(args):
+    """List all decisions across all meeting records.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     _, conn, _ = ps.resolve(args.project)
     decs = list_decisions(conn, status=args.status, affects_req=args.affects_req)
     _ok({"count": len(decs), "decisions": decs})
 
 
 def cmd_update_decision(args):
+    """Update the status and notes of a specific decision.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     _, conn, _ = ps.resolve(args.project)
     row = get_minute(conn, args.meeting_id)
     if not row:
@@ -127,6 +152,11 @@ def cmd_update_decision(args):
 
 
 def cmd_close_action(args):
+    """Mark a specific action item as done.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     _, conn, _ = ps.resolve(args.project)
     row = get_minute(conn, args.meeting_id)
     if not row:
@@ -153,6 +183,11 @@ def cmd_close_action(args):
 
 
 def cmd_integrate(args):
+    """Mark one or more meetings as integrated and optionally update project status.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     _, conn, meta = ps.resolve(args.project)
     marked = []
     if args.all_unintegrated:
@@ -181,6 +216,12 @@ def cmd_integrate(args):
 
 
 def build_parser():
+    """Build and return the meeting argument parser.
+
+    Returns:
+        Configured ArgumentParser with log, get, list, decisions,
+        update_decision, close_action, and integrate subcommands.
+    """
     p = argparse.ArgumentParser(description="Meeting agent")
     p.add_argument("--project", default=None)
     sub = p.add_subparsers(dest="command", required=True)
@@ -230,6 +271,7 @@ def build_parser():
 
 
 def main():
+    """Entry point for the meeting CLI."""
     args = build_parser().parse_args()
     {
         "log": cmd_log,

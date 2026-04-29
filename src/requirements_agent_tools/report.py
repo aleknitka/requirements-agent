@@ -20,6 +20,21 @@ from .db.updates import get_updates
 
 
 def _build_report(slug: str, conn, meta) -> dict:
+    """Assemble the full status report dict from the project DB.
+
+    Queries requirements, meetings, decisions, action items, and recent
+    changes to produce a structured report dict suitable for JSON output
+    or Markdown rendering.
+
+    Args:
+        slug: Project slug (used for file path construction).
+        conn: Open SQLite connection to the project DB.
+        meta: ProjectMeta instance for the project.
+
+    Returns:
+        Dict containing project metadata, requirement counts, FRET
+        coverage, meeting/decision/action summaries, and a health signal.
+    """
     reqs = search_requirements(conn)
     mins = list_minutes(conn)
     decs = list_decisions(conn)
@@ -128,6 +143,14 @@ def _health_signal(reqs, open_decs, pending_acts, unint_mins) -> str:
 
 
 def _report_to_md(report: dict) -> str:
+    """Render a report dict as a Markdown status report string.
+
+    Args:
+        report: Report dict produced by _build_report().
+
+    Returns:
+        Multi-line Markdown string suitable for writing to a .md file.
+    """
     r = report
     proj = r["project"]
     reqs = r["requirements"]
@@ -190,6 +213,11 @@ def _report_to_md(report: dict) -> str:
 
 
 def cmd_generate(args):
+    """Generate a project status report and print it to stdout.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     _, conn, meta = ps.resolve(args.project)
     slug = C.slugify(meta.name)
     report = _build_report(slug, conn, meta)
@@ -200,6 +228,14 @@ def cmd_generate(args):
 
 
 def cmd_save(args):
+    """Generate a project status report and save it to timestamped files.
+
+    Writes both a Markdown file (STATUS-<timestamp>.md) and a JSON file
+    (STATUS-<timestamp>.json) to the project directory.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     _, conn, meta = ps.resolve(args.project)
     slug = C.slugify(meta.name)
     report = _build_report(slug, conn, meta)
@@ -219,6 +255,11 @@ def cmd_save(args):
 
 
 def build_parser():
+    """Build and return the report argument parser.
+
+    Returns:
+        Configured ArgumentParser with generate and save subcommands.
+    """
     p = argparse.ArgumentParser(description="Status report generator")
     p.add_argument("--project", default=None)
     sub = p.add_subparsers(dest="command", required=True)
@@ -231,6 +272,7 @@ def build_parser():
 
 
 def main():
+    """Entry point for the report CLI."""
     args = build_parser().parse_args()
     {"generate": cmd_generate, "save": cmd_save}[args.command](args)
 

@@ -31,6 +31,11 @@ from .models import (
 
 
 def cmd_add(args):
+    """Add a new requirement to the active project.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     slug, conn, meta = ps.resolve(args.project)
     req_in = RequirementIn(
         req_type=RequirementType(args.type.upper())
@@ -64,6 +69,11 @@ def cmd_add(args):
 
 
 def cmd_update(args):
+    """Apply a partial field update to an existing requirement.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     slug, conn, meta = ps.resolve(args.project)
     changes = {}
     if args.title:
@@ -118,6 +128,11 @@ def cmd_update(args):
 
 
 def cmd_get(args):
+    """Fetch and display a single requirement by ID.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     _, conn, _ = ps.resolve(args.project)
     row = get_requirement(conn, args.id)
     if not row:
@@ -126,6 +141,11 @@ def cmd_get(args):
 
 
 def cmd_list(args):
+    """List all requirements with optional field filters.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     _, conn, _ = ps.resolve(args.project)
     rows = search_requirements(
         conn,
@@ -159,6 +179,11 @@ def cmd_list(args):
 
 
 def cmd_search(args):
+    """Keyword search across requirement titles and descriptions.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     _, conn, _ = ps.resolve(args.project)
     rows = search_requirements(conn, keyword=args.query)
     _ok(
@@ -179,6 +204,11 @@ def cmd_search(args):
 
 
 def cmd_history(args):
+    """Display the full change history for a requirement.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     _, conn, _ = ps.resolve(args.project)
     updates = get_updates(conn, args.id)
     _ok(
@@ -200,6 +230,13 @@ def cmd_history(args):
 
 
 def cmd_vector(args):
+    """Embedding-based similarity search over requirements.
+
+    Requires EMBEDDING_API_KEY environment variable to be set.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     if not C.EMBEDDING_API_KEY:
         _err("EMBEDDING_API_KEY not set. Vector search unavailable.")
     _, conn, _ = ps.resolve(args.project)
@@ -223,6 +260,12 @@ def cmd_vector(args):
 
 
 def build_parser():
+    """Build and return the req-ops argument parser.
+
+    Returns:
+        Configured ArgumentParser with add, update, get, list, search,
+        history, and vector subcommands.
+    """
     p = argparse.ArgumentParser(description="Requirement operations")
     p.add_argument("--project", default=None, help="Project slug or partial name")
     sub = p.add_subparsers(dest="command", required=True)
@@ -284,6 +327,7 @@ def build_parser():
 
 
 def main():
+    """Entry point for the req-ops CLI."""
     args = build_parser().parse_args()
     {
         "add": cmd_add,

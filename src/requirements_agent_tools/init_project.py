@@ -22,6 +22,15 @@ from .models import ExternalLink, ProjectMeta, ProjectPhase, Stakeholder
 
 
 def cmd_new(args: argparse.Namespace) -> None:
+    """Create a new project database and directory.
+
+    Validates that no project with the same slug already exists, then
+    creates the DB, writes project metadata, and prints a JSON result
+    with the project ID, slug, and next-step instructions.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     slug = C.slugify(args.name)
 
     # Guard: prevent duplicate slugs
@@ -71,6 +80,11 @@ def cmd_new(args: argparse.Namespace) -> None:
 
 
 def cmd_list(args: argparse.Namespace) -> None:
+    """List all existing projects found in PROJECTS_DIR.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     projects = projects_db.discover_projects()
     if not projects:
         _ok(
@@ -85,6 +99,14 @@ def cmd_list(args: argparse.Namespace) -> None:
 
 
 def cmd_update(args: argparse.Namespace) -> None:
+    """Update metadata fields for an existing project.
+
+    Resolves the project by slug or name, applies all non-None CLI
+    argument values to the project metadata, and persists the change.
+
+    Args:
+        args: Parsed CLI arguments from build_parser().
+    """
     slug, conn, meta = ps.resolve(args.project)
 
     SIMPLE = [
@@ -125,6 +147,11 @@ def cmd_update(args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build and return the init-project argument parser.
+
+    Returns:
+        Configured ArgumentParser with new, list, and update subcommands.
+    """
     p = argparse.ArgumentParser(description="Project initialisation")
     sub = p.add_subparsers(dest="command", required=True)
     PHASES = [ph.value for ph in ProjectPhase]
@@ -169,6 +196,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main():
+    """Entry point for the init-project CLI."""
     args = build_parser().parse_args()
     {"new": cmd_new, "list": cmd_list, "update": cmd_update}[args.command](args)
 
