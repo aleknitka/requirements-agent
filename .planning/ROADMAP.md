@@ -51,7 +51,7 @@ Plans:
   4. `.pre-commit-config.yaml` exists with hooks for ruff-format, ruff-check, ty, bandit, detect-private-key, interrogate (≥90%), pdoc, pytest
   5. `CLAUDE.md` references `src/requirements_agent_tools/` (not `shared/`) and uses `uv run <entry-point>` invocations; Known Issues section cleaned of fixed items
   6. `uv run interrogate -v --fail-under 90 src/requirements_agent_tools/` exits 0
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
 - [x] 00.5-01: Update all 6 SKILL.md files to use `uv run <entry-point>` and document all sub-commands; remove `skills/*/scripts/` directories — DONE 2026-04-28
