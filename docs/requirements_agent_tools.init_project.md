@@ -18,14 +18,20 @@ Commands ────────  new      Interview user → create <slug>.db 
 cmd_new(args: Namespace) → None
 ```
 
+Create a new project database and directory. 
+
+Validates that no project with the same slug already exists, then creates the DB, writes project metadata, and prints a JSON result with the project ID, slug, and next-step instructions. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/init_project.py#L73"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/init_project.py#L82"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_list`
 
@@ -33,14 +39,18 @@ cmd_new(args: Namespace) → None
 cmd_list(args: Namespace) → None
 ```
 
+List all existing projects found in PROJECTS_DIR. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/init_project.py#L87"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/init_project.py#L101"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_update`
 
@@ -48,14 +58,20 @@ cmd_list(args: Namespace) → None
 cmd_update(args: Namespace) → None
 ```
 
+Update metadata fields for an existing project. 
+
+Resolves the project by slug or name, applies all non-None CLI argument values to the project metadata, and persists the change. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/init_project.py#L127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/init_project.py#L149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_parser`
 
@@ -63,14 +79,17 @@ cmd_update(args: Namespace) → None
 build_parser() → ArgumentParser
 ```
 
+Build and return the init-project argument parser. 
 
 
 
+**Returns:**
+  Configured ArgumentParser with new, list, and update subcommands. 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/init_project.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/init_project.py#L198"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 
@@ -78,9 +97,7 @@ build_parser() → ArgumentParser
 main()
 ```
 
-
-
-
+Entry point for the init-project CLI. 
 
 
 

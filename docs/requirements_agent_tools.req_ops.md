@@ -18,14 +18,18 @@ Commands: add · update · get · list · search · history · vector
 cmd_add(args)
 ```
 
+Add a new requirement to the active project. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L66"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L71"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_update`
 
@@ -33,14 +37,18 @@ cmd_add(args)
 cmd_update(args)
 ```
 
+Apply a partial field update to an existing requirement. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L120"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L130"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_get`
 
@@ -48,14 +56,18 @@ cmd_update(args)
 cmd_get(args)
 ```
 
+Fetch and display a single requirement by ID. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L143"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_list`
 
@@ -63,14 +75,18 @@ cmd_get(args)
 cmd_list(args)
 ```
 
+List all requirements with optional field filters. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L181"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_search`
 
@@ -78,14 +94,18 @@ cmd_list(args)
 cmd_search(args)
 ```
 
+Keyword search across requirement titles and descriptions. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L181"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L206"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_history`
 
@@ -93,14 +113,18 @@ cmd_search(args)
 cmd_history(args)
 ```
 
+Display the full change history for a requirement. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L202"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L232"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_vector`
 
@@ -108,14 +132,20 @@ cmd_history(args)
 cmd_vector(args)
 ```
 
+Embedding-based similarity search over requirements. 
+
+Requires EMBEDDING_API_KEY environment variable to be set. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L262"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_parser`
 
@@ -123,14 +153,17 @@ cmd_vector(args)
 build_parser()
 ```
 
+Build and return the req-ops argument parser. 
 
 
 
+**Returns:**
+  Configured ArgumentParser with add, update, get, list, search,  history, and vector subcommands. 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L286"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L329"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 
@@ -138,9 +171,7 @@ build_parser()
 main()
 ```
 
-
-
-
+Entry point for the req-ops CLI. 
 
 
 

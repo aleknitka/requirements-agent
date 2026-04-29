@@ -1,0 +1,61 @@
+---
+repos:
+  # ── Formatting (must run before lint) ──────────────────────────────────
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.12
+    hooks:
+      - id: ruff-format
+      - id: ruff-check
+        args: [--fix]
+
+  # ── Credentials ────────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: detect-private-key
+
+  # ── Security ───────────────────────────────────────────────────────────
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.9.4
+    hooks:
+      - id: bandit
+        args: [-r, src/]
+        pass_filenames: false
+
+  # ── Type checking (local — no astral-sh/ty-pre-commit repo exists) ─────
+  - repo: local
+    hooks:
+      - id: ty
+        name: ty type check
+        entry: uv run --with ty ty check
+        language: system
+        types: [python]
+        pass_filenames: false
+
+  # ── Docstring coverage ─────────────────────────────────────────────────
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.7.0
+    hooks:
+      - id: interrogate
+        args: [src/]
+        pass_filenames: false
+
+  # ── Documentation regeneration (lazydocs → docs/) ─────────────────────
+  - repo: local
+    hooks:
+      - id: lazydocs
+        name: regenerate API docs (lazydocs)
+        entry: uv run --with lazydocs lazydocs --output-path docs/ requirements_agent_tools
+        language: system
+        pass_filenames: false
+        always_run: true
+
+  # ── Tests ──────────────────────────────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: uv run pytest
+        language: system
+        pass_filenames: false
+        always_run: true

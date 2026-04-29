@@ -18,14 +18,18 @@ Commands ────────  log             Log a meeting with summary, d
 cmd_log(args)
 ```
 
+Log a meeting with its title, summary, decisions, and action items. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/meeting.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/meeting.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_get`
 
@@ -33,14 +37,18 @@ cmd_log(args)
 cmd_get(args)
 ```
 
+Fetch and display a single meeting record. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/meeting.py#L70"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/meeting.py#L80"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_list`
 
@@ -48,14 +56,18 @@ cmd_get(args)
 cmd_list(args)
 ```
 
+List meetings with optional source, integration, and date filters. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/meeting.py#L97"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/meeting.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_decisions`
 
@@ -63,14 +75,18 @@ cmd_list(args)
 cmd_decisions(args)
 ```
 
+List all decisions across all meeting records. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/meeting.py#L103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/meeting.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_update_decision`
 
@@ -78,14 +94,18 @@ cmd_decisions(args)
 cmd_update_decision(args)
 ```
 
+Update the status and notes of a specific decision. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/meeting.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/meeting.py#L154"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_close_action`
 
@@ -93,14 +113,18 @@ cmd_update_decision(args)
 cmd_close_action(args)
 ```
 
+Mark a specific action item as done. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/meeting.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/meeting.py#L185"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_integrate`
 
@@ -108,14 +132,18 @@ cmd_close_action(args)
 cmd_integrate(args)
 ```
 
+Mark one or more meetings as integrated and optionally update project status. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/meeting.py#L183"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/meeting.py#L218"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_parser`
 
@@ -123,14 +151,17 @@ cmd_integrate(args)
 build_parser()
 ```
 
+Build and return the meeting argument parser. 
 
 
 
+**Returns:**
+  Configured ArgumentParser with log, get, list, decisions,  update_decision, close_action, and integrate subcommands. 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/meeting.py#L232"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/meeting.py#L273"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 
@@ -138,9 +169,7 @@ build_parser()
 main()
 ```
 
-
-
-
+Entry point for the meeting CLI. 
 
 
 

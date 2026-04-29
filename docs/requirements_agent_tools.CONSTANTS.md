@@ -42,14 +42,23 @@ Return (and create) the directory for a given project slug.
 db_path(slug: str) → Path
 ```
 
+Return the SQLite database file path for a given project slug. 
 
 
 
+**Args:**
+ 
+ - <b>`slug`</b>:  Project slug (directory name under PROJECTS_DIR). 
+
+
+
+**Returns:**
+ Path to the .db file at PROJECTS_DIR/<slug>/<slug>.db. 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/CONSTANTS.py#L65"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/CONSTANTS.py#L73"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `md_path`
 
@@ -57,14 +66,23 @@ db_path(slug: str) → Path
 md_path(slug: str) → Path
 ```
 
+Return the PROJECT.md path for a given project slug. 
 
 
 
+**Args:**
+ 
+ - <b>`slug`</b>:  Project slug (directory name under PROJECTS_DIR). 
+
+
+
+**Returns:**
+ Path to PROJECT.md at PROJECTS_DIR/<slug>/PROJECT.md. 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/CONSTANTS.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/CONSTANTS.py#L85"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `slugify`
 
@@ -72,9 +90,20 @@ md_path(slug: str) → Path
 slugify(name: str) → str
 ```
 
+Convert a human-readable name into a URL-safe slug. 
+
+Replaces any sequence of non-alphanumeric characters with a single hyphen and strips leading/trailing hyphens. 
 
 
 
+**Args:**
+ 
+ - <b>`name`</b>:  Human-readable name to slugify. 
+
+
+
+**Returns:**
+ Lowercase hyphen-separated slug string. 
 
 
 

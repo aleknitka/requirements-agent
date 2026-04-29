@@ -78,7 +78,7 @@ Return the project with the matching slug in this database, or ``None``.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/projects.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/projects.py#L121"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `list_projects`
 
@@ -91,7 +91,7 @@ Return every project row in this database, ordered by ``created_at``.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/projects.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/projects.py#L127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `discover_projects`
 

@@ -52,7 +52,7 @@ Creates the file if it does not exist; otherwise overwrites it. In both cases an
 
 ---
 
-<a href="../src/requirements_agent_tools/project_md.py#L92"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/project_md.py#L90"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `append_section`
 
@@ -90,7 +90,7 @@ A blank line is inserted between the existing body and the new section.
 
 ---
 
-<a href="../src/requirements_agent_tools/project_md.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/project_md.py#L153"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `read`
 

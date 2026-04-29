@@ -10,7 +10,7 @@ Commands ────────  generate   Pull current state from DB and pro
 
 ---
 
-<a href="../src/requirements_agent_tools/report.py#L192"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/report.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_generate`
 
@@ -18,14 +18,18 @@ Commands ────────  generate   Pull current state from DB and pro
 cmd_generate(args)
 ```
 
+Generate a project status report and print it to stdout. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/report.py#L202"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/report.py#L230"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_save`
 
@@ -33,14 +37,20 @@ cmd_generate(args)
 cmd_save(args)
 ```
 
+Generate a project status report and save it to timestamped files. 
+
+Writes both a Markdown file (STATUS-<timestamp>.md) and a JSON file (STATUS-<timestamp>.json) to the project directory. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/report.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/report.py#L257"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_parser`
 
@@ -48,14 +58,17 @@ cmd_save(args)
 build_parser()
 ```
 
+Build and return the report argument parser. 
 
 
 
+**Returns:**
+  Configured ArgumentParser with generate and save subcommands. 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/report.py#L233"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/report.py#L274"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 
@@ -63,9 +76,7 @@ build_parser()
 main()
 ```
 
-
-
-
+Entry point for the report CLI. 
 
 
 

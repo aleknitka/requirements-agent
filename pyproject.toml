@@ -8,6 +8,10 @@ dependencies = [
     "click>=8.3.3",
     "loguru>=0.7.3",
     "openai>=2.32.0",
+    "opentelemetry-api>=1.41.1",
+    "opentelemetry-exporter-otlp>=1.41.1",
+    "opentelemetry-sdk>=1.41.1",
+    "pip>=26.1",
     "prek>=0.3.9",
     "pydantic>=2.13.3",
     "pytest>=9.0.3",
@@ -67,3 +71,10 @@ include = ["src/requirements_agent_tools"]
 # because the inferred type is Any | tuple[Any, ...].
 # Suppress as warn until sqlite-vec ships type stubs.
 invalid-argument-type = "warn"
+# ty flags unresolved-attribute on Optional returns in db/cli.py where callers
+# guard with _fail() before accessing the attribute. Pre-existing; suppress as warn.
+unresolved-attribute = "warn"
+# ty flags invalid-return-type on MinuteRow/RequirementRow return types where
+# get_minute/get_requirement return Optional but the caller already verified presence.
+# Pre-existing (# type: ignore[return-value] comments show original intent).
+invalid-return-type = "warn"

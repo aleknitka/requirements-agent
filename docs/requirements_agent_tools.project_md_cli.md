@@ -10,7 +10,7 @@ Commands ────────  save     Write the full markdown body (create
 
 ---
 
-<a href="../src/requirements_agent_tools/project_md_cli.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/project_md_cli.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_save`
 
@@ -18,14 +18,18 @@ Commands ────────  save     Write the full markdown body (create
 cmd_save(args: 'Namespace') → None
 ```
 
+Write the full PROJECT.md content, creating or replacing the file. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/project_md_cli.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/project_md_cli.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_append`
 
@@ -33,14 +37,18 @@ cmd_save(args: 'Namespace') → None
 cmd_append(args: 'Namespace') → None
 ```
 
+Append a markdown section to the existing PROJECT.md. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/project_md_cli.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/project_md_cli.py#L85"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_read`
 
@@ -48,14 +56,18 @@ cmd_append(args: 'Namespace') → None
 cmd_read(args: 'Namespace') → None
 ```
 
+Print the current PROJECT.md content to stdout. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/project_md_cli.py#L64"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/project_md_cli.py#L98"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_parser`
 
@@ -63,14 +75,17 @@ cmd_read(args: 'Namespace') → None
 build_parser() → ArgumentParser
 ```
 
+Build and return the project-md-cli argument parser. 
 
 
 
+**Returns:**
+  Configured ArgumentParser with save, append, and read subcommands. 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/project_md_cli.py#L86"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/project_md_cli.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 
@@ -78,9 +93,7 @@ build_parser() → ArgumentParser
 main() → None
 ```
 
-
-
-
+Entry point for the project_md_cli CLI. 
 
 
 

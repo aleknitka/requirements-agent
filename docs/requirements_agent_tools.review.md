@@ -10,7 +10,7 @@ Commands ────────  gaps       Identify missing requirement types
 
 ---
 
-<a href="../src/requirements_agent_tools/review.py#L198"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/review.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_gaps`
 
@@ -18,14 +18,18 @@ Commands ────────  gaps       Identify missing requirement types
 cmd_gaps(args)
 ```
 
+Run gap analysis and output identified issues as JSON. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/review.py#L204"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/review.py#L232"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_conflicts`
 
@@ -33,14 +37,18 @@ cmd_gaps(args)
 cmd_conflicts(args)
 ```
 
+Run conflict detection and output flagged conflicts as JSON. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/review.py#L210"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/review.py#L243"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_coverage`
 
@@ -48,14 +56,18 @@ cmd_conflicts(args)
 cmd_coverage(args)
 ```
 
+Run success criteria coverage check and output results as JSON. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/review.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/review.py#L254"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_report`
 
@@ -63,14 +75,18 @@ cmd_coverage(args)
 cmd_report(args)
 ```
 
+Run all review checks and output a combined review report as JSON. 
 
 
 
+**Args:**
+ 
+ - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/review.py#L249"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/review.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_parser`
 
@@ -78,14 +94,17 @@ cmd_report(args)
 build_parser()
 ```
 
+Build and return the review argument parser. 
 
 
 
+**Returns:**
+  Configured ArgumentParser with gaps, conflicts, coverage,  and report subcommands. 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/review.py#L260"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/review.py#L309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 
@@ -93,9 +112,7 @@ build_parser()
 main()
 ```
 
-
-
-
+Entry point for the review CLI. 
 
 
 
