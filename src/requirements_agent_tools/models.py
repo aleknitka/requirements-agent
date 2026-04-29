@@ -19,6 +19,8 @@ from pydantic import BaseModel, Field
 
 
 class RequirementStatus(str, Enum):
+    """Lifecycle states for a requirement."""
+
     BACKLOG = "backlog"
     OPEN = "open"
     IN_PROGRESS = "in-progress"
@@ -27,6 +29,8 @@ class RequirementStatus(str, Enum):
 
 
 class RequirementPriority(str, Enum):
+    """Priority tiers for triaging and scheduling requirements."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -73,6 +77,14 @@ class RequirementType(str, Enum):
 
 
 class RequirementTypeMeta(NamedTuple):
+    """Metadata tuple binding a type code to its display name and description.
+
+    Attributes:
+        code: Three-letter type code matching RequirementType enum values.
+        name: Human-readable type name.
+        description: One-sentence description of what this type covers.
+    """
+
     code: str
     name: str
     description: str
@@ -253,6 +265,8 @@ REQUIREMENT_TYPE_METADATA: list[RequirementTypeMeta] = [
 
 
 class ProjectPhase(str, Enum):
+    """Lifecycle phases for a project."""
+
     DISCOVERY = "discovery"
     DEFINITION = "definition"
     DEVELOPMENT = "development"
@@ -263,6 +277,8 @@ class ProjectPhase(str, Enum):
 
 
 class MeetingSource(str, Enum):
+    """Platforms or channels from which a meeting originated."""
+
     TEAMS = "teams"
     SLACK = "slack"
     DIRECT = "direct"
@@ -273,6 +289,8 @@ class MeetingSource(str, Enum):
 
 
 class DecisionStatus(str, Enum):
+    """Lifecycle states for a decision logged in meeting minutes."""
+
     OPEN = "open"
     ACTIONED = "actioned"
     SUPERSEDED = "superseded"
@@ -285,12 +303,30 @@ class DecisionStatus(str, Enum):
 
 
 class ExternalLink(BaseModel):
+    """A reference to an external system or resource.
+
+    Attributes:
+        system: Name of the external system (e.g. "Jira", "Confluence").
+        label: Display label for the link.
+        url: Optional URL to the specific item.
+    """
+
     system: str
     label: str
     url: Optional[str] = None
 
 
 class Dependency(BaseModel):
+    """A directed dependency between requirements or external systems.
+
+    Attributes:
+        kind: Whether the dependency is internal (another requirement)
+            or external (outside system).
+        ref: Identifier of the dependency target.
+        url: Optional URL to the dependency.
+        note: Optional explanatory note.
+    """
+
     kind: Literal["internal", "external"]
     ref: str
     url: Optional[str] = None
@@ -298,6 +334,14 @@ class Dependency(BaseModel):
 
 
 class Stakeholder(BaseModel):
+    """A person with a defined role on the project.
+
+    Attributes:
+        name: Full name or identifier of the stakeholder.
+        role: Stakeholder role (requestor/sponsor/approver/reviewer/informed).
+        contact: Optional email or messaging handle.
+    """
+
     name: str
     role: Literal["requestor", "sponsor", "approver", "reviewer", "informed"]
     contact: Optional[str] = None
@@ -339,12 +383,33 @@ class RequirementRow(RequirementIn):
 
 
 class FieldDiff(BaseModel):
+    """A before/after change record for a single field.
+
+    Attributes:
+        field: Name of the changed field.
+        old_value: Value before the change.
+        new_value: Value after the change.
+    """
+
     field: str
     old_value: Any
     new_value: Any
 
 
 class UpdateRecord(BaseModel):
+    """Audit record capturing a change to a requirement or PROJECT.md.
+
+    Attributes:
+        id: UUID for this update record.
+        entity_type: Either "requirement" or "project_md".
+        entity_id: Identifier of the changed entity.
+        changed_at: Timestamp of the change (UTC).
+        changed_by: Identifier of the person who made the change.
+        summary: One-line description of what changed and why.
+        diffs: List of per-field before/after diffs.
+        full_snapshot: Optional full row snapshot for status transitions.
+    """
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     entity_type: Literal["requirement", "project_md"] = "requirement"
     entity_id: str
@@ -361,6 +426,20 @@ class UpdateRecord(BaseModel):
 
 
 class Decision(BaseModel):
+    """A decision recorded during a meeting.
+
+    Attributes:
+        decision_id: Unique decision identifier (auto-generated DEC-XXXXXXXX).
+        title: Short title summarising the decision.
+        detail: Full decision text.
+        made_by: List of participant identifiers who made the decision.
+        status: Current decision status.
+        affects_reqs: Requirement identifiers affected by this decision.
+        action_owner: Optional identifier of who owns the follow-up action.
+        due_date: Optional date by which the action should be completed.
+        notes: Freeform notes or follow-up context.
+    """
+
     decision_id: str = Field(
         default_factory=lambda: f"DEC-{str(uuid.uuid4())[:8].upper()}"
     )
@@ -375,6 +454,16 @@ class Decision(BaseModel):
 
 
 class ActionItem(BaseModel):
+    """A follow-up action item arising from a meeting decision.
+
+    Attributes:
+        action_id: Unique action identifier (auto-generated ACT-XXXXXXXX).
+        description: Full description of the action to take.
+        owner: Optional identifier of the person responsible.
+        due_date: Optional completion date.
+        done: True when the action has been completed.
+    """
+
     action_id: str = Field(
         default_factory=lambda: f"ACT-{str(uuid.uuid4())[:8].upper()}"
     )
@@ -385,6 +474,21 @@ class ActionItem(BaseModel):
 
 
 class MinuteIn(BaseModel):
+    """Validated input for logging a meeting.
+
+    Attributes:
+        title: Meeting title.
+        source: Platform or channel where the meeting occurred.
+        source_url: Optional URL to the meeting recording or notes.
+        occurred_at: When the meeting took place (UTC).
+        logged_by: Identifier of the person logging the minutes.
+        attendees: List of attendee names or identifiers.
+        summary: Short prose summary of the meeting.
+        raw_notes: Full verbatim notes.
+        decisions: Decisions made during the meeting.
+        action_items: Action items arising from the meeting.
+    """
+
     title: str
     source: MeetingSource = MeetingSource.OTHER
     source_url: Optional[str] = None
@@ -398,6 +502,16 @@ class MinuteIn(BaseModel):
 
 
 class MinuteRow(MinuteIn):
+    """Full DB row — extends MinuteIn with persistence fields.
+
+    Attributes:
+        id: UUID for this meeting record.
+        logged_at: When the minutes were persisted (UTC).
+        integrated_into_status: True when the meeting has been integrated
+            into the project status summary.
+        integrated_at: Timestamp of integration, if integrated.
+    """
+
     id: str
     logged_at: datetime
     integrated_into_status: bool = False
@@ -410,6 +524,31 @@ class MinuteRow(MinuteIn):
 
 
 class ProjectMeta(BaseModel):
+    """Full project metadata record.
+
+    Attributes:
+        project_id: UUID for the project.
+        slug: URL-safe slug derived from the project name.
+        name: Human-readable project name.
+        code: Optional short project code (e.g. "PROJ-24").
+        phase: Current project lifecycle phase.
+        objective: One-sentence project objective.
+        business_case: Business justification narrative.
+        success_criteria: List of measurable success criteria statements.
+        out_of_scope: List of explicitly out-of-scope items.
+        project_owner: Name or identifier of the project owner.
+        sponsor: Name or identifier of the executive sponsor.
+        stakeholders: List of project stakeholders with roles.
+        start_date: Planned or actual project start date.
+        target_date: Target completion date.
+        actual_end_date: Actual completion date, if closed.
+        external_links: Links to external systems (e.g. Jira, Confluence).
+        status_summary: Current status narrative for the project.
+        status_updated_at: When the status summary was last updated.
+        created_at: When the project record was created (UTC).
+        updated_at: When the project record was last modified (UTC).
+    """
+
     project_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     slug: str = ""  # derived from name, used for filenames
     name: str

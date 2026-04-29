@@ -59,12 +59,39 @@ def project_dir(slug: str) -> Path:
 
 
 def db_path(slug: str) -> Path:
+    """Return the SQLite database file path for a given project slug.
+
+    Args:
+        slug: Project slug (directory name under PROJECTS_DIR).
+
+    Returns:
+        Path to the .db file at PROJECTS_DIR/<slug>/<slug>.db.
+    """
     return project_dir(slug) / f"{slug}.db"
 
 
 def md_path(slug: str) -> Path:
+    """Return the PROJECT.md path for a given project slug.
+
+    Args:
+        slug: Project slug (directory name under PROJECTS_DIR).
+
+    Returns:
+        Path to PROJECT.md at PROJECTS_DIR/<slug>/PROJECT.md.
+    """
     return project_dir(slug) / "PROJECT.md"
 
 
 def slugify(name: str) -> str:
+    """Convert a human-readable name into a URL-safe slug.
+
+    Replaces any sequence of non-alphanumeric characters with a single
+    hyphen and strips leading/trailing hyphens.
+
+    Args:
+        name: Human-readable name to slugify.
+
+    Returns:
+        Lowercase hyphen-separated slug string.
+    """
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
