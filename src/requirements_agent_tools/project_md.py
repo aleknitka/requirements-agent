@@ -66,9 +66,7 @@ def save(
         log_msg = "Created PROJECT.md for {} ({} chars) by {}"
         log_args = (slug, len(content), changed_by)
     else:
-        diffs = [
-            FieldDiff(field="content", old_value=previous, new_value=content)
-        ]
+        diffs = [FieldDiff(field="content", old_value=previous, new_value=content)]
         delta = len(content) - len(previous)
         log_msg = "Updated PROJECT.md for {} ({:+} chars) by {}"
         log_args = (slug, delta, changed_by)

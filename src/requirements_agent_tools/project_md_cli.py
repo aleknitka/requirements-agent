@@ -50,7 +50,13 @@ def cmd_append(args: argparse.Namespace) -> None:
         )
     except FileNotFoundError as e:
         _err(str(e))
-    _ok({"slug": slug, "path": str(path), "appended_bytes": len(section.encode("utf-8"))})
+    _ok(
+        {
+            "slug": slug,
+            "path": str(path),
+            "appended_bytes": len(section.encode("utf-8")),
+        }
+    )
 
 
 def cmd_read(args: argparse.Namespace) -> None:
@@ -70,13 +76,17 @@ def build_parser() -> argparse.ArgumentParser:
     sv.add_argument("--by", required=True)
     sv.add_argument("--summary", required=True)
     sv.add_argument("--content", help="Inline markdown content")
-    sv.add_argument("--content-file", dest="content_file", help="Path to a markdown file")
+    sv.add_argument(
+        "--content-file", dest="content_file", help="Path to a markdown file"
+    )
 
     ap = sub.add_parser("append", help="Append a section to PROJECT.md")
     ap.add_argument("--by", required=True)
     ap.add_argument("--summary", required=True)
     ap.add_argument("--section", help="Inline section markdown")
-    ap.add_argument("--section-file", dest="section_file", help="Path to a section file")
+    ap.add_argument(
+        "--section-file", dest="section_file", help="Path to a section file"
+    )
 
     sub.add_parser("read", help="Print the current PROJECT.md")
 

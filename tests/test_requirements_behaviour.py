@@ -113,14 +113,26 @@ def conn(tmp_path):
     c.close()
 
 
-def _add(conn, *, title, description="", req_type=RequirementType.FUN,
-         status=RequirementStatus.OPEN, priority=RequirementPriority.MEDIUM,
-         owner=None, by="tester"):
+def _add(
+    conn,
+    *,
+    title,
+    description="",
+    req_type=RequirementType.FUN,
+    status=RequirementStatus.OPEN,
+    priority=RequirementPriority.MEDIUM,
+    owner=None,
+    by="tester",
+):
     return db_req.insert_requirement(
         conn,
         RequirementIn(
-            req_type=req_type, title=title, description=description,
-            status=status, priority=priority, owner=owner,
+            req_type=req_type,
+            title=title,
+            description=description,
+            status=status,
+            priority=priority,
+            owner=owner,
         ),
         created_by=by,
     )
@@ -207,9 +219,7 @@ def test_find_updated_in_period(conn):
     early_window = db_req.find_requirements_updated_between(
         conn, cutoff - timedelta(days=1), cutoff
     )
-    late_window = db_req.find_requirements_updated_between(
-        conn, cutoff, far_future
-    )
+    late_window = db_req.find_requirements_updated_between(conn, cutoff, far_future)
 
     assert [r.id for r in early_window] == [a.id]
     assert [r.id for r in late_window] == [b.id]
@@ -237,9 +247,7 @@ def test_insert_persists_row_and_logs_creation(conn):
 
 def test_update_writes_diff_to_updates_table(conn):
     row = _add(conn, title="Old title")
-    db_req.update_requirement(
-        conn, row.id, {"title": "New title"}, "bob", "rename"
-    )
+    db_req.update_requirement(conn, row.id, {"title": "New title"}, "bob", "rename")
 
     history = get_updates(conn, row.id)
     assert len(history) == 2  # creation + this update
@@ -293,9 +301,7 @@ def test_update_rejects_protected_field(conn, field, value):
     original = db_req.get_requirement(conn, row.id)
 
     with pytest.raises(ValueError, match="not updatable"):
-        db_req.update_requirement(
-            conn, row.id, {field: value}, "mallory", "tampering"
-        )
+        db_req.update_requirement(conn, row.id, {field: value}, "mallory", "tampering")
 
     after = db_req.get_requirement(conn, row.id)
     assert after.id == original.id

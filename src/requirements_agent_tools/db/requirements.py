@@ -348,6 +348,4 @@ def build_requirements_report(
     from .updates import get_updates
 
     reqs = search_requirements(conn)
-    return [
-        {"requirement": r, "updates": get_updates(conn, r.id)} for r in reqs
-    ]
+    return [{"requirement": r, "updates": get_updates(conn, r.id)} for r in reqs]

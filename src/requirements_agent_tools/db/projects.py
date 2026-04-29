@@ -110,9 +110,7 @@ def get_project(conn: sqlite3.Connection) -> Optional[ProjectMeta]:
     return ser.row_to_project(row) if row else None
 
 
-def get_project_by_slug(
-    conn: sqlite3.Connection, slug: str
-) -> Optional[ProjectMeta]:
+def get_project_by_slug(conn: sqlite3.Connection, slug: str) -> Optional[ProjectMeta]:
     """Return the project with the matching slug in this database, or ``None``."""
     row = conn.execute(
         "SELECT * FROM projects WHERE slug = ? LIMIT 1", (slug,)
