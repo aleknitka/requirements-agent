@@ -89,7 +89,12 @@ def _parse_json_list(raw: Optional[str], label: str) -> list[Any]:
 )
 @click.pass_context
 def cli(ctx: click.Context, slug: str) -> None:
-    """Top-level entry point. Stores ``slug`` on the context."""
+    """Entry point for the db CLI. Stores project slug on Click context.
+
+    Args:
+        ctx: Click context object.
+        slug: Project slug matching the directory name under projects/.
+    """
     ctx.ensure_object(dict)
     ctx.obj["slug"] = slug
 
@@ -98,12 +103,18 @@ def cli(ctx: click.Context, slug: str) -> None:
 
 
 @cli.group(help="Project metadata commands.")
-def project() -> None: ...
+def project() -> None:
+    """Project metadata subcommands."""
 
 
 @project.command("show", help="Show the project metadata as JSON.")
 @click.pass_context
 def project_show(ctx: click.Context) -> None:
+    """Display the project metadata row as JSON.
+
+    Args:
+        ctx: Click context carrying the project slug.
+    """
     conn = _open_conn(ctx.obj["slug"])
     meta = projects_db.get_project(conn)
     if not meta:
@@ -136,6 +147,19 @@ def project_upsert(
     sponsor: Optional[str],
     status_summary: str,
 ) -> None:
+    """Insert or update the single project metadata row.
+
+    Args:
+        ctx: Click context carrying the project slug.
+        name: Human-readable project name.
+        code: Optional short project code (e.g. "PROJ-24").
+        phase: Project lifecycle phase value.
+        objective: One-sentence project objective.
+        business_case: Business justification text.
+        project_owner: Name of the project owner.
+        sponsor: Name of the executive sponsor.
+        status_summary: Current status narrative.
+    """
     conn = _open_conn(ctx.obj["slug"])
     existing = projects_db.get_project(conn)
     if existing:
@@ -168,7 +192,8 @@ def project_upsert(
 
 
 @cli.group(help="Requirement CRUD and search commands.")
-def req() -> None: ...
+def req() -> None:
+    """Requirement CRUD and search subcommands."""
 
 
 @req.command("add", help="Insert a new requirement.")
@@ -199,6 +224,18 @@ def req_add(
     owner: Optional[str],
     tags: str,
 ) -> None:
+    """Insert a new requirement row.
+
+    Args:
+        ctx: Click context carrying the project slug.
+        title: Short requirement title.
+        created_by: Identifier of the person creating the requirement.
+        req_type: Three-letter requirement type code (e.g. "FUN").
+        description: Full requirement description text.
+        priority: Priority level (low/medium/high/critical).
+        owner: Optional owner identifier.
+        tags: Comma-separated tag string.
+    """
     conn = _open_conn(ctx.obj["slug"])
     req_in = RequirementIn(
         req_type=RequirementType(req_type),
@@ -241,6 +278,20 @@ def req_update(
     owner: Optional[str],
     tags: Optional[str],
 ) -> None:
+    """Apply a partial field update to an existing requirement.
+
+    Args:
+        ctx: Click context carrying the project slug.
+        req_id: Requirement identifier to update.
+        changed_by: Identifier of the person making the change.
+        summary: One-line summary of what changed and why.
+        title: New title, if updating.
+        description: New description, if updating.
+        status: New status value, if updating.
+        priority: New priority value, if updating.
+        owner: New owner, if updating.
+        tags: Comma-separated replacement tag list, if updating.
+    """
     changes: dict[str, Any] = {}
     if title is not None:
         changes["title"] = title
@@ -268,6 +319,12 @@ def req_update(
 @click.argument("req_id")
 @click.pass_context
 def req_show(ctx: click.Context, req_id: str) -> None:
+    """Display a single requirement as JSON.
+
+    Args:
+        ctx: Click context carrying the project slug.
+        req_id: Requirement identifier to fetch.
+    """
     conn = _open_conn(ctx.obj["slug"])
     row = req_db.get_requirement(conn, req_id)
     if not row:
@@ -303,6 +360,17 @@ def req_search(
     tag: Optional[str],
     keyword: Optional[str],
 ) -> None:
+    """Search requirements using field-based filters.
+
+    Args:
+        ctx: Click context carrying the project slug.
+        status: Filter by status value.
+        priority: Filter by priority value.
+        req_type: Filter by requirement type code.
+        owner: Filter by owner identifier.
+        tag: Filter by tag string.
+        keyword: Filter by keyword substring match in title or description.
+    """
     conn = _open_conn(ctx.obj["slug"])
     rows = req_db.search_requirements(
         conn,
@@ -327,6 +395,13 @@ def req_search(
 @click.option("--top-k", "top_k", type=int, default=10)
 @click.pass_context
 def req_vec_search(ctx: click.Context, query: str, top_k: int) -> None:
+    """Run an embedding-based similarity search over requirements.
+
+    Args:
+        ctx: Click context carrying the project slug.
+        query: Natural-language query string.
+        top_k: Number of nearest neighbours to return.
+    """
     conn = _open_conn(ctx.obj["slug"])
     try:
         results = vector_search(conn, query, top_k=top_k)
@@ -348,7 +423,8 @@ def req_vec_search(ctx: click.Context, query: str, top_k: int) -> None:
 
 
 @cli.group(help="Meeting minute commands.")
-def minute() -> None: ...
+def minute() -> None:
+    """Meeting minute subcommands."""
 
 
 @minute.command("add", help="Log a meeting.")
@@ -387,6 +463,21 @@ def minute_add(
     decisions: Optional[str],
     action_items: Optional[str],
 ) -> None:
+    """Log a meeting with its summary, decisions, and action items.
+
+    Args:
+        ctx: Click context carrying the project slug.
+        title: Meeting title.
+        logged_by: Identifier of the person logging the meeting.
+        source: Meeting platform (teams/slack/zoom/in-person/other).
+        source_url: Optional URL to the meeting recording or transcript.
+        occurred_at: ISO datetime string; defaults to current UTC time.
+        summary: Short prose summary of the meeting.
+        raw_notes: Full verbatim meeting notes.
+        attendees: JSON array of attendee name strings.
+        decisions: JSON array of Decision dicts.
+        action_items: JSON array of ActionItem dicts.
+    """
     from ..models import ActionItem, Decision
 
     conn = _open_conn(ctx.obj["slug"])
@@ -417,6 +508,12 @@ def minute_add(
 @click.argument("minute_id")
 @click.pass_context
 def minute_show(ctx: click.Context, minute_id: str) -> None:
+    """Display one meeting record as JSON.
+
+    Args:
+        ctx: Click context carrying the project slug.
+        minute_id: Meeting identifier to fetch.
+    """
     conn = _open_conn(ctx.obj["slug"])
     row = minutes_db.get_minute(conn, minute_id)
     if not row:
@@ -437,6 +534,14 @@ def minute_list(
     unintegrated: bool,
     since: Optional[str],
 ) -> None:
+    """List meetings with optional source, integration, and date filters.
+
+    Args:
+        ctx: Click context carrying the project slug.
+        source: Filter by meeting source platform.
+        unintegrated: If True, return only meetings not yet integrated.
+        since: ISO datetime lower bound for occurred_at filter.
+    """
     conn = _open_conn(ctx.obj["slug"])
     rows = minutes_db.list_minutes(
         conn, source=source, unintegrated=unintegrated, since=since
@@ -454,6 +559,12 @@ def minute_list(
 @click.argument("minute_id")
 @click.pass_context
 def minute_integrate(ctx: click.Context, minute_id: str) -> None:
+    """Mark a meeting as integrated into the project status.
+
+    Args:
+        ctx: Click context carrying the project slug.
+        minute_id: Meeting identifier to mark as integrated.
+    """
     conn = _open_conn(ctx.obj["slug"])
     if not minutes_db.get_minute(conn, minute_id):
         _fail(f"Meeting '{minute_id}' not found.")
@@ -470,6 +581,13 @@ def minute_integrate(ctx: click.Context, minute_id: str) -> None:
 def minute_decisions(
     ctx: click.Context, status: Optional[str], affects_req: Optional[str]
 ) -> None:
+    """List decisions extracted across all meetings.
+
+    Args:
+        ctx: Click context carrying the project slug.
+        status: Filter by decision status.
+        affects_req: Filter by affected requirement identifier.
+    """
     conn = _open_conn(ctx.obj["slug"])
     decs = minutes_db.list_decisions(conn, status=status, affects_req=affects_req)
     _emit({"ok": True, "count": len(decs), "decisions": decs})
@@ -479,13 +597,20 @@ def minute_decisions(
 
 
 @cli.group(help="Requirement change-log commands.")
-def update() -> None: ...
+def update() -> None:
+    """Requirement change-log subcommands."""
 
 
 @update.command("show", help="Show full change history for a requirement.")
 @click.argument("req_id")
 @click.pass_context
 def update_show(ctx: click.Context, req_id: str) -> None:
+    """Display the full change history for a requirement.
+
+    Args:
+        ctx: Click context carrying the project slug.
+        req_id: Requirement identifier whose history to fetch.
+    """
     conn = _open_conn(ctx.obj["slug"])
     history = updates_db.get_updates(conn, req_id)
     _emit(

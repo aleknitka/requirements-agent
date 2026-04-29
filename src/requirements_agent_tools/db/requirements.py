@@ -198,7 +198,7 @@ def update_requirement(
     sets.append("updated_at = :updated_at")
 
     conn.execute(
-        f"UPDATE requirements SET {', '.join(sets)} WHERE id = :req_id",
+        f"UPDATE requirements SET {', '.join(sets)} WHERE id = :req_id",  # nosec B608 — sets list built from validated, hardcoded column names; values are parameterized
         params,
     )
 
@@ -289,7 +289,7 @@ def search_requirements(
         {tag_join}
         {where}
         ORDER BY r.created_at
-    """
+    """  # nosec B608 — tag_join and where built from hardcoded column/table names; values are parameterized
     rows = conn.execute(sql, params).fetchall()
     return [ser.row_to_requirement(r) for r in rows]
 

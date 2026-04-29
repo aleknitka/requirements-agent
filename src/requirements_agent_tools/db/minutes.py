@@ -94,7 +94,7 @@ def list_minutes(
         params["since"] = since
     where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
     rows = conn.execute(
-        f"SELECT * FROM minutes{where} ORDER BY occurred_at",
+        f"SELECT * FROM minutes{where} ORDER BY occurred_at",  # nosec B608 — where clause built from hardcoded column filter constants; values are parameterized
         params,
     ).fetchall()
     return [ser.row_to_minute(r) for r in rows]

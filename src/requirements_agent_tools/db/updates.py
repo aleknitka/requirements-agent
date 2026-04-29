@@ -78,6 +78,14 @@ def get_project_md_history(
 
 
 def _row_to_record(d: dict) -> UpdateRecord:
+    """Deserialise a DB row dict into an UpdateRecord model instance.
+
+    Args:
+        d: Raw row dict from the updates table.
+
+    Returns:
+        Populated UpdateRecord with diffs and snapshot deserialised from JSON.
+    """
     return UpdateRecord(
         id=d["id"],
         entity_type=d["entity_type"],
