@@ -57,7 +57,7 @@ Plans:
 - [x] 00.5-01: Update all 6 SKILL.md files to use `uv run <entry-point>` and document all sub-commands; remove `skills/*/scripts/` directories — DONE 2026-04-28
 - [x] 00.5-02: Add lazydocs as dev dep; generate `docs/` (21 Markdown files) from full package; commit output — DONE 2026-04-28
 - [x] 00.5-03: Configure `.pre-commit-config.yaml` with 8 hooks (ruff, ty, bandit, interrogate, lazydocs, pytest, detect-private-key); add dev deps — DONE 2026-04-29
-- [ ] 00.5-04: Update CLAUDE.md — new package structure, entry-point commands, agent fallback pattern, clean Known Issues
+- [x] 00.5-04: Update CLAUDE.md — new package structure, entry-point commands, agent fallback pattern, clean Known Issues — DONE 2026-04-29
 
 ### Phase 1: Project Initialisation
 **Goal**: `init.py new` runs end-to-end, creating a project DB and PROJECT.md in `projects/<slug>/`, and the `.active` sentinel enables auto-selection in multi-project environments.
@@ -160,7 +160,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 0. Bug Triage | 6/6 | Complete | 2026-04-24 |
-| 0.5. Package Scaffold | 2/4 | In progress | - |
+| 0.5. Package Scaffold | 4/4 | Complete | 2026-04-29 |
 | 1. Project Initialisation | 0/4 | Not started | - |
 | 2. Elicitation Skill | 0/5 | Not started | - |
 | 3. FRET Refinement | 0/4 | Not started | - |

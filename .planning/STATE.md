@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Plan 00.5-03 complete (2026-04-29)
-last_updated: "2026-04-29T17:30:00.000Z"
-last_activity: "2026-04-29 — Plan 00.5-03 executed: Google-style docstrings added to 10 modules (98.2% coverage); .pre-commit-config.yaml with 8 hooks created and all hooks passing; PKG-04 met"
+stopped_at: Plan 00.5-04 complete (2026-04-29) — Phase 0.5 complete
+last_updated: "2026-04-29T15:14:40.000Z"
+last_activity: "2026-04-29 — Plan 00.5-04 executed: CLAUDE.md rewritten with src/requirements_agent_tools/ package section, entry-point table, gitagent fallback pattern, pre-commit and doc-gen commands; Known Issues removed; ROADMAP.md pdoc → lazydocs; PKG-05 and PKG-06 met; Phase 0.5 complete"
 progress:
   total_phases: 7
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 3
-  percent: 75
+  completed_plans: 4
+  percent: 100
 ---
 
 # Project State
@@ -21,36 +21,36 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-21)
 
 **Core value:** An agent that takes fuzzy stakeholder input and produces a formally structured, persistently stored, machine-checkable requirement.
-**Current focus:** Phase 0.5 — Package Scaffold
+**Current focus:** Phase 1 — Project Initialisation (next)
 
 ## Current Position
 
-Phase: 0.5 of 5 (Package Scaffold)
-Plan: 3 of 4 in current phase (00.5-01, 00.5-02, 00.5-03 complete)
-Status: Phase 0.5 in progress — Plans 01, 02, 03 complete; Plan 04 next (CLAUDE.md update)
-Last activity: 2026-04-29 — Plan 00.5-03 executed: Google-style docstrings added to 10 modules (98.2% coverage); .pre-commit-config.yaml with 8 hooks created and all passing; PKG-04 met
+Phase: 0.5 of 5 (Package Scaffold) — COMPLETE
+Plan: 4 of 4 in current phase (00.5-01, 00.5-02, 00.5-03, 00.5-04 complete)
+Status: Phase 0.5 complete — all 4 plans done; Phase 1 (Project Initialisation) is next
+Last activity: 2026-04-29 — Plan 00.5-04 executed: CLAUDE.md rewritten (shared/ → src/requirements_agent_tools/, entry-point table, gitagent fallback, pre-commit and lazydocs commands, Known Issues removed); ROADMAP.md pdoc → lazydocs; PKG-05 and PKG-06 met
 
-Progress: [████████░░] 75%
+Progress: [██████████] 100% (Phase 0.5)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 2
-- Average duration: 10 minutes
-- Total execution time: 0.2 hours
+- Total plans completed: 4
+- Average duration: 18 minutes
+- Total execution time: 1.2 hours (estimated)
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 0 Bug Triage | 2 | 10 min | 5 min |
-| 0.5 Package Scaffold | 3 | 65 min | 22 min |
+| 0.5 Package Scaffold | 4 | 68 min | 17 min |
 
 **Recent Trend:**
 
-- Last 5 plans: 00-01 (8 min), 00-02 (2 min), 00-03 (3 min), 00.5-01 (15 min), 00.5-02 (5 min)
-- Trend: 00.5-02 fast — Python 3.13 compat fix required but quickly resolved
+- Last 5 plans: 00-03 (3 min), 00.5-01 (15 min), 00.5-02 (5 min), 00.5-03 (45 min), 00.5-04 (3 min)
+- Trend: 00.5-04 very fast — pure documentation rewrite with clear acceptance criteria
 
 *Updated after each plan completion*
 
@@ -75,6 +75,7 @@ Recent decisions affecting current work:
 - 00.5-01: All 6 SKILL.md files use uv run <entry-point>; PKG-01 and PKG-02 met; rename-then-create pattern used for root-owned files (sudo not available); meeting-agent missing allowed-tools field backfilled (Rule 2 auto-fix)
 - 00.5-02: lazydocs>=0.4.8 added as dev dep; pyproject.toml [dependency-groups] dev + [tool.interrogate] + [tool.ty.*] sections added; 21 Markdown docs generated; PKG-03 met; lazydocs patched for Python 3.13 compat (find_module removed in 3.12 — use importlib.import_module)
 - 00.5-03: Google-style docstrings added to 10 modules (50.6% to 98.2% coverage); bandit B608 nosec suppressions added; .pre-commit-config.yaml with 8 hooks (ruff-format, ruff-check, detect-private-key, bandit, ty, interrogate, lazydocs, pytest) all passing; ty warn rules for unresolved-attribute and invalid-return-type; interrogate hook scoped to src/ with args: [src/]
+- 00.5-04: CLAUDE.md Known Issues section removed entirely (sole entry was report.py.py double-extension, already fixed in Plan 01); gitagent fallback model IDs documented with explicit provider-availability caveat; ROADMAP.md pdoc → lazydocs applied to all 4 occurrences (overview line, goal statement, SC3, SC4) for internal consistency
 
 ### Pending Todos
 
@@ -85,7 +86,6 @@ Topics: AI governance reqs, conflict detection, external links, FRET formalisati
 ### Blockers/Concerns
 
 - `fret_grammar.md` type names misalign with `RequirementType` Enum codes — must be corrected before Phase 3 (pre-existing, deferred)
-- `fret_grammar.md` type names misalign with `RequirementType` Enum codes — must be corrected before Phase 3
 
 ## Deferred Items
 
@@ -98,6 +98,6 @@ Topics: AI governance reqs, conflict detection, external links, FRET formalisati
 
 ## Session Continuity
 
-Last session: 2026-04-29T17:30:00.000Z
-Stopped at: Plan 00.5-03 complete — Plan 00.5-04 (CLAUDE.md update) next
+Last session: 2026-04-29T15:14:40.000Z
+Stopped at: Plan 00.5-04 complete — Phase 0.5 complete; Phase 1 (Project Initialisation) next
 Resume file: None
