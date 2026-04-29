@@ -56,7 +56,7 @@ Plans:
 Plans:
 - [x] 00.5-01: Update all 6 SKILL.md files to use `uv run <entry-point>` and document all sub-commands; remove `skills/*/scripts/` directories — DONE 2026-04-28
 - [x] 00.5-02: Add lazydocs as dev dep; generate `docs/` (21 Markdown files) from full package; commit output — DONE 2026-04-28
-- [ ] 00.5-03: Configure `.pre-commit-config.yaml` with 8 hooks (ruff, ty, bandit, interrogate, lazydocs, pytest, detect-private-key); add dev deps
+- [x] 00.5-03: Configure `.pre-commit-config.yaml` with 8 hooks (ruff, ty, bandit, interrogate, lazydocs, pytest, detect-private-key); add dev deps — DONE 2026-04-29
 - [ ] 00.5-04: Update CLAUDE.md — new package structure, entry-point commands, agent fallback pattern, clean Known Issues
 
 ### Phase 1: Project Initialisation
