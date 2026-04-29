@@ -11,7 +11,7 @@ The requirements-agent delivers a conversational requirements engineering loop: 
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 0: Bug Triage** - Fix all 9 cascading runtime bugs so every skill can import and run without error
-- [ ] **Phase 0.5: Package Scaffold** - Move skill scripts into installable `requirements_agent` package; set up pdoc + pre-commit doc rendering; establish agent fallback pattern
+- [ ] **Phase 0.5: Package Scaffold** - Move skill scripts into installable `requirements_agent` package; set up lazydocs + pre-commit doc rendering; establish agent fallback pattern
 - [ ] **Phase 1: Project Initialisation** - `init.py new` runs end-to-end, writes DB + PROJECT.md, auto-selects via .active sentinel
 - [ ] **Phase 2: Elicitation Skill** - New `elicit-requirements` skill interviews user, captures context, elicits and classifies requirements
 - [ ] **Phase 3: FRET Refinement** - Field-by-field FRET protocol resolves ambiguities and produces a confirmed, typed requirement
@@ -41,14 +41,14 @@ Plans:
 - [x] 00-06-PLAN.md — Write tests: `test_db.py` (real-SQLite), `test_models.py`, replace `test_init.py` with subprocess tests
 
 ### Phase 0.5: Package Scaffold
-**Goal**: Solidify `requirements_agent_tools` as the canonical CLI package: update all 6 skill command surfaces to use installed entry points, remove dead `scripts/` directories, add a documentation toolchain (pdoc + committed `docs/`), configure a comprehensive pre-commit pipeline, verify the agent.yaml fallback pattern, and update CLAUDE.md to reflect the new package structure.
+**Goal**: Solidify `requirements_agent_tools` as the canonical CLI package: update all 6 skill command surfaces to use installed entry points, remove dead `scripts/` directories, add a documentation toolchain (lazydocs + committed `docs/`), configure a comprehensive pre-commit pipeline, verify the agent.yaml fallback pattern, and update CLAUDE.md to reflect the new package structure.
 **Depends on**: Phase 0
 **Requirements**: PKG-01, PKG-02, PKG-03, PKG-04, PKG-05, PKG-06
 **Success Criteria** (what must be TRUE):
   1. `uv run init-project --help`, `uv run refine --help`, `uv run req-ops --help`, `uv run review --help`, `uv run report --help`, `uv run meeting --help` all exit 0
   2. `find skills -name 'scripts' -type d` returns nothing (all `skills/*/scripts/` directories removed)
-  3. `docs/requirements_agent_tools/index.html` exists and `docs/requirements_agent_tools.md` exists (pdoc HTML + Markdown output committed)
-  4. `.pre-commit-config.yaml` exists with hooks for ruff-format, ruff-check, ty, bandit, detect-private-key, interrogate (≥90%), pdoc, pytest
+  3. `docs/requirements_agent_tools.md` exists (lazydocs Markdown API reference committed, 21 files)
+  4. `.pre-commit-config.yaml` exists with hooks for ruff-format, ruff-check, ty, bandit, detect-private-key, interrogate (≥90%), lazydocs, pytest
   5. `CLAUDE.md` references `src/requirements_agent_tools/` (not `shared/`) and uses `uv run <entry-point>` invocations; Known Issues section cleaned of fixed items
   6. `uv run interrogate -v --fail-under 90 src/requirements_agent_tools/` exits 0
 **Plans**: 4 plans
