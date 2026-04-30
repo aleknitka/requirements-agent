@@ -11,21 +11,25 @@ from . import schema
 from ._logging import add_project_log_sink
 
 
-def get_db(path: str) -> sqlite3.Connection:
-    """Open (or create) a SQLite database and load ``sqlite-vec``.
+def get_db(path: str, sqlite_vec_enabled: bool = False) -> sqlite3.Connection:
+    """Open (or create) a SQLite database and optionally load sqlite-vec.
 
     The connection is configured with WAL journaling, FK enforcement,
-    and ``Row`` factory before bootstrap runs.
+    and Row factory before bootstrap runs.
 
     Args:
         path: Filesystem path to the SQLite file. Parent directories are
             created if missing.
+        sqlite_vec_enabled: When True, loads the sqlite-vec extension and
+            creates the vec0 virtual table. Read from config/project.yaml
+            by callers that know the config; defaults to False.
 
     Returns:
-        An open :class:`sqlite3.Connection`. Caller owns the lifetime.
+        An open sqlite3.Connection. Caller owns the lifetime.
 
     Raises:
-        RuntimeError: If the ``sqlite-vec`` extension cannot be loaded.
+        RuntimeError: If sqlite_vec_enabled is True but the extension
+            cannot be loaded.
     """
     db_file = Path(path)
     db_file.parent.mkdir(parents=True, exist_ok=True)
@@ -37,54 +41,31 @@ def get_db(path: str) -> sqlite3.Connection:
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
 
-    try:
-        import sqlite_vec
+    if sqlite_vec_enabled:
+        try:
+            import sqlite_vec
 
-        sqlite_vec.load(conn)
+            sqlite_vec.load(conn)
+        except Exception as e:  # noqa: BLE001 — surface as RuntimeError
+            logger.error("sqlite-vec extension cannot be loaded")
+            raise RuntimeError(f"Could not load sqlite-vec extension: {e}\n") from e
 
-    except Exception as e:  # noqa: BLE001 — surface as RuntimeError
-        logger.error("sqlite-vec extension cannot be loaded")
-        raise RuntimeError(f"Could not load sqlite-vec extension: {e}\n") from e
-
-    bootstrap(conn)
+    bootstrap(conn, sqlite_vec_enabled=sqlite_vec_enabled)
     return conn
 
 
-def bootstrap(conn: sqlite3.Connection) -> None:
+def bootstrap(conn: sqlite3.Connection, sqlite_vec_enabled: bool = False) -> None:
     """Create tables and seed reference data if absent.
 
-    Safe to call on an already-bootstrapped database. Also performs the
-    one-shot ``ADD COLUMN slug`` migration for legacy DBs.
+    Safe to call on an already-bootstrapped database.
 
     Args:
-        conn: An open SQLite connection with ``sqlite-vec`` loaded.
+        conn: An open SQLite connection.
+        sqlite_vec_enabled: When True, also creates the vec0 virtual table.
     """
-    conn.executescript(schema.SCHEMA_SQL)
+    conn.executescript(schema.BASE_SCHEMA_SQL)
+    if sqlite_vec_enabled:
+        conn.executescript(schema.VEC_SCHEMA_SQL)
     conn.commit()
     schema.seed_reference_tables(conn)
-
-    try:
-        conn.execute("ALTER TABLE projects ADD COLUMN slug TEXT NOT NULL DEFAULT ''")
-        conn.commit()
-        logger.info("Migrated existing DB: added 'slug' column to projects")
-    except sqlite3.OperationalError:
-        pass
-
-    try:
-        conn.execute(
-            "ALTER TABLE projects ADD COLUMN singleton INTEGER NOT NULL "
-            "DEFAULT 1 CHECK (singleton = 1)"
-        )
-        conn.execute(
-            "CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_singleton "
-            "ON projects(singleton)"
-        )
-        conn.commit()
-        logger.info("Migrated existing DB: added single-project structural guard")
-    except sqlite3.OperationalError:
-        pass
-
-    conn.execute("DROP TRIGGER IF EXISTS enforce_single_project")
-    conn.commit()
-
     logger.debug("Bootstrap complete")

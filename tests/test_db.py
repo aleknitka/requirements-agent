@@ -5,22 +5,19 @@ Bugs covered:
   BUG-01 — get_db() must require an explicit path argument (no default).
   BUG-03 — list_projects() must exist and return ProjectMeta objects, not dicts.
 
-Phase 1 changes:
+Phase 1 changes (Plan 02):
   - _TEST_BOOTSTRAP_SQL projects table has NO slug column (single-project model, D-01)
   - minutes table updated to canonical schema (no project_id FK)
   - test_projects_table_no_slug_column added: asserts slug NOT in new schema
-  - _LEGACY_BOOTSTRAP_SQL retained so upsert_project() tests continue to pass
-    until Plan 02 removes slug from the production INSERT statement
-  - conn fixture will be updated to use sqlite_vec_enabled=False once Plan 02
-    ships the new get_db() signature (currently uses sys.modules patching)
+  - _LEGACY_BOOTSTRAP_SQL removed: Plan 02 removed slug from db/projects.py upsert INSERT
+  - conn fixture updated to use sqlite_vec_enabled=False (Plan 02 ships new get_db signature)
 """
 
 from __future__ import annotations
 
 import inspect
 import sqlite3
-import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -116,51 +113,25 @@ CREATE TABLE IF NOT EXISTS minutes (
 );
 """
 
-# ── Legacy bootstrap SQL (with slug) — used by upsert_project() tests ────────
-# Retained until Plan 02 removes slug from db/projects.py upsert INSERT.
-# Once Plan 02 is executed, this constant can be removed and conn can use
-# _TEST_BOOTSTRAP_SQL directly.
 
-_LEGACY_BOOTSTRAP_SQL = _TEST_BOOTSTRAP_SQL.replace(
-    "    singleton         INTEGER NOT NULL DEFAULT 1 CHECK (singleton = 1),\n"
-    "    name              TEXT NOT NULL,",
-    "    singleton         INTEGER NOT NULL DEFAULT 1 CHECK (singleton = 1),\n"
-    "    slug              TEXT NOT NULL DEFAULT '',\n"
-    "    name              TEXT NOT NULL,",
-)
-
-
-def _test_bootstrap(conn: sqlite3.Connection) -> None:
-    """Test-safe bootstrap using the legacy schema (with slug) so upsert_project
-    tests continue to pass until Plan 02 removes slug from production INSERT."""
-    conn.executescript(_LEGACY_BOOTSTRAP_SQL)
+def _test_bootstrap(conn: sqlite3.Connection, sqlite_vec_enabled: bool = False) -> None:
+    """Test-safe bootstrap using the canonical schema (no slug, no sqlite-vec)."""
+    conn.executescript(_TEST_BOOTSTRAP_SQL)
     conn.commit()
 
 
-# ── Fixture (legacy schema for upsert_project compatibility) ─────────────────
+# ── Fixture ───────────────────────────────────────────────────────────────────
 
 
 @pytest.fixture()
 def conn(tmp_path):
-    """Open a real SQLite DB (via db.get_db) with sqlite_vec patched to a no-op.
+    """Open a real SQLite DB (via db.get_db) with canonical schema.
 
-    Uses _LEGACY_BOOTSTRAP_SQL (with slug) until Plan 02 removes slug from
-    db/projects.py. Uses sys.modules injection until Plan 02 ships
-    get_db(sqlite_vec_enabled=False).
+    Uses sqlite_vec_enabled=False (Plan 02 signature) — no sys.modules patching needed.
     All project/requirement CRUD runs against a real SQLite file on disk.
     """
-    mock_vec = MagicMock()
-    mock_vec.load = MagicMock()
-    original_vec = sys.modules.get("sqlite_vec", None)
-    sys.modules["sqlite_vec"] = mock_vec
-    try:
-        with patch.object(db_conn, "bootstrap", _test_bootstrap):
-            c = db_conn.get_db(str(tmp_path / "test.db"))
-    finally:
-        if original_vec is None:
-            sys.modules.pop("sqlite_vec", None)
-        else:
-            sys.modules["sqlite_vec"] = original_vec
+    with patch.object(db_conn, "bootstrap", _test_bootstrap):
+        c = db_conn.get_db(str(tmp_path / "test.db"), sqlite_vec_enabled=False)
     yield c
     c.close()
 

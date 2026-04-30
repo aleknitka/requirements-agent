@@ -528,7 +528,6 @@ class ProjectMeta(BaseModel):
 
     Attributes:
         project_id: UUID for the project.
-        slug: URL-safe slug derived from the project name.
         name: Human-readable project name.
         code: Optional short project code (e.g. "PROJ-24").
         phase: Current project lifecycle phase.
@@ -550,7 +549,6 @@ class ProjectMeta(BaseModel):
     """
 
     project_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    slug: str = ""  # derived from name, used for filenames
     name: str
     code: Optional[str] = None
     phase: ProjectPhase = ProjectPhase.DISCOVERY

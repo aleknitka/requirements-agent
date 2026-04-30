@@ -17,7 +17,6 @@ The skill drafts the markdown content and calls ``save()`` (full replace, also t
 ```python
 save(
     conn: 'Connection',
-    slug: 'str',
     content: 'str',
     changed_by: 'str',
     summary: 'str'
@@ -33,7 +32,6 @@ Creates the file if it does not exist; otherwise overwrites it. In both cases an
 **Args:**
  
  - <b>`conn`</b>:  Open connection to the project's DB. 
- - <b>`slug`</b>:  Project slug (selects the target file path). 
  - <b>`content`</b>:  The full markdown body to persist. 
  - <b>`changed_by`</b>:  User or agent identifier for the audit row. 
  - <b>`summary`</b>:  Human-readable description of the change. 
@@ -52,14 +50,13 @@ Creates the file if it does not exist; otherwise overwrites it. In both cases an
 
 ---
 
-<a href="../src/requirements_agent_tools/project_md.py#L90"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/project_md.py#L86"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `append_section`
 
 ```python
 append_section(
     conn: 'Connection',
-    slug: 'str',
     section: 'str',
     changed_by: 'str',
     summary: 'str'
@@ -75,7 +72,6 @@ A blank line is inserted between the existing body and the new section.
 **Args:**
  
  - <b>`conn`</b>:  Open connection to the project's DB. 
- - <b>`slug`</b>:  Project slug. 
  - <b>`section`</b>:  Markdown text to append (no leading/trailing blank required). 
  - <b>`changed_by`</b>:  Audit author. 
  - <b>`summary`</b>:  Audit summary. 
@@ -90,12 +86,12 @@ A blank line is inserted between the existing body and the new section.
 
 ---
 
-<a href="../src/requirements_agent_tools/project_md.py#L153"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/project_md.py#L144"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `read`
 
 ```python
-read(slug: 'str') → Optional[str]
+read() → Optional[str]
 ```
 
 Return the current PROJECT.md content, or ``None`` if it does not exist. 

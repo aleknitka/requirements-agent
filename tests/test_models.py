@@ -204,14 +204,16 @@ class TestProjectMeta:
         """ProjectMeta must instantiate with only name provided."""
         meta = ProjectMeta(name="Test")
         assert meta.name == "Test"
-        assert meta.slug == ""
+        assert meta.project_id  # auto UUID
 
-    def test_project_meta_slug_default_empty(self):
-        """slug defaults to empty string; auto-derivation is done by upsert_project."""
+    def test_project_meta_no_slug_field(self):
+        """ProjectMeta must NOT have a slug field (single-project model, D-01)."""
+        assert "slug" not in ProjectMeta.model_fields
+
+    def test_project_meta_has_required_fields(self):
+        """ProjectMeta must have project_id, name, phase, created_at, updated_at."""
         meta = ProjectMeta(name="My Project")
-        assert meta.slug == ""
-
-    def test_project_meta_slug_explicit(self):
-        """Explicit slug is preserved unchanged."""
-        meta = ProjectMeta(name="My Project", slug="custom")
-        assert meta.slug == "custom"
+        assert meta.project_id
+        assert meta.name == "My Project"
+        assert meta.created_at is not None
+        assert meta.updated_at is not None

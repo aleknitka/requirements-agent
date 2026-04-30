@@ -110,7 +110,6 @@ def row_to_project(row: sqlite3.Row) -> ProjectMeta:
     d = dict(row)
     return ProjectMeta(
         project_id=d["project_id"],
-        slug=d.get("slug", ""),
         name=d["name"],
         code=d.get("code"),
         phase=d["phase"],

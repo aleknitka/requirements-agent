@@ -23,7 +23,6 @@ from .models import FieldDiff, UpdateRecord
 
 def save(
     conn: sqlite3.Connection,
-    slug: str,
     content: str,
     *,
     changed_by: str,
@@ -36,7 +35,6 @@ def save(
 
     Args:
         conn: Open connection to the project's DB.
-        slug: Project slug (selects the target file path).
         content: The full markdown body to persist.
         changed_by: User or agent identifier for the audit row.
         summary: Human-readable description of the change.
@@ -51,11 +49,9 @@ def save(
     """
     meta = get_project(conn)
     if meta is None:
-        raise LookupError(
-            f"No project row in DB for '{slug}' — initialise the project first."
-        )
+        raise LookupError("No project row in DB — initialise the project first.")
 
-    path = C.md_path(slug)
+    path = C.MD_PATH
     previous = path.read_text(encoding="utf-8") if path.exists() else None
 
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -63,13 +59,13 @@ def save(
 
     if previous is None:
         diffs: list[FieldDiff] = []
-        log_msg = "Created PROJECT.md for {} ({} chars) by {}"
-        log_args = (slug, len(content), changed_by)
+        log_msg = "Created PROJECT.md ({} chars) by {}"
+        log_args = (len(content), changed_by)
     else:
         diffs = [FieldDiff(field="content", old_value=previous, new_value=content)]
         delta = len(content) - len(previous)
-        log_msg = "Updated PROJECT.md for {} ({:+} chars) by {}"
-        log_args = (slug, delta, changed_by)
+        log_msg = "Updated PROJECT.md ({:+} chars) by {}"
+        log_args = (delta, changed_by)
 
     write_update(
         conn,
@@ -89,7 +85,6 @@ def save(
 
 def append_section(
     conn: sqlite3.Connection,
-    slug: str,
     section: str,
     *,
     changed_by: str,
@@ -101,7 +96,6 @@ def append_section(
 
     Args:
         conn: Open connection to the project's DB.
-        slug: Project slug.
         section: Markdown text to append (no leading/trailing blank required).
         changed_by: Audit author.
         summary: Audit summary.
@@ -111,16 +105,14 @@ def append_section(
             first.
         LookupError: If the project row is missing from the DB.
     """
-    path = C.md_path(slug)
+    path = C.MD_PATH
     if not path.exists():
         raise FileNotFoundError(
             f"PROJECT.md not found at {path} — call save() before append_section()."
         )
     meta = get_project(conn)
     if meta is None:
-        raise LookupError(
-            f"No project row in DB for '{slug}' — initialise the project first."
-        )
+        raise LookupError("No project row in DB — initialise the project first.")
 
     existing = path.read_text(encoding="utf-8")
     addition = section if section.endswith("\n") else section + "\n"
@@ -142,15 +134,14 @@ def append_section(
     )
     conn.commit()
     logger.info(
-        "Appended section to PROJECT.md for {} ({} chars) by {}",
-        slug,
+        "Appended section to PROJECT.md ({} chars) by {}",
         len(addition),
         changed_by,
     )
     return path
 
 
-def read(slug: str) -> Optional[str]:
+def read() -> Optional[str]:
     """Return the current PROJECT.md content, or ``None`` if it does not exist."""
-    path = C.md_path(slug)
+    path = C.MD_PATH
     return path.read_text(encoding="utf-8") if path.exists() else None

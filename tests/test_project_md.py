@@ -6,9 +6,9 @@ import sqlite3
 import subprocess
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
+from unittest.mock import patch
 
 from requirements_agent_tools import CONSTANTS as C
 from requirements_agent_tools import project_md, project_md_cli
@@ -42,7 +42,6 @@ _BOOTSTRAP_SQL = """
 CREATE TABLE IF NOT EXISTS projects (
     project_id        TEXT PRIMARY KEY,
     singleton         INTEGER NOT NULL DEFAULT 1 CHECK (singleton = 1),
-    slug              TEXT NOT NULL DEFAULT '',
     name              TEXT NOT NULL,
     code              TEXT,
     phase             TEXT NOT NULL DEFAULT 'discovery',
@@ -101,33 +100,28 @@ CREATE INDEX IF NOT EXISTS idx_upd_entity ON updates(entity_type, entity_id);
 """
 
 
-def _bootstrap(conn: sqlite3.Connection) -> None:
+def _bootstrap(conn: sqlite3.Connection, sqlite_vec_enabled: bool = False) -> None:
     conn.executescript(_BOOTSTRAP_SQL)
     conn.commit()
 
 
 @pytest.fixture()
 def project_env(tmp_path, monkeypatch):
-    """Real DB at PROJECTS_DIR/<slug>/<slug>.db with a project row inserted."""
-    monkeypatch.setattr(C, "PROJECTS_DIR", tmp_path)
-    slug = "demo"
+    """Real DB at tmp_path/project.db with a project row inserted.
 
-    mock_vec = MagicMock()
-    mock_vec.load = MagicMock()
-    saved = sys.modules.get("sqlite_vec")
-    sys.modules["sqlite_vec"] = mock_vec
-    try:
-        with patch.object(db_conn, "bootstrap", _bootstrap):
-            conn = db_conn.get_db(str(C.db_path(slug)))
-    finally:
-        if saved is None:
-            sys.modules.pop("sqlite_vec", None)
-        else:
-            sys.modules["sqlite_vec"] = saved
+    Patches C.PROJECT_DIR, C.DB_PATH, and C.MD_PATH to use tmp_path,
+    so tests are isolated from the real project directory.
+    """
+    monkeypatch.setattr(C, "PROJECT_DIR", tmp_path)
+    monkeypatch.setattr(C, "DB_PATH", tmp_path / "project.db")
+    monkeypatch.setattr(C, "MD_PATH", tmp_path / "PROJECT.md")
+
+    with patch.object(db_conn, "bootstrap", _bootstrap):
+        conn = db_conn.get_db(str(C.DB_PATH), sqlite_vec_enabled=False)
 
     meta = ProjectMeta(name="Demo")
     db_projects.upsert_project(conn, meta)
-    yield slug, conn, meta
+    yield conn, meta
     conn.close()
 
 
@@ -135,9 +129,9 @@ def project_env(tmp_path, monkeypatch):
 
 
 def test_save_creates_file_when_missing(project_env):
-    slug, conn, meta = project_env
+    conn, meta = project_env
     path = project_md.save(
-        conn, slug, "# Demo\n\nbody\n", changed_by="alice", summary="initial"
+        conn, "# Demo\n\nbody\n", changed_by="alice", summary="initial"
     )
     assert path.exists()
     assert path.read_text(encoding="utf-8") == "# Demo\n\nbody\n"
@@ -157,11 +151,11 @@ def test_save_creates_file_when_missing(project_env):
 
 
 def test_save_overwrites_and_records_diff(project_env):
-    slug, conn, meta = project_env
-    project_md.save(conn, slug, "v1\n", changed_by="alice", summary="initial")
-    project_md.save(conn, slug, "v2\n", changed_by="bob", summary="rewrite")
+    conn, meta = project_env
+    project_md.save(conn, "v1\n", changed_by="alice", summary="initial")
+    project_md.save(conn, "v2\n", changed_by="bob", summary="rewrite")
 
-    assert C.md_path(slug).read_text(encoding="utf-8") == "v2\n"
+    assert C.MD_PATH.read_text(encoding="utf-8") == "v2\n"
     history = get_project_md_history(conn, meta.project_id)
     assert len(history) == 2
     update = history[-1]
@@ -181,17 +175,16 @@ def test_save_overwrites_and_records_diff(project_env):
 def test_save_emits_loguru_record(project_env):
     from loguru import logger
 
-    slug, conn, _ = project_env
+    conn, _ = project_env
     captured: list[str] = []
     sink_id = logger.add(lambda m: captured.append(str(m)), level="INFO")
     try:
-        project_md.save(conn, slug, "hi", changed_by="carol", summary="hello")
+        project_md.save(conn, "hi", changed_by="carol", summary="hello")
     finally:
         logger.remove(sink_id)
 
     joined = "\n".join(captured)
     assert "Created PROJECT.md" in joined
-    assert slug in joined
     assert "carol" in joined
 
 
@@ -199,13 +192,13 @@ def test_save_emits_loguru_record(project_env):
 
 
 def test_append_section_extends_file(project_env):
-    slug, conn, meta = project_env
-    project_md.save(conn, slug, "# Demo\n", changed_by="a", summary="init")
+    conn, meta = project_env
+    project_md.save(conn, "# Demo\n", changed_by="a", summary="init")
     project_md.append_section(
-        conn, slug, "## Update\nProgress note", changed_by="a", summary="weekly"
+        conn, "## Update\nProgress note", changed_by="a", summary="weekly"
     )
 
-    body = C.md_path(slug).read_text(encoding="utf-8")
+    body = C.MD_PATH.read_text(encoding="utf-8")
     assert body.startswith("# Demo\n")
     assert body.endswith("## Update\nProgress note\n")
 
@@ -219,19 +212,17 @@ def test_append_section_extends_file(project_env):
 
 
 def test_append_requires_existing_file(project_env):
-    slug, conn, _ = project_env
+    conn, _ = project_env
     with pytest.raises(FileNotFoundError):
-        project_md.append_section(
-            conn, slug, "anything", changed_by="a", summary="oops"
-        )
+        project_md.append_section(conn, "anything", changed_by="a", summary="oops")
 
 
 # ── isolation: requirement updates and project_md updates do not bleed ───────
 
 
 def test_audit_isolated_from_requirement_updates(project_env):
-    slug, conn, meta = project_env
-    project_md.save(conn, slug, "body", changed_by="a", summary="md")
+    conn, meta = project_env
+    project_md.save(conn, "body", changed_by="a", summary="md")
     req = db_req.insert_requirement(
         conn,
         RequirementIn(req_type=RequirementType.FUN, title="login"),
@@ -273,8 +264,6 @@ class TestCLIParser:
     def test_save_parses_inline_content(self):
         args = project_md_cli.build_parser().parse_args(
             [
-                "--project",
-                "demo",
                 "save",
                 "--by",
                 "alice",
@@ -293,8 +282,6 @@ class TestCLIParser:
     def test_save_parses_content_file(self):
         args = project_md_cli.build_parser().parse_args(
             [
-                "--project",
-                "demo",
                 "save",
                 "--by",
                 "alice",
@@ -309,8 +296,6 @@ class TestCLIParser:
     def test_append_parses(self):
         args = project_md_cli.build_parser().parse_args(
             [
-                "--project",
-                "demo",
                 "append",
                 "--by",
                 "alice",

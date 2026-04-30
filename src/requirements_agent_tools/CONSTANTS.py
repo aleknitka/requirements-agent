@@ -1,16 +1,14 @@
 """
 CONSTANTS.py — single source of truth for all configuration.
 
-PROJECTS_DIR defaults to a path relative to this file's location
-(requirements-agent/projects/), so scripts work correctly regardless
+PROJECT_DIR defaults to a path relative to this file's location
+(requirements-agent/project/), so scripts work correctly regardless
 of the working directory they are launched from.
 
-To migrate to S3 later: replace PROJECTS_DIR with an S3-backed
-path abstraction — no skill code needs to change.
+Override with env var PROJECT_DIR (absolute path only).
 """
 
 import os
-import re
 from pathlib import Path
 
 # ── Storage ───────────────────────────────────────────────────────────────────
@@ -18,17 +16,25 @@ from pathlib import Path
 # Root of the agent repository — the directory containing src/ and skills/
 _AGENT_ROOT: Path = Path(__file__).resolve().parents[2]
 
-# Root directory for all project subdirectories.
-# Each project lives at: PROJECTS_DIR / <project-slug> /
-#   <project-slug>.db
-#   PROJECT.md
+# Single project directory: project/ at the repo root.
+# Structure: project/project.db, project/PROJECT.md, project/logs/, project/notes/
 #
-# Override with env var PROJECTS_DIR (absolute path only).
-PROJECTS_DIR: Path = (
-    Path(os.environ["PROJECTS_DIR"])
-    if "PROJECTS_DIR" in os.environ
-    else _AGENT_ROOT / "projects"
-)
+# Override with env var PROJECT_DIR (absolute path only).
+# Raises ValueError if PROJECT_DIR is set to a non-absolute path to prevent
+# relative path traversal (T-02-01).
+_env_project_dir = os.environ.get("PROJECT_DIR")
+if _env_project_dir is not None:
+    _env_path = Path(_env_project_dir)
+    if not _env_path.is_absolute():
+        raise ValueError(
+            f"PROJECT_DIR env var must be an absolute path, got: {_env_project_dir!r}"
+        )
+    PROJECT_DIR: Path = _env_path
+else:
+    PROJECT_DIR = _AGENT_ROOT / "project"
+
+DB_PATH: Path = PROJECT_DIR / "project.db"
+MD_PATH: Path = PROJECT_DIR / "PROJECT.md"
 
 # ── Embedding ─────────────────────────────────────────────────────────────────
 
@@ -46,52 +52,3 @@ SNAPSHOT_ON_STATUSES: set[str] = {"in-progress", "done", "rejected"}
 
 MD_NOTES_BEGIN: str = "<!-- NOTES:BEGIN -->"
 MD_NOTES_END: str = "<!-- NOTES:END -->"
-
-
-# ── Path helpers ──────────────────────────────────────────────────────────────
-
-
-def project_dir(slug: str) -> Path:
-    """Return (and create) the directory for a given project slug."""
-    p = PROJECTS_DIR / slug
-    p.mkdir(parents=True, exist_ok=True)
-    return p
-
-
-def db_path(slug: str) -> Path:
-    """Return the SQLite database file path for a given project slug.
-
-    Args:
-        slug: Project slug (directory name under PROJECTS_DIR).
-
-    Returns:
-        Path to the .db file at PROJECTS_DIR/<slug>/<slug>.db.
-    """
-    return project_dir(slug) / f"{slug}.db"
-
-
-def md_path(slug: str) -> Path:
-    """Return the PROJECT.md path for a given project slug.
-
-    Args:
-        slug: Project slug (directory name under PROJECTS_DIR).
-
-    Returns:
-        Path to PROJECT.md at PROJECTS_DIR/<slug>/PROJECT.md.
-    """
-    return project_dir(slug) / "PROJECT.md"
-
-
-def slugify(name: str) -> str:
-    """Convert a human-readable name into a URL-safe slug.
-
-    Replaces any sequence of non-alphanumeric characters with a single
-    hyphen and strips leading/trailing hyphens.
-
-    Args:
-        name: Human-readable name to slugify.
-
-    Returns:
-        Lowercase hyphen-separated slug string.
-    """
-    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")

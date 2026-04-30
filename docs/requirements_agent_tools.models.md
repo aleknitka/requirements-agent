@@ -564,7 +564,6 @@ Full project metadata record.
 **Attributes:**
  
  - <b>`project_id`</b>:  UUID for the project. 
- - <b>`slug`</b>:  URL-safe slug derived from the project name. 
  - <b>`name`</b>:  Human-readable project name. 
  - <b>`code`</b>:  Optional short project code (e.g. "PROJ-24"). 
  - <b>`phase`</b>:  Current project lifecycle phase. 

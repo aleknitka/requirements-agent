@@ -10,10 +10,9 @@ Covers:
 from __future__ import annotations
 
 import sqlite3
-import sys
 import time
 from datetime import datetime, timedelta, timezone
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -32,7 +31,6 @@ _BOOTSTRAP_SQL = """
 CREATE TABLE IF NOT EXISTS projects (
     project_id        TEXT PRIMARY KEY,
     singleton         INTEGER NOT NULL DEFAULT 1 CHECK (singleton = 1),
-    slug              TEXT NOT NULL DEFAULT '',
     name              TEXT NOT NULL,
     code              TEXT,
     phase             TEXT NOT NULL DEFAULT 'discovery',
@@ -89,26 +87,16 @@ CREATE TABLE IF NOT EXISTS updates (
 """
 
 
-def _bootstrap(conn: sqlite3.Connection) -> None:
+def _bootstrap(conn: sqlite3.Connection, sqlite_vec_enabled: bool = False) -> None:
     conn.executescript(_BOOTSTRAP_SQL)
     conn.commit()
 
 
 @pytest.fixture()
 def conn(tmp_path):
-    """Real SQLite file with sqlite-vec stubbed and a plain req_embeddings table."""
-    mock_vec = MagicMock()
-    mock_vec.load = MagicMock()
-    saved = sys.modules.get("sqlite_vec")
-    sys.modules["sqlite_vec"] = mock_vec
-    try:
-        with patch.object(db_conn, "bootstrap", _bootstrap):
-            c = db_conn.get_db(str(tmp_path / "test.db"))
-    finally:
-        if saved is None:
-            sys.modules.pop("sqlite_vec", None)
-        else:
-            sys.modules["sqlite_vec"] = saved
+    """Real SQLite file with plain schema (no sqlite-vec required)."""
+    with patch.object(db_conn, "bootstrap", _bootstrap):
+        c = db_conn.get_db(str(tmp_path / "test.db"), sqlite_vec_enabled=False)
     yield c
     c.close()
 

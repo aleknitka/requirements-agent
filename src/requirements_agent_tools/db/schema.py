@@ -15,16 +15,16 @@ from ..models import (
 )
 
 
-SCHEMA_SQL: str = f"""
+BASE_SCHEMA_SQL: str = """
 -- ── Projects ──────────────────────────────────────────────────────────
--- Each database file holds at most one project. The ``singleton`` column
+-- Each database file holds at most one project. The singleton column
 -- is constrained to the literal value 1 and has a UNIQUE index, so the
 -- table can never contain more than a single row — enforced structurally
 -- by the engine, not by application code.
+-- slug column removed: single-project model has no need for slug-based paths.
 CREATE TABLE IF NOT EXISTS projects (
     project_id        TEXT PRIMARY KEY,
     singleton         INTEGER NOT NULL DEFAULT 1 CHECK (singleton = 1),
-    slug              TEXT NOT NULL DEFAULT '',
     name              TEXT NOT NULL,
     code              TEXT,
     phase             TEXT NOT NULL DEFAULT 'discovery',
@@ -69,15 +69,8 @@ CREATE INDEX IF NOT EXISTS idx_req_status   ON requirements(status);
 CREATE INDEX IF NOT EXISTS idx_req_type     ON requirements(req_type);
 CREATE INDEX IF NOT EXISTS idx_req_priority ON requirements(priority);
 
--- ── Vec virtual table for requirement embeddings ───────────────────────
-CREATE VIRTUAL TABLE IF NOT EXISTS req_embeddings
-USING vec0(
-    requirement_id TEXT PRIMARY KEY,
-    embedding      FLOAT[{C.EMBEDDING_DIM}]
-);
-
 -- ── Updates (change log) ──────────────────────────────────────────────
--- Polymorphic audit log. ``entity_type`` discriminates the record kind:
+-- Polymorphic audit log. entity_type discriminates the record kind:
 --   'requirement' → entity_id is a requirements.id
 --   'project_md'  → entity_id is the singleton projects.project_id
 CREATE TABLE IF NOT EXISTS updates (
@@ -140,10 +133,21 @@ CREATE TABLE IF NOT EXISTS decision_statuses (
 """
 
 
+VEC_SCHEMA_SQL: str = f"""
+-- ── Vec virtual table for requirement embeddings ───────────────────────
+-- Created only when sqlite_vec: true in config/project.yaml.
+CREATE VIRTUAL TABLE IF NOT EXISTS req_embeddings
+USING vec0(
+    requirement_id TEXT PRIMARY KEY,
+    embedding      FLOAT[{C.EMBEDDING_DIM}]
+);
+"""
+
+
 def seed_reference_tables(conn: sqlite3.Connection) -> None:
     """Populate the enum catalogue tables.
 
-    Idempotent: every row is written with ``INSERT OR REPLACE`` so calling
+    Idempotent: every row is written with INSERT OR REPLACE so calling
     this on every bootstrap is safe.
 
     Args:
@@ -161,7 +165,7 @@ def seed_reference_tables(conn: sqlite3.Connection) -> None:
         ("decision_statuses", DecisionStatus),
     ):
         conn.executemany(
-            f"INSERT OR REPLACE INTO {table}(value) VALUES (?)",
+            f"INSERT OR REPLACE INTO {table}(value) VALUES (?)",  # noqa: S608
             [(e.value,) for e in enum_cls],
         )
     conn.commit()

@@ -8,7 +8,7 @@ Project CRUD. Each DB file holds exactly one project row.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/projects.py#L16"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/projects.py#L15"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `upsert_project`
 
@@ -18,19 +18,19 @@ upsert_project(conn: 'Connection', meta: 'ProjectMeta') → ProjectMeta
 
 Insert or update the single project row in this database. 
 
-Auto-derives ``meta.slug`` from ``meta.name`` when empty, and bumps ``updated_at`` to *now*. 
+Bumps ``updated_at`` to now on every call. 
 
 
 
 **Args:**
  
  - <b>`conn`</b>:  Open DB connection. 
- - <b>`meta`</b>:  Project metadata. Mutated in place to reflect derived slug  and updated timestamp. 
+ - <b>`meta`</b>:  Project metadata. Mutated in place to reflect updated timestamp. 
 
 
 
 **Returns:**
- The same ``meta`` instance with derived fields filled in. 
+ The same ``meta`` instance with ``updated_at`` refreshed. 
 
 
 
@@ -41,7 +41,7 @@ Auto-derives ``meta.slug`` from ``meta.name`` when empty, and bumps ``updated_at
 
 ---
 
-<a href="../src/requirements_agent_tools/db/projects.py#L100"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/projects.py#L92"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_project`
 
@@ -65,20 +65,7 @@ Return the single project stored in this database, or ``None``.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/projects.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `get_project_by_slug`
-
-```python
-get_project_by_slug(conn: 'Connection', slug: 'str') → Optional[ProjectMeta]
-```
-
-Return the project with the matching slug in this database, or ``None``. 
-
-
----
-
-<a href="../src/requirements_agent_tools/db/projects.py#L121"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/projects.py#L105"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `list_projects`
 
@@ -87,26 +74,6 @@ list_projects(conn: 'Connection') → list[ProjectMeta]
 ```
 
 Return every project row in this database, ordered by ``created_at``. 
-
-
----
-
-<a href="../src/requirements_agent_tools/db/projects.py#L127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `discover_projects`
-
-```python
-discover_projects() → list[dict]
-```
-
-Discover every project on disk by scanning ``PROJECTS_DIR``. 
-
-Each project lives at ``PROJECTS_DIR/<slug>/<slug>.db``. Directories without a matching DB file (or whose DB has no project row) are skipped. 
-
-
-
-**Returns:**
-  A list of dicts with ``slug``, ``name``, ``code``, and ``phase``  for every discoverable project, sorted by slug. 
 
 
 

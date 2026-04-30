@@ -14,9 +14,10 @@ import argparse
 from pathlib import Path
 
 from . import project_md
-from . import project_session as ps
 from ._cli_io import err as _err
 from ._cli_io import ok as _ok
+from . import CONSTANTS as C
+from .db.connection import get_db
 
 
 def _resolve_content(inline: str | None, file_path: str | None, label: str) -> str:
@@ -51,12 +52,10 @@ def cmd_save(args: argparse.Namespace) -> None:
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    slug, conn, _ = ps.resolve(args.project)
+    conn = get_db(str(C.DB_PATH))
     content = _resolve_content(args.content, args.content_file, "content")
-    path = project_md.save(
-        conn, slug, content, changed_by=args.by, summary=args.summary
-    )
-    _ok({"slug": slug, "path": str(path), "bytes": len(content.encode("utf-8"))})
+    path = project_md.save(conn, content, changed_by=args.by, summary=args.summary)
+    _ok({"path": str(path), "bytes": len(content.encode("utf-8"))})
 
 
 def cmd_append(args: argparse.Namespace) -> None:
@@ -65,17 +64,16 @@ def cmd_append(args: argparse.Namespace) -> None:
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    slug, conn, _ = ps.resolve(args.project)
+    conn = get_db(str(C.DB_PATH))
     section = _resolve_content(args.section, args.section_file, "section")
     try:
         path = project_md.append_section(
-            conn, slug, section, changed_by=args.by, summary=args.summary
+            conn, section, changed_by=args.by, summary=args.summary
         )
     except FileNotFoundError as e:
         _err(str(e))
     _ok(
         {
-            "slug": slug,
             "path": str(path),
             "appended_bytes": len(section.encode("utf-8")),
         }
@@ -88,10 +86,9 @@ def cmd_read(args: argparse.Namespace) -> None:
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    slug, _, _ = ps.resolve(args.project)
-    body = project_md.read(slug)
+    body = project_md.read()
     if body is None:
-        _err(f"PROJECT.md does not exist for project '{slug}'.")
+        _err("PROJECT.md does not exist.")
     print(body, end="" if body.endswith("\n") else "\n")
 
 
@@ -102,7 +99,6 @@ def build_parser() -> argparse.ArgumentParser:
         Configured ArgumentParser with save, append, and read subcommands.
     """
     p = argparse.ArgumentParser(description="PROJECT.md persistence")
-    p.add_argument("--project", default=None, help="Project slug")
     sub = p.add_subparsers(dest="command", required=True)
 
     sv = sub.add_parser("save", help="Create or replace PROJECT.md")
