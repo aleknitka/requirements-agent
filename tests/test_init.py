@@ -5,11 +5,11 @@ After the src/ layout migration:
   - The script is invoked via `python -m requirements_agent_tools.init_project`.
   - The module is imported directly (relative imports require package context).
 
-Phase 1 rewrite:
+Phase 1 rewrite (Plan 04):
   - TestInitHelp: tests the setup subcommand (not new/list/update)
   - TestBuildParser: tests setup subcommand parsing
-  - TestParseJson and TestOutputHelpers: unchanged (helpers survive rewrite)
-  - Tests that depend on cmd_setup() not yet implemented are marked xfail.
+  - TestOutputHelpers: tests _ok and _err helpers (imported from _cli_io)
+  - TestParseJson removed: _parse_json was removed from init_project.py in Plan 04
 """
 
 from __future__ import annotations
@@ -39,19 +39,11 @@ class TestInitHelp:
     def test_help_exits_0(self):
         assert _run("--help").returncode == 0
 
-    @pytest.mark.xfail(
-        strict=False,
-        reason="cmd_setup() not yet implemented — requires Plan 02",
-    )
     def test_help_mentions_setup(self):
         result = _run("--help")
         output = result.stdout + result.stderr
         assert "setup" in output.lower()
 
-    @pytest.mark.xfail(
-        strict=False,
-        reason="setup subcommand not yet registered — requires Plan 02",
-    )
     def test_setup_help_exits_0(self):
         assert _run("setup", "--help").returncode == 0
 
@@ -65,10 +57,6 @@ def init():
 
 
 class TestBuildParser:
-    @pytest.mark.xfail(
-        strict=False,
-        reason="setup subcommand not yet registered in build_parser() — requires Plan 02",
-    )
     def test_setup_subcommand_registered(self, init):
         args = init.build_parser().parse_args(["setup"])
         assert args.command == "setup"
@@ -76,41 +64,6 @@ class TestBuildParser:
     def test_no_subcommand_exits_nonzero(self):
         result = _run()
         assert result.returncode != 0
-
-
-class TestParseJson:
-    def test_none_returns_empty_list(self, init):
-        assert init._parse_json(None, "field") == []
-
-    def test_empty_string_returns_empty_list(self, init):
-        assert init._parse_json("", "field") == []
-
-    def test_valid_string_array(self, init):
-        assert init._parse_json('["a", "b"]', "field") == ["a", "b"]
-
-    def test_valid_object_array(self, init):
-        data = '[{"name": "Alice", "role": "sponsor"}]'
-        assert init._parse_json(data, "stakeholders") == [
-            {"name": "Alice", "role": "sponsor"}
-        ]
-
-    def test_invalid_json_exits_1(self, init):
-        with pytest.raises(SystemExit) as exc:
-            init._parse_json("not-json", "field")
-        assert exc.value.code == 1
-
-    def test_object_not_array_exits_1(self, init):
-        with pytest.raises(SystemExit) as exc:
-            init._parse_json('{"key": "v"}', "field")
-        assert exc.value.code == 1
-
-    def test_error_message_names_the_field(self, init, capsys):
-        with pytest.raises(SystemExit):
-            init._parse_json("42", "my-field")
-        _, err = capsys.readouterr()
-        payload = json.loads(err)
-        assert payload["ok"] is False
-        assert "my-field" in payload["error"]
 
 
 class TestOutputHelpers:

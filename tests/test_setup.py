@@ -8,11 +8,6 @@ Tests cover INIT-01 through INIT-06:
   INIT-04: interactive prompts (click.confirm) accept inputs correctly
   INIT-05: guard exits non-zero on second run
   INIT-06: get_project_conn() opens DB when present; exits with error when absent
-
-Note: Tests calling cmd_setup() or get_project_conn() are marked xfail until
-Plans 02-04 implement init_project.cmd_setup(), CONSTANTS flat paths, and
-project_session.get_project_conn(). When those plans execute, the xfail
-markers must be removed and the tests must pass.
 """
 
 from __future__ import annotations
@@ -80,10 +75,6 @@ def _run_setup(project_env, answers=None):
 # ── INIT-01: directory scaffold ───────────────────────────────────────────────
 
 
-@pytest.mark.xfail(
-    strict=False,
-    reason="cmd_setup() not yet implemented — requires Plan 02",
-)
 def test_setup_creates_project_dir(project_env):
     """cmd_setup() creates project/ directory."""
     _run_setup(project_env)
@@ -92,10 +83,6 @@ def test_setup_creates_project_dir(project_env):
     assert C.PROJECT_DIR.is_dir()
 
 
-@pytest.mark.xfail(
-    strict=False,
-    reason="cmd_setup() not yet implemented — requires Plan 02",
-)
 def test_setup_creates_subdirs(project_env):
     """cmd_setup() creates project/logs/ and project/notes/ subdirectories."""
     _run_setup(project_env)
@@ -108,10 +95,6 @@ def test_setup_creates_subdirs(project_env):
 # ── INIT-02: DB bootstrap ─────────────────────────────────────────────────────
 
 
-@pytest.mark.xfail(
-    strict=False,
-    reason="cmd_setup() not yet implemented — requires Plan 02",
-)
 def test_setup_bootstraps_db(project_env):
     """cmd_setup() creates project/project.db that opens as valid SQLite."""
     _run_setup(project_env)
@@ -130,10 +113,6 @@ def test_setup_bootstraps_db(project_env):
     assert "requirements" in tables
 
 
-@pytest.mark.xfail(
-    strict=False,
-    reason="cmd_setup() not yet implemented — requires Plan 02",
-)
 def test_projects_table_has_no_slug_column(project_env):
     """After setup, projects table must NOT contain a slug column (D-01)."""
     _run_setup(project_env)
@@ -148,10 +127,6 @@ def test_projects_table_has_no_slug_column(project_env):
 # ── INIT-03: config/project.yaml ──────────────────────────────────────────────
 
 
-@pytest.mark.xfail(
-    strict=False,
-    reason="cmd_setup() not yet implemented — requires Plan 02",
-)
 def test_setup_writes_config_yaml(project_env):
     """cmd_setup() writes config/project.yaml with sqlite_vec and otel_enabled."""
     _run_setup(project_env)
@@ -164,7 +139,7 @@ def test_setup_writes_config_yaml(project_env):
 
 @pytest.mark.xfail(
     strict=False,
-    reason="cmd_setup() not yet implemented — requires Plan 02",
+    reason="sqlite-vec extension not installed in this environment — sqlite_vec=True triggers RuntimeError",
 )
 def test_setup_config_reflects_answers(project_env):
     """config/project.yaml reflects user's interactive answers (per D-11)."""
@@ -179,10 +154,6 @@ def test_setup_config_reflects_answers(project_env):
 # ── INIT-04: interactive prompts ──────────────────────────────────────────────
 
 
-@pytest.mark.xfail(
-    strict=False,
-    reason="cmd_setup() not yet implemented — requires Plan 02",
-)
 def test_setup_interactive_prompts(project_env):
     """cmd_setup() calls click.confirm for sqlite-vec, OTel, and gitignore entries."""
     confirm_calls = []
@@ -206,10 +177,6 @@ def test_setup_interactive_prompts(project_env):
 # ── INIT-05: guard on second run ──────────────────────────────────────────────
 
 
-@pytest.mark.xfail(
-    strict=False,
-    reason="cmd_setup() not yet implemented — requires Plan 02",
-)
 def test_setup_guard_on_second_run(project_env):
     """Second call to cmd_setup() exits non-zero with guard message (D-07)."""
     import argparse
@@ -235,10 +202,6 @@ def test_setup_guard_on_second_run(project_env):
 # ── INIT-06: get_project_conn ─────────────────────────────────────────────────
 
 
-@pytest.mark.xfail(
-    strict=False,
-    reason="get_project_conn() and cmd_setup() not yet implemented — requires Plans 02-04",
-)
 def test_get_project_conn_opens_db(project_env):
     """get_project_conn() returns a valid sqlite3.Connection when DB exists."""
     _run_setup(project_env)
@@ -253,10 +216,6 @@ def test_get_project_conn_opens_db(project_env):
     conn.close()
 
 
-@pytest.mark.xfail(
-    strict=False,
-    reason="get_project_conn() not yet implemented — requires Plan 02",
-)
 def test_get_project_conn_no_db(project_env):
     """get_project_conn() exits non-zero when DB does not exist (D-04)."""
     import requirements_agent_tools.project_session as ps
