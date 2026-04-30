@@ -4,6 +4,12 @@ CLI subprocess tests for requirements_agent_tools.init_project.
 After the src/ layout migration:
   - The script is invoked via `python -m requirements_agent_tools.init_project`.
   - The module is imported directly (relative imports require package context).
+
+Phase 1 rewrite:
+  - TestInitHelp: tests the setup subcommand (not new/list/update)
+  - TestBuildParser: tests setup subcommand parsing
+  - TestParseJson and TestOutputHelpers: unchanged (helpers survive rewrite)
+  - Tests that depend on cmd_setup() not yet implemented are marked xfail.
 """
 
 from __future__ import annotations
@@ -33,22 +39,21 @@ class TestInitHelp:
     def test_help_exits_0(self):
         assert _run("--help").returncode == 0
 
-    def test_help_mentions_subcommands(self):
+    @pytest.mark.xfail(
+        strict=False,
+        reason="cmd_setup() not yet implemented — requires Plan 02",
+    )
+    def test_help_mentions_setup(self):
         result = _run("--help")
         output = result.stdout + result.stderr
-        assert "new" in output.lower() or "list" in output.lower()
+        assert "setup" in output.lower()
 
-    def test_new_help_exits_0(self):
-        assert _run("new", "--help").returncode == 0
-
-    def test_list_help_exits_0(self):
-        assert _run("list", "--help").returncode == 0
-
-    def test_update_help_exits_0(self):
-        assert _run("update", "--help").returncode == 0
-
-    def test_new_without_name_exits_nonzero(self):
-        assert _run("new").returncode != 0
+    @pytest.mark.xfail(
+        strict=False,
+        reason="setup subcommand not yet registered — requires Plan 02",
+    )
+    def test_setup_help_exits_0(self):
+        assert _run("setup", "--help").returncode == 0
 
 
 @pytest.fixture(scope="module")
@@ -60,70 +65,17 @@ def init():
 
 
 class TestBuildParser:
-    def test_new_requires_name(self, init):
-        with pytest.raises(SystemExit):
-            init.build_parser().parse_args(["new"])
+    @pytest.mark.xfail(
+        strict=False,
+        reason="setup subcommand not yet registered in build_parser() — requires Plan 02",
+    )
+    def test_setup_subcommand_registered(self, init):
+        args = init.build_parser().parse_args(["setup"])
+        assert args.command == "setup"
 
-    def test_new_parses_name(self, init):
-        args = init.build_parser().parse_args(["new", "--name", "My Project"])
-        assert args.name == "My Project"
-        assert args.command == "new"
-
-    def test_new_default_phase_is_discovery(self, init):
-        args = init.build_parser().parse_args(["new", "--name", "X"])
-        assert args.phase == "discovery"
-
-    def test_new_all_phases_accepted(self, init):
-        from requirements_agent_tools.models import ProjectPhase
-
-        for phase in ProjectPhase:
-            args = init.build_parser().parse_args(
-                ["new", "--name", "X", "--phase", phase.value]
-            )
-            assert args.phase == phase.value
-
-    def test_new_optional_fields_parsed(self, init):
-        args = init.build_parser().parse_args(
-            [
-                "new",
-                "--name",
-                "P",
-                "--code",
-                "P1",
-                "--objective",
-                "obj",
-                "--business-case",
-                "bc",
-                "--project-owner",
-                "Alice",
-                "--sponsor",
-                "Bob",
-            ]
-        )
-        assert args.code == "P1"
-        assert args.objective == "obj"
-        assert args.business_case == "bc"
-        assert args.project_owner == "Alice"
-        assert args.sponsor == "Bob"
-
-    def test_list_subcommand(self, init):
-        args = init.build_parser().parse_args(["list"])
-        assert args.command == "list"
-
-    def test_update_requires_project(self, init):
-        with pytest.raises(SystemExit):
-            init.build_parser().parse_args(["update"])
-
-    def test_update_parses_project_slug(self, init):
-        args = init.build_parser().parse_args(["update", "--project", "my-slug"])
-        assert args.project == "my-slug"
-        assert args.command == "update"
-
-    def test_update_rejects_invalid_phase(self, init):
-        with pytest.raises(SystemExit):
-            init.build_parser().parse_args(
-                ["update", "--project", "x", "--phase", "invalid"]
-            )
+    def test_no_subcommand_exits_nonzero(self):
+        result = _run()
+        assert result.returncode != 0
 
 
 class TestParseJson:
