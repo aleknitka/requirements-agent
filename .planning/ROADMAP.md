@@ -72,7 +72,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 01-01: Implement `init.py new` end-to-end — DB bootstrap, PROJECT.md write, slug collision guard
+- [x] 01-01: Implement `init.py new` end-to-end — DB bootstrap, PROJECT.md write, slug collision guard
 - [ ] 01-02: Implement `.active` sentinel write on project creation/selection; update `project_session.resolve()` to read it
 - [ ] 01-03: Implement project onboarding conversation in `project-init` SKILL.md — 5-question interview, confirm before saving
 - [ ] 01-04: Write `tests/test_db.py` with real-SQLite coverage of all CRUD functions using `tmp_path`
@@ -161,7 +161,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 0. Bug Triage | 6/6 | Complete | 2026-04-24 |
 | 0.5. Package Scaffold | 4/4 | Complete | 2026-04-29 |
-| 1. Project Initialisation | 0/4 | Not started | - |
+| 1. Project Initialisation | 1/5 | In Progress|  |
 | 2. Elicitation Skill | 0/5 | Not started | - |
 | 3. FRET Refinement | 0/4 | Not started | - |
 | 4. Persistence and Reporting | 0/4 | Not started | - |

@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Plan 00.5-04 complete (2026-04-29) — Phase 0.5 complete
-last_updated: "2026-04-29T15:14:40.000Z"
-last_activity: "2026-04-29 — Plan 00.5-04 executed: CLAUDE.md rewritten with src/requirements_agent_tools/ package section, entry-point table, gitagent fallback pattern, pre-commit and doc-gen commands; Known Issues removed; ROADMAP.md pdoc → lazydocs; PKG-05 and PKG-06 met; Phase 0.5 complete"
+status: verifying
+stopped_at: Plan 01-01 complete (2026-04-30) — test infrastructure written for Phase 1 TDD RED phase
+last_updated: "2026-04-30T18:23:46.087Z"
+last_activity: 2026-04-30
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  total_plans: 9
+  completed_plans: 5
+  percent: 56
 ---
 
 # Project State
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 
 Phase: 0.5 of 5 (Package Scaffold) — COMPLETE
 Plan: 4 of 4 in current phase (00.5-01, 00.5-02, 00.5-03, 00.5-04 complete)
-Status: Phase 0.5 complete — all 4 plans done; Phase 1 (Project Initialisation) is next
-Last activity: 2026-04-29 — Plan 00.5-04 executed: CLAUDE.md rewritten (shared/ → src/requirements_agent_tools/, entry-point table, gitagent fallback, pre-commit and lazydocs commands, Known Issues removed); ROADMAP.md pdoc → lazydocs; PKG-05 and PKG-06 met
+Status: Phase complete — ready for verification
+Last activity: 2026-04-30
 
 Progress: [██████████] 100% (Phase 0.5)
 
@@ -53,6 +53,7 @@ Progress: [██████████] 100% (Phase 0.5)
 - Trend: 00.5-04 very fast — pure documentation rewrite with clear acceptance criteria
 
 *Updated after each plan completion*
+| Phase 01 P01 | 6 minutes | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,8 @@ Recent decisions affecting current work:
 - 00.5-02: lazydocs>=0.4.8 added as dev dep; pyproject.toml [dependency-groups] dev + [tool.interrogate] + [tool.ty.*] sections added; 21 Markdown docs generated; PKG-03 met; lazydocs patched for Python 3.13 compat (find_module removed in 3.12 — use importlib.import_module)
 - 00.5-03: Google-style docstrings added to 10 modules (50.6% to 98.2% coverage); bandit B608 nosec suppressions added; .pre-commit-config.yaml with 8 hooks (ruff-format, ruff-check, detect-private-key, bandit, ty, interrogate, lazydocs, pytest) all passing; ty warn rules for unresolved-attribute and invalid-return-type; interrogate hook scoped to src/ with args: [src/]
 - 00.5-04: CLAUDE.md Known Issues section removed entirely (sole entry was report.py.py double-extension, already fixed in Plan 01); gitagent fallback model IDs documented with explicit provider-availability caveat; ROADMAP.md pdoc → lazydocs applied to all 4 occurrences (overview line, goal statement, SC3, SC4) for internal consistency
+- [Phase 01]: xfail markers used on TDD RED phase tests to satisfy pre-commit pytest gate while preserving intent
+- [Phase 01]: _LEGACY_BOOTSTRAP_SQL shim in test_db.py keeps upsert_project tests passing until Plan 02 removes slug from production INSERT
 
 ### Pending Todos
 
@@ -98,6 +101,6 @@ Topics: AI governance reqs, conflict detection, external links, FRET formalisati
 
 ## Session Continuity
 
-Last session: 2026-04-29T15:14:40.000Z
-Stopped at: Plan 00.5-04 complete — Phase 0.5 complete; Phase 1 (Project Initialisation) next
+Last session: 2026-04-30T18:23:22.191Z
+Stopped at: Plan 01-01 complete (2026-04-30) — test infrastructure written for Phase 1 TDD RED phase
 Resume file: None
