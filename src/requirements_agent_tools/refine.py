@@ -11,15 +11,15 @@ Commands
 
 import argparse
 
-from . import project_session as ps
 from ._cli_io import err as _err
 from ._cli_io import ok as _ok
 from .db.requirements import get_requirement, search_requirements, update_requirement
+from .project_session import get_project_conn
 
 
 def cmd_pending(args):
     """List requirements that still need a FRET statement."""
-    _, conn, _ = ps.resolve(args.project)
+    conn = get_project_conn()
     reqs = search_requirements(conn)
     _ok(
         {
@@ -43,7 +43,7 @@ def cmd_pending(args):
 
 def cmd_show(args):
     """Show a requirement with full FRET status for refinement session."""
-    _, conn, _ = ps.resolve(args.project)
+    conn = get_project_conn()
     req = get_requirement(conn, args.id)
     if not req:
         _err(f"Requirement '{args.id}' not found.")
@@ -66,7 +66,7 @@ def cmd_apply(args):
     FRET grammar fields (scope/condition/timing/response) are deferred to Phase 3.
     For now, only description can be updated via this command.
     """
-    _, conn, _ = ps.resolve(args.project)
+    conn = get_project_conn()
 
     changes = {}
     # Optionally update description with a refined version
@@ -98,7 +98,7 @@ def cmd_apply(args):
 
 def cmd_coverage(args):
     """Show FRET coverage across all requirements."""
-    _, conn, _ = ps.resolve(args.project)
+    conn = get_project_conn()
     all_reqs = search_requirements(conn)
     total = len(all_reqs)
 
@@ -116,7 +116,6 @@ def cmd_coverage(args):
 
 def build_parser():
     p = argparse.ArgumentParser(description="FRET requirement refinement")
-    p.add_argument("--project", default=None)
     sub = p.add_subparsers(dest="command", required=True)
 
     sub.add_parser("pending")

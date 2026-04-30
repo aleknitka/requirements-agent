@@ -12,7 +12,9 @@ Commands
 import argparse
 from collections import defaultdict
 
-from . import project_session as ps
+from .project_session import get_project_conn
+from .db.projects import get_project as _get_project
+from ._cli_io import err as _err
 from ._cli_io import ok as _ok
 from .db.requirements import search_requirements
 from .models import RequirementType
@@ -224,7 +226,8 @@ def cmd_gaps(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    _, conn, meta = ps.resolve(args.project)
+    conn = get_project_conn()
+    meta = _get_project(conn)
     reqs = search_requirements(conn)
     _ok(_check_gaps(reqs, meta))
 
@@ -235,7 +238,7 @@ def cmd_conflicts(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    _, conn, _ = ps.resolve(args.project)
+    conn = get_project_conn()
     reqs = search_requirements(conn)
     _ok(_check_conflicts(reqs))
 
@@ -246,7 +249,8 @@ def cmd_coverage(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    _, conn, meta = ps.resolve(args.project)
+    conn = get_project_conn()
+    meta = _get_project(conn)
     reqs = search_requirements(conn)
     _ok(_check_coverage(reqs, meta))
 
@@ -257,8 +261,12 @@ def cmd_report(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    _, conn, meta = ps.resolve(args.project)
+    conn = get_project_conn()
+    meta = _get_project(conn)
     reqs = search_requirements(conn)
+
+    if not meta:
+        _err("No project metadata found in database.")
 
     gaps = _check_gaps(reqs, meta)
     conflicts = _check_conflicts(reqs)
@@ -297,7 +305,6 @@ def build_parser():
         and report subcommands.
     """
     p = argparse.ArgumentParser(description="Requirements review and gap analysis")
-    p.add_argument("--project", default=None)
     sub = p.add_subparsers(dest="command", required=True)
     sub.add_parser("gaps")
     sub.add_parser("conflicts")

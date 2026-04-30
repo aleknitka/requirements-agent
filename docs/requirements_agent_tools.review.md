@@ -10,7 +10,7 @@ Commands ────────  gaps       Identify missing requirement types
 
 ---
 
-<a href="../src/requirements_agent_tools/review.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/review.py#L223"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_gaps`
 
@@ -29,7 +29,7 @@ Run gap analysis and output identified issues as JSON.
 
 ---
 
-<a href="../src/requirements_agent_tools/review.py#L232"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/review.py#L235"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_conflicts`
 
@@ -48,7 +48,7 @@ Run conflict detection and output flagged conflicts as JSON.
 
 ---
 
-<a href="../src/requirements_agent_tools/review.py#L243"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/review.py#L246"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_coverage`
 
@@ -67,7 +67,7 @@ Run success criteria coverage check and output results as JSON.
 
 ---
 
-<a href="../src/requirements_agent_tools/review.py#L254"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/review.py#L258"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_report`
 
@@ -86,7 +86,7 @@ Run all review checks and output a combined review report as JSON.
 
 ---
 
-<a href="../src/requirements_agent_tools/review.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/review.py#L300"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_parser`
 
@@ -104,7 +104,7 @@ Build and return the review argument parser.
 
 ---
 
-<a href="../src/requirements_agent_tools/review.py#L309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/review.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 

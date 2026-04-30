@@ -7,7 +7,7 @@ Commands: add · update · get · list · search · history · vector
 import argparse
 
 from . import CONSTANTS as C
-from . import project_session as ps
+from .project_session import get_project_conn
 from ._cli_io import err as _err
 from ._cli_io import ok as _ok
 from ._cli_io import parse_json_arg as _pj
@@ -36,7 +36,7 @@ def cmd_add(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    slug, conn, meta = ps.resolve(args.project)
+    conn = get_project_conn()
     req_in = RequirementIn(
         req_type=RequirementType(args.type.upper())
         if args.type
@@ -74,7 +74,7 @@ def cmd_update(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    slug, conn, meta = ps.resolve(args.project)
+    conn = get_project_conn()
     changes = {}
     if args.title:
         changes["title"] = args.title
@@ -133,7 +133,7 @@ def cmd_get(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    _, conn, _ = ps.resolve(args.project)
+    conn = get_project_conn()
     row = get_requirement(conn, args.id)
     if not row:
         _err(f"Requirement '{args.id}' not found.")
@@ -146,7 +146,7 @@ def cmd_list(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    _, conn, _ = ps.resolve(args.project)
+    conn = get_project_conn()
     rows = search_requirements(
         conn,
         status=args.status,
@@ -184,7 +184,7 @@ def cmd_search(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    _, conn, _ = ps.resolve(args.project)
+    conn = get_project_conn()
     rows = search_requirements(conn, keyword=args.query)
     _ok(
         {
@@ -209,7 +209,7 @@ def cmd_history(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    _, conn, _ = ps.resolve(args.project)
+    conn = get_project_conn()
     updates = get_updates(conn, args.id)
     _ok(
         {
@@ -239,7 +239,7 @@ def cmd_vector(args):
     """
     if not C.EMBEDDING_API_KEY:
         _err("EMBEDDING_API_KEY not set. Vector search unavailable.")
-    _, conn, _ = ps.resolve(args.project)
+    conn = get_project_conn()
     results = vector_search(conn, args.query, top_k=args.top_k)
     _ok(
         {
@@ -267,7 +267,6 @@ def build_parser():
         history, and vector subcommands.
     """
     p = argparse.ArgumentParser(description="Requirement operations")
-    p.add_argument("--project", default=None, help="Project slug or partial name")
     sub = p.add_subparsers(dest="command", required=True)
 
     TYPES = [t.value for t in RequirementType]

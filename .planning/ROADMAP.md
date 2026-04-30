@@ -11,8 +11,8 @@ The requirements-agent delivers a conversational requirements engineering loop: 
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 0: Bug Triage** - Fix all 9 cascading runtime bugs so every skill can import and run without error
-- [ ] **Phase 0.5: Package Scaffold** - Move skill scripts into installable `requirements_agent` package; set up lazydocs + pre-commit doc rendering; establish agent fallback pattern
-- [ ] **Phase 1: Project Initialisation** - `init.py new` runs end-to-end, writes DB + PROJECT.md, auto-selects via .active sentinel
+- [x] **Phase 0.5: Package Scaffold** - Move skill scripts into installable `requirements_agent` package; set up lazydocs + pre-commit doc rendering; establish agent fallback pattern — DONE 2026-04-29
+- [x] **Phase 1: Project Initialisation** - `init.py new` runs end-to-end, writes DB + PROJECT.md, auto-selects via .active sentinel — DONE 2026-04-30
 - [ ] **Phase 2: Elicitation Skill** - New `elicit-requirements` skill interviews user, captures context, elicits and classifies requirements
 - [ ] **Phase 3: FRET Refinement** - Field-by-field FRET protocol resolves ambiguities and produces a confirmed, typed requirement
 - [ ] **Phase 4: Persistence and Reporting** - Confirmed requirements write to DB; `report.py` outputs FRET coverage and counts
@@ -76,7 +76,7 @@ Plans:
 - [x] 01-02: Rewrite CONSTANTS/models/schema/connection — flat constants, slug removed, conditional sqlite-vec — DONE 2026-04-30
 - [x] 01-03: Remove slug from db/projects.py, _serialization.py, project_md.py — verified (pre-applied in 01-02 cascade) — DONE 2026-04-30
 - [x] 01-04: Implement cmd_setup() in init_project.py — interactive setup questions, project dir creation, config.yaml write — DONE 2026-04-30
-- [ ] 01-05: Clean up remaining slug references (db/cli.py, init_project.py, refine/req_ops/review/report/meeting CLIs)
+- [x] 01-05: Clean up remaining slug references (db/cli.py, init_project.py, refine/req_ops/review/report/meeting CLIs) — DONE 2026-04-30
 **UI hint**: no
 
 ### Phase 2: Elicitation Skill

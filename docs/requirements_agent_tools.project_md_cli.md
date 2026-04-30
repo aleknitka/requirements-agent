@@ -10,7 +10,7 @@ Commands ────────  save     Write the full markdown body (create
 
 ---
 
-<a href="../src/requirements_agent_tools/project_md_cli.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/project_md_cli.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_save`
 
@@ -29,7 +29,7 @@ Write the full PROJECT.md content, creating or replacing the file.
 
 ---
 
-<a href="../src/requirements_agent_tools/project_md_cli.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/project_md_cli.py#L60"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_append`
 
@@ -48,7 +48,7 @@ Append a markdown section to the existing PROJECT.md.
 
 ---
 
-<a href="../src/requirements_agent_tools/project_md_cli.py#L83"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/project_md_cli.py#L82"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_read`
 
@@ -67,7 +67,7 @@ Print the current PROJECT.md content to stdout.
 
 ---
 
-<a href="../src/requirements_agent_tools/project_md_cli.py#L95"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/project_md_cli.py#L94"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_parser`
 
@@ -85,7 +85,7 @@ Build and return the project-md-cli argument parser.
 
 ---
 
-<a href="../src/requirements_agent_tools/project_md_cli.py#L125"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/project_md_cli.py#L124"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 

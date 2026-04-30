@@ -10,7 +10,7 @@ Commands ────────  log             Log a meeting with summary, d
 
 ---
 
-<a href="../src/requirements_agent_tools/meeting.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/meeting.py#L36"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_log`
 
@@ -29,7 +29,7 @@ Log a meeting with its title, summary, decisions, and action items.
 
 ---
 
-<a href="../src/requirements_agent_tools/meeting.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/meeting.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_get`
 
@@ -48,7 +48,7 @@ Fetch and display a single meeting record.
 
 ---
 
-<a href="../src/requirements_agent_tools/meeting.py#L80"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/meeting.py#L81"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_list`
 
@@ -67,7 +67,7 @@ List meetings with optional source, integration, and date filters.
 
 ---
 
-<a href="../src/requirements_agent_tools/meeting.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/meeting.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_decisions`
 
@@ -86,7 +86,7 @@ List all decisions across all meeting records.
 
 ---
 
-<a href="../src/requirements_agent_tools/meeting.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/meeting.py#L124"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_update_decision`
 
@@ -105,7 +105,7 @@ Update the status and notes of a specific decision.
 
 ---
 
-<a href="../src/requirements_agent_tools/meeting.py#L154"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/meeting.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_close_action`
 
@@ -124,7 +124,7 @@ Mark a specific action item as done.
 
 ---
 
-<a href="../src/requirements_agent_tools/meeting.py#L185"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/meeting.py#L186"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_integrate`
 
@@ -143,7 +143,7 @@ Mark one or more meetings as integrated and optionally update project status.
 
 ---
 
-<a href="../src/requirements_agent_tools/meeting.py#L218"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/meeting.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_parser`
 
@@ -161,7 +161,7 @@ Build and return the meeting argument parser.
 
 ---
 
-<a href="../src/requirements_agent_tools/meeting.py#L273"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/meeting.py#L276"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 

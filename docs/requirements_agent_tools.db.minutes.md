@@ -34,7 +34,7 @@ Insert one meeting record.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/minutes.py#L60"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/minutes.py#L63"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_minute`
 
@@ -47,7 +47,7 @@ Return one meeting by id, or ``None`` if missing.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/minutes.py#L66"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/minutes.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `list_minutes`
 
@@ -80,7 +80,7 @@ List meetings ordered by ``occurred_at`` ascending.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/minutes.py#L103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/minutes.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `mark_integrated`
 
@@ -106,7 +106,7 @@ Flag a meeting as integrated into the project status.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/minutes.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/minutes.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `list_decisions`
 

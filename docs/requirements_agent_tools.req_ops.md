@@ -163,7 +163,7 @@ Build and return the req-ops argument parser.
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L329"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L328"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 

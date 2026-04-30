@@ -39,7 +39,7 @@ Insert a new requirement, log the creation, and embed it.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/requirements.py#L126"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/requirements.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `update_requirement`
 
@@ -83,7 +83,7 @@ Only fields listed in :data:`_UPDATABLE_FIELDS` are accepted. A full row snapsho
 
 ---
 
-<a href="../src/requirements_agent_tools/db/requirements.py#L217"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/requirements.py#L223"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_requirement`
 
@@ -98,7 +98,7 @@ The result includes a ``has_embedding`` flag joined from ``req_embeddings``.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/requirements.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/requirements.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `search_requirements`
 
@@ -137,7 +137,7 @@ Field-based search with optional substring match on title/description.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/requirements.py#L297"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/requirements.py#L303"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_requirement_by_title`
 
@@ -153,7 +153,7 @@ Return the requirement whose ``title`` matches exactly, or ``None``.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/requirements.py#L314"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/requirements.py#L320"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `find_requirements_updated_between`
 
@@ -172,7 +172,7 @@ Both bounds are inclusive. ISO-8601 string comparison on the stored timestamp co
 
 ---
 
-<a href="../src/requirements_agent_tools/db/requirements.py#L339"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/requirements.py#L345"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_requirements_report`
 

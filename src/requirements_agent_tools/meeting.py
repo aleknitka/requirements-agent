@@ -16,7 +16,8 @@ import argparse
 import json
 from datetime import datetime, timezone
 
-from . import project_session as ps
+from .project_session import get_project_conn
+from .db.projects import get_project as _get_project
 from ._cli_io import err as _err
 from ._cli_io import ok as _ok
 from ._cli_io import parse_dt as _parse_dt
@@ -38,7 +39,7 @@ def cmd_log(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    _, conn, _ = ps.resolve(args.project)
+    conn = get_project_conn()
     minute_in = MinuteIn(
         title=args.title,
         source=MeetingSource(args.source) if args.source else MeetingSource.OTHER,
@@ -70,7 +71,7 @@ def cmd_get(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    _, conn, _ = ps.resolve(args.project)
+    conn = get_project_conn()
     row = get_minute(conn, args.id)
     if not row:
         _err(f"Meeting '{args.id}' not found.")
@@ -83,7 +84,7 @@ def cmd_list(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    _, conn, _ = ps.resolve(args.project)
+    conn = get_project_conn()
     rows = list_minutes(
         conn, source=args.source, unintegrated=args.unintegrated, since=args.since
     )
@@ -115,7 +116,7 @@ def cmd_decisions(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    _, conn, _ = ps.resolve(args.project)
+    conn = get_project_conn()
     decs = list_decisions(conn, status=args.status, affects_req=args.affects_req)
     _ok({"count": len(decs), "decisions": decs})
 
@@ -126,7 +127,7 @@ def cmd_update_decision(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    _, conn, _ = ps.resolve(args.project)
+    conn = get_project_conn()
     row = get_minute(conn, args.meeting_id)
     if not row:
         _err(f"Meeting '{args.meeting_id}' not found.")
@@ -157,7 +158,7 @@ def cmd_close_action(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    _, conn, _ = ps.resolve(args.project)
+    conn = get_project_conn()
     row = get_minute(conn, args.meeting_id)
     if not row:
         _err(f"Meeting '{args.meeting_id}' not found.")
@@ -188,7 +189,8 @@ def cmd_integrate(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    _, conn, meta = ps.resolve(args.project)
+    conn = get_project_conn()
+    meta = _get_project(conn)
     marked = []
     if args.all_unintegrated:
         for m in list_minutes(conn, unintegrated=True):
@@ -203,6 +205,8 @@ def cmd_integrate(args):
             marked.append(mid)
 
     if args.status_summary:
+        if not meta:
+            _err("Cannot update status: No project metadata found in DB.")
         meta.status_summary = args.status_summary
         meta.status_updated_at = datetime.now(timezone.utc)
         upsert_project(conn, meta)
@@ -223,7 +227,6 @@ def build_parser():
         update_decision, close_action, and integrate subcommands.
     """
     p = argparse.ArgumentParser(description="Meeting agent")
-    p.add_argument("--project", default=None)
     sub = p.add_subparsers(dest="command", required=True)
     SOURCES = [s.value for s in MeetingSource]
     DS = [s.value for s in DecisionStatus]

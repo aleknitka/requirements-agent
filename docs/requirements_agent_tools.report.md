@@ -10,7 +10,7 @@ Commands ────────  generate   Pull current state from DB and pro
 
 ---
 
-<a href="../src/requirements_agent_tools/report.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/report.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_generate`
 
@@ -29,7 +29,7 @@ Generate a project status report and print it to stdout.
 
 ---
 
-<a href="../src/requirements_agent_tools/report.py#L230"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/report.py#L229"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_save`
 
@@ -50,7 +50,7 @@ Writes both a Markdown file (STATUS-<timestamp>.md) and a JSON file (STATUS-<tim
 
 ---
 
-<a href="../src/requirements_agent_tools/report.py#L257"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/report.py#L255"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_parser`
 
@@ -68,7 +68,7 @@ Build and return the report argument parser.
 
 ---
 
-<a href="../src/requirements_agent_tools/report.py#L274"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/report.py#L271"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 

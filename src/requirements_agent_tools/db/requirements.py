@@ -90,7 +90,10 @@ def insert_requirement(
 
     conn.commit()
     logger.info("Inserted requirement {} by {}", req_id, created_by)
-    return get_requirement(conn, req_id)  # type: ignore[return-value]
+    row = get_requirement(conn, req_id)
+    if row is None:
+        raise RuntimeError(f"Failed to retrieve requirement {req_id} after operation.")
+    return row
 
 
 _UPDATABLE_FIELDS: set[str] = {
@@ -211,7 +214,10 @@ def update_requirement(
     logger.info("Updated {} ({} field(s)) by {}", req_id, len(diffs), changed_by)
     for diff in diffs:
         logger.debug("  {} : {!r} -> {!r}", diff.field, diff.old_value, diff.new_value)
-    return get_requirement(conn, req_id)  # type: ignore[return-value]
+    row = get_requirement(conn, req_id)
+    if row is None:
+        raise RuntimeError(f"Failed to retrieve requirement {req_id} after operation.")
+    return row
 
 
 def get_requirement(conn: sqlite3.Connection, req_id: str) -> Optional[RequirementRow]:

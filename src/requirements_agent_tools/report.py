@@ -10,16 +10,16 @@ Commands
 import argparse
 import json
 from datetime import datetime, timezone
-
 from . import CONSTANTS as C
-from . import project_session as ps
 from ._cli_io import ok as _ok
 from .db.minutes import list_decisions, list_minutes
 from .db.requirements import search_requirements
 from .db.updates import get_updates
+from .project_session import get_project_conn
+from .db.projects import get_project as _get_project
 
 
-def _build_report(slug: str, conn, meta) -> dict:
+def _build_report(conn, meta) -> dict:
     """Assemble the full status report dict from the project DB.
 
     Queries requirements, meetings, decisions, action items, and recent
@@ -27,7 +27,6 @@ def _build_report(slug: str, conn, meta) -> dict:
     or Markdown rendering.
 
     Args:
-        slug: Project slug (used for file path construction).
         conn: Open SQLite connection to the project DB.
         meta: ProjectMeta instance for the project.
 
@@ -218,9 +217,9 @@ def cmd_generate(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    _, conn, meta = ps.resolve(args.project)
-    slug = C.slugify(meta.name)
-    report = _build_report(slug, conn, meta)
+    conn = get_project_conn()
+    meta = _get_project(conn)
+    report = _build_report(conn, meta)
     if args.format == "md":
         print(_report_to_md(report))
     else:
@@ -236,14 +235,13 @@ def cmd_save(args):
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    _, conn, meta = ps.resolve(args.project)
-    slug = C.slugify(meta.name)
-    report = _build_report(slug, conn, meta)
+    conn = get_project_conn()
+    meta = _get_project(conn)
+    report = _build_report(conn, meta)
 
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    proj_dir = C.project_dir(slug)
-    md_out = proj_dir / f"STATUS-{ts}.md"
-    json_out = proj_dir / f"STATUS-{ts}.json"
+    md_out = C.PROJECT_DIR / f"STATUS-{ts}.md"
+    json_out = C.PROJECT_DIR / f"STATUS-{ts}.json"
 
     md_out.write_text(_report_to_md(report), encoding="utf-8")
     json_out.write_text(
@@ -261,7 +259,6 @@ def build_parser():
         Configured ArgumentParser with generate and save subcommands.
     """
     p = argparse.ArgumentParser(description="Status report generator")
-    p.add_argument("--project", default=None)
     sub = p.add_subparsers(dest="command", required=True)
 
     gn = sub.add_parser("generate")

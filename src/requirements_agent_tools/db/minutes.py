@@ -54,7 +54,10 @@ def insert_minute(conn: sqlite3.Connection, minute_in: MinuteIn) -> MinuteRow:
         len(minute_in.decisions),
         len(minute_in.action_items),
     )
-    return get_minute(conn, mid)  # type: ignore[return-value]
+    row = get_minute(conn, mid)
+    if row is None:
+        raise RuntimeError(f"Failed to retrieve meeting {mid} after insertion.")
+    return row
 
 
 def get_minute(conn: sqlite3.Connection, minute_id: str) -> Optional[MinuteRow]:
@@ -117,7 +120,10 @@ def mark_integrated(conn: sqlite3.Connection, minute_id: str) -> MinuteRow:
     )
     conn.commit()
     logger.info("Marked meeting {} as integrated", minute_id)
-    return get_minute(conn, minute_id)  # type: ignore[return-value]
+    row = get_minute(conn, minute_id)
+    if row is None:
+        raise RuntimeError(f"Failed to retrieve meeting {minute_id} after integration.")
+    return row
 
 
 def list_decisions(

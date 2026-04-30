@@ -16,8 +16,7 @@ from pathlib import Path
 from . import project_md
 from ._cli_io import err as _err
 from ._cli_io import ok as _ok
-from . import CONSTANTS as C
-from .db.connection import get_db
+from .project_session import get_project_conn
 
 
 def _resolve_content(inline: str | None, file_path: str | None, label: str) -> str:
@@ -52,7 +51,7 @@ def cmd_save(args: argparse.Namespace) -> None:
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    conn = get_db(str(C.DB_PATH))
+    conn = get_project_conn()
     content = _resolve_content(args.content, args.content_file, "content")
     path = project_md.save(conn, content, changed_by=args.by, summary=args.summary)
     _ok({"path": str(path), "bytes": len(content.encode("utf-8"))})
@@ -64,7 +63,7 @@ def cmd_append(args: argparse.Namespace) -> None:
     Args:
         args: Parsed CLI arguments from build_parser().
     """
-    conn = get_db(str(C.DB_PATH))
+    conn = get_project_conn()
     section = _resolve_content(args.section, args.section_file, "section")
     try:
         path = project_md.append_section(
