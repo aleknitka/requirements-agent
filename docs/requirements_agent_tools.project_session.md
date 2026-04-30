@@ -3,28 +3,31 @@
 <a href="../src/requirements_agent_tools/project_session.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `requirements_agent_tools.project_session`
-project_session.py — shared helper for resolving the active project. 
+project_session.py — single-project connection helper. 
 
-Every skill calls `resolve(slug_or_name)` at the start of its session. Pass an explicit slug via --project <slug>. Auto-selection via .active sentinel will be added in Phase 1 (INIT-06). 
+Every skill calls ``get_project_conn()`` at the start of its session. The single project database is at ``CONSTANTS.DB_PATH``. 
 
-PROJECT.md is owned by the skill: write through ``project_md_cli`` (or call ``project_md.save`` / ``append_section`` directly). There is no auto-refresh. 
+PROJECT.md is owned by the skill: write through ``project_md_cli`` (or call ``project_md.save`` / ``append_section`` directly). 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/project_session.py#L24"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/project_session.py#L20"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `resolve`
+## <kbd>function</kbd> `get_project_conn`
 
 ```python
-resolve(
-    slug_or_name: 'Optional[str]' = None
-) → tuple[str, Connection, ProjectMeta]
+get_project_conn() → Connection
 ```
 
-Resolve which project to work on. Returns (slug, conn, meta). 
+Open the single project database. Exits with error if not initialised. 
 
-Phase 0: requires explicit slug_or_name. Auto-selection via .active sentinel is implemented in Phase 1 (INIT-06). 
+Checks that ``DB_PATH`` exists before opening. If the project has not been set up yet (``uv run init-project setup`` not run), exits non-zero with a clear error message rather than creating an empty database. 
+
+
+
+**Returns:**
+  An open ``sqlite3.Connection`` to the project database.  Caller owns the lifetime and must close it. 
 
 
 

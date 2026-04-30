@@ -1,46 +1,33 @@
 """
-project_session.py — shared helper for resolving the active project.
+project_session.py — single-project connection helper.
 
-Every skill calls `resolve(slug_or_name)` at the start of its session.
-Pass an explicit slug via --project <slug>. Auto-selection via .active
-sentinel will be added in Phase 1 (INIT-06).
+Every skill calls ``get_project_conn()`` at the start of its session.
+The single project database is at ``CONSTANTS.DB_PATH``.
 
 PROJECT.md is owned by the skill: write through ``project_md_cli`` (or call
-``project_md.save`` / ``append_section`` directly). There is no auto-refresh.
+``project_md.save`` / ``append_section`` directly).
 """
 
 from __future__ import annotations
 
 import sqlite3
-from typing import Optional
 
 from . import CONSTANTS as C
 from ._cli_io import err as _err
 from .db.connection import get_db
-from .db.projects import get_project
-from .models import ProjectMeta
 
 
-def resolve(
-    slug_or_name: Optional[str] = None,
-) -> tuple[str, sqlite3.Connection, ProjectMeta]:
+def get_project_conn() -> sqlite3.Connection:
+    """Open the single project database. Exits with error if not initialised.
+
+    Checks that ``DB_PATH`` exists before opening. If the project has not been
+    set up yet (``uv run init-project setup`` not run), exits non-zero with a
+    clear error message rather than creating an empty database.
+
+    Returns:
+        An open ``sqlite3.Connection`` to the project database.
+        Caller owns the lifetime and must close it.
     """
-    Resolve which project to work on.
-    Returns (slug, conn, meta).
-
-    Phase 0: requires explicit slug_or_name. Auto-selection via .active sentinel
-    is implemented in Phase 1 (INIT-06).
-    """
-    if not slug_or_name:
-        _err(
-            "No project selected. Pass --project <slug>.\n"
-            "To list projects: python -m requirements_agent_tools.init_project list\n"
-            "(Auto-selection via .active sentinel will be added in Phase 1.)"
-        )
-
-    slug = slug_or_name
-    conn = get_db(str(C.db_path(slug)))
-    meta = get_project(conn)
-    if not meta:
-        _err(f"Project '{slug}' not found. Run project-init new --name '<name>' first.")
-    return slug, conn, meta
+    if not C.DB_PATH.exists():
+        _err("No project found. Run 'uv run init-project setup' first.")
+    return get_db(str(C.DB_PATH))
