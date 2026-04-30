@@ -72,10 +72,11 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [x] 01-01: Implement `init.py new` end-to-end — DB bootstrap, PROJECT.md write, slug collision guard
-- [ ] 01-02: Implement `.active` sentinel write on project creation/selection; update `project_session.resolve()` to read it
-- [ ] 01-03: Implement project onboarding conversation in `project-init` SKILL.md — 5-question interview, confirm before saving
-- [ ] 01-04: Write `tests/test_db.py` with real-SQLite coverage of all CRUD functions using `tmp_path`
+- [x] 01-01: TDD RED phase — delete slug-infra tests, update test_db.py, create test_setup.py — DONE 2026-04-30
+- [x] 01-02: Rewrite CONSTANTS/models/schema/connection — flat constants, slug removed, conditional sqlite-vec — DONE 2026-04-30
+- [ ] 01-03: Implement project_session.get_project_conn() — replace resolve(slug) with single-project helper
+- [ ] 01-04: Implement cmd_setup() in init_project.py — interactive setup questions, project dir creation, config.yaml write
+- [ ] 01-05: Clean up remaining slug references (db/cli.py, init_project.py, refine/req_ops/review/report/meeting CLIs)
 **UI hint**: no
 
 ### Phase 2: Elicitation Skill
@@ -161,7 +162,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 0. Bug Triage | 6/6 | Complete | 2026-04-24 |
 | 0.5. Package Scaffold | 4/4 | Complete | 2026-04-29 |
-| 1. Project Initialisation | 1/5 | In Progress|  |
+| 1. Project Initialisation | 2/5 | In Progress|  |
 | 2. Elicitation Skill | 0/5 | Not started | - |
 | 3. FRET Refinement | 0/4 | Not started | - |
 | 4. Persistence and Reporting | 0/4 | Not started | - |

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Plan 01-01 complete (2026-04-30) — test infrastructure written for Phase 1 TDD RED phase
-last_updated: "2026-04-30T18:23:46.087Z"
+stopped_at: Plan 01-02 complete (2026-04-30) — foundation layer rewritten (CONSTANTS/models/schema/connection)
+last_updated: "2026-04-30T18:32:00.000Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 9
-  completed_plans: 5
-  percent: 56
+  completed_plans: 6
+  percent: 67
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 
 ## Current Position
 
-Phase: 0.5 of 5 (Package Scaffold) — COMPLETE
-Plan: 4 of 4 in current phase (00.5-01, 00.5-02, 00.5-03, 00.5-04 complete)
-Status: Phase complete — ready for verification
+Phase: 1 of 5 (Project Initialisation) — In Progress
+Plan: 2 of 5 in current phase (01-01, 01-02 complete)
+Status: In progress — foundation layer complete; Plans 03-05 remaining
 Last activity: 2026-04-30
 
-Progress: [██████████] 100% (Phase 0.5)
+Progress: [████████░░] 80% (Phase 1 foundation, 2/5 plans done)
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [██████████] 100% (Phase 0.5)
 
 *Updated after each plan completion*
 | Phase 01 P01 | 6 minutes | 2 tasks | 5 files |
+| Phase 01 P02 | 7 minutes | 2 tasks | 20 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,11 @@ Recent decisions affecting current work:
 - 00.5-04: CLAUDE.md Known Issues section removed entirely (sole entry was report.py.py double-extension, already fixed in Plan 01); gitagent fallback model IDs documented with explicit provider-availability caveat; ROADMAP.md pdoc → lazydocs applied to all 4 occurrences (overview line, goal statement, SC3, SC4) for internal consistency
 - [Phase 01]: xfail markers used on TDD RED phase tests to satisfy pre-commit pytest gate while preserving intent
 - [Phase 01]: _LEGACY_BOOTSTRAP_SQL shim in test_db.py keeps upsert_project tests passing until Plan 02 removes slug from production INSERT
+- 01-02: T-02-01 absolute-path guard added to CONSTANTS.py PROJECT_DIR env var (ValueError if non-absolute path)
+- 01-02: SCHEMA_SQL split into BASE_SCHEMA_SQL + VEC_SCHEMA_SQL; slug removed from projects DDL and ProjectMeta
+- 01-02: get_db()/bootstrap() now accept sqlite_vec_enabled=False — no unconditional sqlite-vec loading
+- 01-02: cascade fixes: db/projects.py slug removed; project_md.py slug param removed; test fixtures updated (no sys.modules patching)
+- 01-02: ty unknown-argument=warn added to pyproject.toml; db/cli.py and init_project.py slug= errors deferred to Plans 03/04
 
 ### Pending Todos
 
@@ -101,6 +107,6 @@ Topics: AI governance reqs, conflict detection, external links, FRET formalisati
 
 ## Session Continuity
 
-Last session: 2026-04-30T18:23:22.191Z
-Stopped at: Plan 01-01 complete (2026-04-30) — test infrastructure written for Phase 1 TDD RED phase
+Last session: 2026-04-30T18:32:00Z
+Stopped at: Plan 01-02 complete (2026-04-30) — foundation layer rewritten (CONSTANTS/models/schema/connection)
 Resume file: None
