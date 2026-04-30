@@ -4,14 +4,15 @@ tests/test_db.py — Real-SQLite CRUD tests for shared/db.py after Phase 0 bug f
 Bugs covered:
   BUG-01 — get_db() must require an explicit path argument (no default).
   BUG-03 — list_projects() must exist and return ProjectMeta objects, not dicts.
-  BUG-04 — get_project_by_slug() must exist and perform a correct slug lookup.
-  BUG-08 — projects table must have a slug column; upsert_project auto-derives slug.
 
-Strategy:
-  - Patch sys.modules["sqlite_vec"] so sqlite_vec.load() becomes a no-op.
-  - Patch db.bootstrap with a test-safe version that replaces the vec0 virtual table
-    with a plain table (vec0 requires the native extension to be loaded into SQLite).
-  - All other operations use a real SQLite file via pytest's tmp_path fixture.
+Phase 1 changes:
+  - _TEST_BOOTSTRAP_SQL projects table has NO slug column (single-project model, D-01)
+  - minutes table updated to canonical schema (no project_id FK)
+  - test_projects_table_no_slug_column added: asserts slug NOT in new schema
+  - _LEGACY_BOOTSTRAP_SQL retained so upsert_project() tests continue to pass
+    until Plan 02 removes slug from the production INSERT statement
+  - conn fixture will be updated to use sqlite_vec_enabled=False once Plan 02
+    ships the new get_db() signature (currently uses sys.modules patching)
 """
 
 from __future__ import annotations
@@ -28,13 +29,14 @@ from requirements_agent_tools.db import connection as db_conn
 from requirements_agent_tools.db import projects as db_projects
 
 
-# ── Test-safe bootstrap (replaces vec0 virtual table with plain table) ────────
+# ── Phase 1 canonical bootstrap SQL (no slug column) ─────────────────────────
+# This is the NEW schema for Phase 1. The test_projects_table_no_slug_column
+# test verifies this SQL does NOT include a slug column.
 
 _TEST_BOOTSTRAP_SQL = """
 CREATE TABLE IF NOT EXISTS projects (
     project_id        TEXT PRIMARY KEY,
     singleton         INTEGER NOT NULL DEFAULT 1 CHECK (singleton = 1),
-    slug              TEXT NOT NULL DEFAULT '',
     name              TEXT NOT NULL,
     code              TEXT,
     phase             TEXT NOT NULL DEFAULT 'discovery',
@@ -98,7 +100,6 @@ CREATE INDEX IF NOT EXISTS idx_upd_entity ON updates(entity_type, entity_id);
 
 CREATE TABLE IF NOT EXISTS minutes (
     id                      TEXT PRIMARY KEY,
-    project_id              TEXT NOT NULL REFERENCES projects(project_id),
     title                   TEXT NOT NULL,
     source                  TEXT NOT NULL DEFAULT 'other',
     source_url              TEXT,
@@ -113,34 +114,39 @@ CREATE TABLE IF NOT EXISTS minutes (
     integrated_into_status  INTEGER NOT NULL DEFAULT 0,
     integrated_at           TEXT
 );
-
-CREATE INDEX IF NOT EXISTS idx_min_project ON minutes(project_id);
 """
+
+# ── Legacy bootstrap SQL (with slug) — used by upsert_project() tests ────────
+# Retained until Plan 02 removes slug from db/projects.py upsert INSERT.
+# Once Plan 02 is executed, this constant can be removed and conn can use
+# _TEST_BOOTSTRAP_SQL directly.
+
+_LEGACY_BOOTSTRAP_SQL = _TEST_BOOTSTRAP_SQL.replace(
+    "    singleton         INTEGER NOT NULL DEFAULT 1 CHECK (singleton = 1),\n"
+    "    name              TEXT NOT NULL,",
+    "    singleton         INTEGER NOT NULL DEFAULT 1 CHECK (singleton = 1),\n"
+    "    slug              TEXT NOT NULL DEFAULT '',\n"
+    "    name              TEXT NOT NULL,",
+)
 
 
 def _test_bootstrap(conn: sqlite3.Connection) -> None:
-    """Test-safe bootstrap: identical to db.bootstrap() but uses a plain table
-    instead of the vec0 virtual table so tests run without the native extension."""
-    conn.executescript(_TEST_BOOTSTRAP_SQL)
+    """Test-safe bootstrap using the legacy schema (with slug) so upsert_project
+    tests continue to pass until Plan 02 removes slug from production INSERT."""
+    conn.executescript(_LEGACY_BOOTSTRAP_SQL)
     conn.commit()
-    # Idempotent slug migration (mirrors db.bootstrap)
-    try:
-        conn.execute("ALTER TABLE projects ADD COLUMN slug TEXT NOT NULL DEFAULT ''")
-        conn.commit()
-    except sqlite3.OperationalError:
-        pass
 
 
-# ── Fixture ───────────────────────────────────────────────────────────────────
+# ── Fixture (legacy schema for upsert_project compatibility) ─────────────────
 
 
 @pytest.fixture()
 def conn(tmp_path):
-    """
-    Open a real SQLite DB (via db.get_db) with:
-      - sqlite_vec patched to a no-op (sys.modules injection)
-      - db.bootstrap patched to _test_bootstrap (avoids vec0 module requirement)
+    """Open a real SQLite DB (via db.get_db) with sqlite_vec patched to a no-op.
 
+    Uses _LEGACY_BOOTSTRAP_SQL (with slug) until Plan 02 removes slug from
+    db/projects.py. Uses sys.modules injection until Plan 02 ships
+    get_db(sqlite_vec_enabled=False).
     All project/requirement CRUD runs against a real SQLite file on disk.
     """
     mock_vec = MagicMock()
@@ -180,48 +186,25 @@ def test_get_db_raises_type_error_without_args():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Test group 2: BUG-08 — slug column exists after bootstrap
+# Test group 2: Phase 1 schema — no slug column
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def test_slug_column_exists(conn):
-    """Projects table has a slug column after bootstrap."""
+def test_projects_table_no_slug_column():
+    """Projects table must NOT have a slug column in the Phase 1 schema (D-01).
+
+    Directly verifies _TEST_BOOTSTRAP_SQL, the new canonical test schema,
+    without going through upsert_project() (which still uses slug until Plan 02).
+    """
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.executescript(_TEST_BOOTSTRAP_SQL)
+    conn.commit()
     cols = [
         row["name"] for row in conn.execute("PRAGMA table_info(projects)").fetchall()
     ]
-    assert "slug" in cols, f"'slug' not found in columns: {cols}"
-
-
-def test_upsert_project_auto_derives_slug(conn):
-    """When meta.slug is empty, upsert_project derives it from name via C.slugify."""
-    from requirements_agent_tools.models import ProjectMeta
-
-    meta = ProjectMeta(name="My ML Project")
-    assert meta.slug == "", "Precondition: slug starts empty"
-    db_projects.upsert_project(conn, meta)
-    assert meta.slug == "my-ml-project", f"Expected 'my-ml-project', got '{meta.slug}'"
-
-
-def test_upsert_project_preserves_explicit_slug(conn):
-    """When meta.slug is already set, upsert_project does not overwrite it."""
-    from requirements_agent_tools.models import ProjectMeta
-
-    meta = ProjectMeta(name="My Project", slug="custom-slug")
-    db_projects.upsert_project(conn, meta)
-    assert meta.slug == "custom-slug", f"Expected 'custom-slug', got '{meta.slug}'"
-
-
-def test_upsert_project_stores_slug_in_db(conn):
-    """Slug written by upsert_project is actually persisted in the DB."""
-    from requirements_agent_tools.models import ProjectMeta
-
-    meta = ProjectMeta(name="Stored Slug Test")
-    db_projects.upsert_project(conn, meta)
-    row = conn.execute(
-        "SELECT slug FROM projects WHERE project_id = ?", (meta.project_id,)
-    ).fetchone()
-    assert row is not None
-    assert row["slug"] == "stored-slug-test"
+    conn.close()
+    assert "slug" not in cols, f"'slug' column must not exist in Phase 1 schema: {cols}"
 
 
 def test_db_rejects_second_project(conn):
@@ -250,16 +233,9 @@ def test_list_projects_returns_project_meta(conn):
 
     meta = ProjectMeta(name="Alpha")
     db_projects.upsert_project(conn, meta)
-    # NB: list_projects is currently missing from db.projects (pre-existing bug);
-    # this test exercises the canonical name as a guardrail.
     results = db_projects.list_projects(conn)
     assert len(results) == 1
-    # Must be attribute access, not dict["slug"]
-    assert hasattr(results[0], "slug"), (
-        "list_projects result must be ProjectMeta (has .slug)"
-    )
     assert results[0].name == "Alpha"
-    assert results[0].slug == "alpha"
 
 
 def test_upsert_second_project_rejected_by_singleton(conn):
@@ -270,7 +246,8 @@ def test_upsert_second_project_rejected_by_singleton(conn):
     with pytest.raises(sqlite3.IntegrityError):
         db_projects.upsert_project(conn, ProjectMeta(name="Proj B"))
     results = db_projects.list_projects(conn)
-    assert [r.slug for r in results] == ["proj-a"]
+    assert len(results) == 1
+    assert results[0].name == "Proj A"
 
 
 def test_list_projects_items_are_project_meta_instances(conn):
@@ -280,46 +257,3 @@ def test_list_projects_items_are_project_meta_instances(conn):
     db_projects.upsert_project(conn, ProjectMeta(name="Type Check"))
     results = db_projects.list_projects(conn)
     assert all(isinstance(r, ProjectMeta) for r in results)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Test group 4: BUG-04 — get_project_by_slug lookup
-# ═══════════════════════════════════════════════════════════════════════════════
-
-
-def test_get_project_by_slug_returns_correct_meta(conn):
-    """get_project_by_slug returns the matching ProjectMeta for a known slug."""
-    from requirements_agent_tools.models import ProjectMeta
-
-    meta = ProjectMeta(name="Test Project")
-    db_projects.upsert_project(conn, meta)
-    fetched = db_projects.get_project_by_slug(conn, "test-project")
-    assert fetched is not None
-    assert fetched.name == "Test Project"
-    assert fetched.slug == "test-project"
-
-
-def test_get_project_by_slug_returns_none_for_missing(conn):
-    """get_project_by_slug returns None when no project has the given slug."""
-    fetched = db_projects.get_project_by_slug(conn, "no-such-slug")
-    assert fetched is None
-
-
-def test_get_project_by_slug_returns_project_meta_instance(conn):
-    """get_project_by_slug result is a ProjectMeta instance, not a dict."""
-    from requirements_agent_tools.models import ProjectMeta
-
-    db_projects.upsert_project(conn, ProjectMeta(name="Slug Meta"))
-    result = db_projects.get_project_by_slug(conn, "slug-meta")
-    assert isinstance(result, ProjectMeta)
-
-
-def test_get_project_by_slug_correct_project_id(conn):
-    """get_project_by_slug returns the project with the matching project_id."""
-    from requirements_agent_tools.models import ProjectMeta
-
-    meta = ProjectMeta(name="Project One")
-    db_projects.upsert_project(conn, meta)
-    fetched = db_projects.get_project_by_slug(conn, "project-one")
-    assert fetched is not None
-    assert fetched.project_id == meta.project_id

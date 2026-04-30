@@ -834,6 +834,7 @@ dependencies = [
     { name = "prek" },
     { name = "pydantic" },
     { name = "pytest" },
+    { name = "pyyaml" },
     { name = "ruff" },
     { name = "sqlite-vec" },
 ]
@@ -859,6 +860,7 @@ requires-dist = [
     { name = "prek", specifier = ">=0.3.9" },
     { name = "pydantic", specifier = ">=2.13.3" },
     { name = "pytest", specifier = ">=9.0.3" },
+    { name = "pyyaml", specifier = ">=6.0" },
     { name = "ruff", specifier = ">=0.15.11" },
     { name = "sqlite-vec", specifier = ">=0.1.9" },
 ]
