@@ -11,8 +11,8 @@ directly from the relevant submodule rather than the top-level package:
     )
     from requirements_agent_tools.db.embeddings   import embed, vector_search
     from requirements_agent_tools.db.updates      import get_updates
-    from requirements_agent_tools.db.minutes      import (
-        insert_minute, get_minute, list_minutes, mark_integrated, list_decisions,
+    from requirements_agent_tools.db.issues       import (
+        insert_issue, get_issue, search_issues, update_issue,
     )
 
 Importing the package configures loguru's stderr sink once at INFO. A

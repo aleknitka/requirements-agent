@@ -6,8 +6,8 @@ import sqlite3
 
 from .. import CONSTANTS as C
 from ..models import (
-    DecisionStatus,
-    MeetingSource,
+    IssuePriority,
+    IssueStatus,
     ProjectPhase,
     REQUIREMENT_TYPE_METADATA,
     RequirementPriority,
@@ -72,10 +72,11 @@ CREATE INDEX IF NOT EXISTS idx_req_priority ON requirements(priority);
 -- ── Updates (change log) ──────────────────────────────────────────────
 -- Polymorphic audit log. entity_type discriminates the record kind:
 --   'requirement' → entity_id is a requirements.id
---   'project_md'  → entity_id is the singleton projects.project_id
+--   'project'     → entity_id is the singleton projects.project_id
+--   'issue'       → entity_id is an issues.id
 CREATE TABLE IF NOT EXISTS updates (
     id             TEXT PRIMARY KEY,
-    entity_type    TEXT NOT NULL CHECK (entity_type IN ('requirement', 'project_md')),
+    entity_type    TEXT NOT NULL CHECK (entity_type IN ('requirement', 'project', 'issue')),
     entity_id      TEXT NOT NULL,
     changed_at     TEXT NOT NULL,
     changed_by     TEXT NOT NULL,
@@ -86,23 +87,42 @@ CREATE TABLE IF NOT EXISTS updates (
 
 CREATE INDEX IF NOT EXISTS idx_upd_entity ON updates(entity_type, entity_id);
 
--- ── Minutes ───────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS minutes (
-    id                      TEXT PRIMARY KEY,
-    title                   TEXT NOT NULL,
-    source                  TEXT NOT NULL DEFAULT 'other',
-    source_url              TEXT,
-    occurred_at             TEXT NOT NULL,
-    logged_at               TEXT NOT NULL,
-    logged_by               TEXT NOT NULL,
-    attendees               TEXT NOT NULL DEFAULT '[]',
-    summary                 TEXT NOT NULL DEFAULT '',
-    raw_notes               TEXT NOT NULL DEFAULT '',
-    decisions               TEXT NOT NULL DEFAULT '[]',
-    action_items            TEXT NOT NULL DEFAULT '[]',
-    integrated_into_status  INTEGER NOT NULL DEFAULT 0,
-    integrated_at           TEXT
+-- ── Issues ───────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS issues (
+    id             TEXT PRIMARY KEY,
+    title          TEXT NOT NULL,
+    description    TEXT NOT NULL DEFAULT '',
+    status         TEXT NOT NULL DEFAULT 'open',
+    priority       TEXT NOT NULL DEFAULT 'medium',
+    owner          TEXT,
+    created_at     TEXT NOT NULL,
+    updated_at     TEXT NOT NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_issue_status   ON issues(status);
+CREATE INDEX IF NOT EXISTS idx_issue_priority ON issues(priority);
+
+-- ── Issue Links (Many-to-Many) ───────────────────────────────────────
+CREATE TABLE IF NOT EXISTS issue_requirements (
+    issue_id       TEXT NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
+    requirement_id TEXT NOT NULL REFERENCES requirements(id) ON DELETE CASCADE,
+    PRIMARY KEY (issue_id, requirement_id)
+);
+
+CREATE TABLE IF NOT EXISTS issue_updates (
+    issue_id       TEXT NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
+    update_id      TEXT NOT NULL REFERENCES updates(id) ON DELETE CASCADE,
+    PRIMARY KEY (issue_id, update_id)
+);
+
+CREATE TABLE IF NOT EXISTS issue_actions_log (
+    id             TEXT PRIMARY KEY,
+    issue_id       TEXT NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
+    occurred_at    TEXT NOT NULL,
+    description    TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_issue_action_issue ON issue_actions_log(issue_id);
 
 -- ── Reference / lookup tables (enum catalogues) ───────────────────────
 CREATE TABLE IF NOT EXISTS requirement_types (
@@ -123,11 +143,11 @@ CREATE TABLE IF NOT EXISTS project_phases (
     value TEXT PRIMARY KEY
 );
 
-CREATE TABLE IF NOT EXISTS meeting_sources (
+CREATE TABLE IF NOT EXISTS issue_statuses (
     value TEXT PRIMARY KEY
 );
 
-CREATE TABLE IF NOT EXISTS decision_statuses (
+CREATE TABLE IF NOT EXISTS issue_priorities (
     value TEXT PRIMARY KEY
 );
 """
@@ -161,8 +181,8 @@ def seed_reference_tables(conn: sqlite3.Connection) -> None:
         ("requirement_statuses", RequirementStatus),
         ("requirement_priorities", RequirementPriority),
         ("project_phases", ProjectPhase),
-        ("meeting_sources", MeetingSource),
-        ("decision_statuses", DecisionStatus),
+        ("issue_statuses", IssueStatus),
+        ("issue_priorities", IssuePriority),
     ):
         conn.executemany(
             f"INSERT OR REPLACE INTO {table}(value) VALUES (?)",  # noqa: S608

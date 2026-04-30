@@ -276,25 +276,23 @@ class ProjectPhase(str, Enum):
     CLOSED = "closed"
 
 
-class MeetingSource(str, Enum):
-    """Platforms or channels from which a meeting originated."""
-
-    TEAMS = "teams"
-    SLACK = "slack"
-    DIRECT = "direct"
-    EMAIL = "email"
-    ZOOM = "zoom"
-    IN_PERSON = "in-person"
-    OTHER = "other"
-
-
-class DecisionStatus(str, Enum):
-    """Lifecycle states for a decision logged in meeting minutes."""
+class IssueStatus(str, Enum):
+    """Lifecycle states for an issue."""
 
     OPEN = "open"
-    ACTIONED = "actioned"
-    SUPERSEDED = "superseded"
-    DEFERRED = "deferred"
+    IN_PROGRESS = "in-progress"
+    RESOLVED = "resolved"
+    CLOSED = "closed"
+    BLOCKED = "blocked"
+
+
+class IssuePriority(str, Enum):
+    """Priority tiers for an issue."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -397,11 +395,11 @@ class FieldDiff(BaseModel):
 
 
 class UpdateRecord(BaseModel):
-    """Audit record capturing a change to a requirement or PROJECT.md.
+    """Audit record capturing a change to a database entity.
 
     Attributes:
         id: UUID for this update record.
-        entity_type: Either "requirement" or "project_md".
+        entity_type: Kind of entity changed ('requirement', 'project', 'issue').
         entity_id: Identifier of the changed entity.
         changed_at: Timestamp of the change (UTC).
         changed_by: Identifier of the person who made the change.
@@ -411,7 +409,7 @@ class UpdateRecord(BaseModel):
     """
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    entity_type: Literal["requirement", "project_md"] = "requirement"
+    entity_type: Literal["requirement", "project", "issue"] = "requirement"
     entity_id: str
     changed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     changed_by: str
@@ -421,101 +419,47 @@ class UpdateRecord(BaseModel):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Minutes
+# Issues
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-class Decision(BaseModel):
-    """A decision recorded during a meeting.
+class IssueIn(BaseModel):
+    """Validated input for creating an issue."""
 
-    Attributes:
-        decision_id: Unique decision identifier (auto-generated DEC-XXXXXXXX).
-        title: Short title summarising the decision.
-        detail: Full decision text.
-        made_by: List of participant identifiers who made the decision.
-        status: Current decision status.
-        affects_reqs: Requirement identifiers affected by this decision.
-        action_owner: Optional identifier of who owns the follow-up action.
-        due_date: Optional date by which the action should be completed.
-        notes: Freeform notes or follow-up context.
-    """
-
-    decision_id: str = Field(
-        default_factory=lambda: f"DEC-{str(uuid.uuid4())[:8].upper()}"
-    )
     title: str
-    detail: str = ""
-    made_by: list[str] = Field(default_factory=list)
-    status: DecisionStatus = DecisionStatus.OPEN
-    affects_reqs: list[str] = Field(default_factory=list)
-    action_owner: Optional[str] = None
-    due_date: Optional[date] = None
-    notes: str = ""
-
-
-class ActionItem(BaseModel):
-    """A follow-up action item arising from a meeting decision.
-
-    Attributes:
-        action_id: Unique action identifier (auto-generated ACT-XXXXXXXX).
-        description: Full description of the action to take.
-        owner: Optional identifier of the person responsible.
-        due_date: Optional completion date.
-        done: True when the action has been completed.
-    """
-
-    action_id: str = Field(
-        default_factory=lambda: f"ACT-{str(uuid.uuid4())[:8].upper()}"
-    )
-    description: str
+    description: str = ""
+    status: IssueStatus = IssueStatus.OPEN
+    priority: IssuePriority = IssuePriority.MEDIUM
     owner: Optional[str] = None
-    due_date: Optional[date] = None
-    done: bool = False
+    requirement_ids: list[str] = Field(default_factory=list)
+    update_ids: list[str] = Field(default_factory=list)
 
 
-class MinuteIn(BaseModel):
-    """Validated input for logging a meeting.
-
-    Attributes:
-        title: Meeting title.
-        source: Platform or channel where the meeting occurred.
-        source_url: Optional URL to the meeting recording or notes.
-        occurred_at: When the meeting took place (UTC).
-        logged_by: Identifier of the person logging the minutes.
-        attendees: List of attendee names or identifiers.
-        summary: Short prose summary of the meeting.
-        raw_notes: Full verbatim notes.
-        decisions: Decisions made during the meeting.
-        action_items: Action items arising from the meeting.
-    """
-
-    title: str
-    source: MeetingSource = MeetingSource.OTHER
-    source_url: Optional[str] = None
-    occurred_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    logged_by: str
-    attendees: list[str] = Field(default_factory=list)
-    summary: str = ""
-    raw_notes: str = ""
-    decisions: list[Decision] = Field(default_factory=list)
-    action_items: list[ActionItem] = Field(default_factory=list)
-
-
-class MinuteRow(MinuteIn):
-    """Full DB row — extends MinuteIn with persistence fields.
-
-    Attributes:
-        id: UUID for this meeting record.
-        logged_at: When the minutes were persisted (UTC).
-        integrated_into_status: True when the meeting has been integrated
-            into the project status summary.
-        integrated_at: Timestamp of integration, if integrated.
-    """
+class IssueRow(IssueIn):
+    """Full DB row — adds id and timestamps."""
 
     id: str
-    logged_at: datetime
-    integrated_into_status: bool = False
-    integrated_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Issue Actions
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class IssueActionIn(BaseModel):
+    """Validated input for logging an action against an issue."""
+
+    issue_id: str
+    description: str
+
+
+class IssueActionRow(IssueActionIn):
+    """Full DB row for an issue action."""
+
+    id: str
+    occurred_at: datetime
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

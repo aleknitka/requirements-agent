@@ -10,7 +10,7 @@ Commands ────────  generate   Pull current state from DB and pro
 
 ---
 
-<a href="../src/requirements_agent_tools/report.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/report.py#L181"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_generate`
 
@@ -29,28 +29,7 @@ Generate a project status report and print it to stdout.
 
 ---
 
-<a href="../src/requirements_agent_tools/report.py#L229"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `cmd_save`
-
-```python
-cmd_save(args)
-```
-
-Generate a project status report and save it to timestamped files. 
-
-Writes both a Markdown file (STATUS-<timestamp>.md) and a JSON file (STATUS-<timestamp>.json) to the project directory. 
-
-
-
-**Args:**
- 
- - <b>`args`</b>:  Parsed CLI arguments from build_parser(). 
-
-
----
-
-<a href="../src/requirements_agent_tools/report.py#L255"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/report.py#L196"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_parser`
 
@@ -63,12 +42,12 @@ Build and return the report argument parser.
 
 
 **Returns:**
-  Configured ArgumentParser with generate and save subcommands. 
+  Configured ArgumentParser with generate subcommand. 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/report.py#L271"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/report.py#L211"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 

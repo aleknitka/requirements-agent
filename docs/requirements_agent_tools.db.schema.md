@@ -13,7 +13,7 @@ DDL and reference-data seeding for the per-project SQLite database.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/schema.py#L147"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/schema.py#L167"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `seed_reference_tables`
 

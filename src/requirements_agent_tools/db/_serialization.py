@@ -9,11 +9,8 @@ from datetime import datetime, timezone
 from typing import Any
 
 from ..models import (
-    ActionItem,
-    Decision,
     Dependency,
     ExternalLink,
-    MinuteRow,
     ProjectMeta,
     RequirementPriority,
     RequirementRow,
@@ -81,27 +78,6 @@ def row_to_requirement(row: sqlite3.Row) -> RequirementRow:
         created_at=datetime.fromisoformat(d["created_at"]),
         updated_at=datetime.fromisoformat(d["updated_at"]),
         has_embedding=bool(d.get("has_embedding", False)),
-    )
-
-
-def row_to_minute(row: sqlite3.Row) -> MinuteRow:
-    """Materialise a ``minutes`` row into a :class:`MinuteRow`."""
-    d = dict(row)
-    return MinuteRow(
-        id=d["id"],
-        title=d["title"],
-        source=d["source"],
-        source_url=d.get("source_url"),
-        occurred_at=datetime.fromisoformat(d["occurred_at"]),
-        logged_at=datetime.fromisoformat(d["logged_at"]),
-        logged_by=d["logged_by"],
-        attendees=json.loads(d["attendees"]),
-        summary=d["summary"],
-        raw_notes=d["raw_notes"],
-        decisions=[Decision(**x) for x in json.loads(d["decisions"])],
-        action_items=[ActionItem(**x) for x in json.loads(d["action_items"])],
-        integrated_into_status=bool(d["integrated_into_status"]),
-        integrated_at=parse_dt(d.get("integrated_at")),
     )
 
 

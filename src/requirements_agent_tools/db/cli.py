@@ -17,7 +17,6 @@ from __future__ import annotations
 import json
 import sqlite3
 import sys
-from datetime import datetime, timezone
 from typing import Any, NoReturn, Optional
 
 import click
@@ -25,9 +24,8 @@ from loguru import logger
 
 from .. import CONSTANTS as C
 from ..models import (
-    DecisionStatus,
-    MeetingSource,
-    MinuteIn,
+    IssuePriority,
+    IssueStatus,
     ProjectMeta,
     ProjectPhase,
     RequirementIn,
@@ -35,7 +33,7 @@ from ..models import (
     RequirementStatus,
     RequirementType,
 )
-from . import minutes as minutes_db
+from . import issues as issues_db
 from . import projects as projects_db
 from . import requirements as req_db
 from . import updates as updates_db
@@ -409,178 +407,140 @@ def req_vec_search(ctx: click.Context, query: str, top_k: int) -> None:
     )
 
 
-# ───────────────────── minutes subgroup ─────────────────────
+# ───────────────────── issues subgroup ─────────────────────
 
 
-@cli.group(help="Meeting minute commands.")
-def minute() -> None:
-    """Meeting minute subcommands."""
+@cli.group(help="Issue CRUD and search commands.")
+def issue() -> None:
+    """Issue CRUD and search subcommands."""
 
 
-@minute.command("add", help="Log a meeting.")
+@issue.command("add", help="Insert a new issue.")
 @click.option("--title", required=True)
-@click.option("--by", "logged_by", required=True)
+@click.option("--by", "created_by", required=True)
+@click.option("--description", default="")
 @click.option(
-    "--source",
-    type=click.Choice([s.value for s in MeetingSource]),
-    default=MeetingSource.OTHER.value,
+    "--status",
+    type=click.Choice([s.value for s in IssueStatus]),
+    default=IssueStatus.OPEN.value,
 )
-@click.option("--source-url", "source_url", default=None)
 @click.option(
-    "--occurred-at", "occurred_at", default=None, help="ISO datetime; defaults to now."
+    "--priority",
+    type=click.Choice([p.value for p in IssuePriority]),
+    default=IssuePriority.MEDIUM.value,
 )
-@click.option("--summary", default="")
-@click.option("--raw-notes", "raw_notes", default="")
-@click.option("--attendees", default=None, help="JSON array of attendee names.")
-@click.option("--decisions", default=None, help="JSON array of Decision dicts.")
+@click.option("--owner", default=None)
 @click.option(
-    "--action-items",
-    "action_items",
-    default=None,
-    help="JSON array of ActionItem dicts.",
+    "--req-ids", "requirement_ids", default="", help="Comma-separated req IDs."
 )
+@click.option("--upd-ids", "update_ids", default="", help="Comma-separated update IDs.")
 @click.pass_context
-def minute_add(
+def issue_add(
     ctx: click.Context,
     title: str,
-    logged_by: str,
-    source: str,
-    source_url: Optional[str],
-    occurred_at: Optional[str],
-    summary: str,
-    raw_notes: str,
-    attendees: Optional[str],
-    decisions: Optional[str],
-    action_items: Optional[str],
+    created_by: str,
+    description: str,
+    status: str,
+    priority: str,
+    owner: Optional[str],
+    requirement_ids: str,
+    update_ids: str,
 ) -> None:
-    """Log a meeting with its summary, decisions, and action items.
-
-    Args:
-        ctx: Click context.
-        title: Meeting title.
-        logged_by: Identifier of the person logging the meeting.
-        source: Meeting platform (teams/slack/zoom/in-person/other).
-        source_url: Optional URL to the meeting recording or transcript.
-        occurred_at: ISO datetime string; defaults to current UTC time.
-        summary: Short prose summary of the meeting.
-        raw_notes: Full verbatim meeting notes.
-        attendees: JSON array of attendee name strings.
-        decisions: JSON array of Decision dicts.
-        action_items: JSON array of ActionItem dicts.
-    """
-    from ..models import ActionItem, Decision
+    """Insert a new issue row."""
+    from ..models import IssueIn
 
     conn = _open_conn()
-    occurred = (
-        datetime.fromisoformat(occurred_at)
-        if occurred_at
-        else datetime.now(timezone.utc)
-    )
-    minute_in = MinuteIn(
+    issue_in = IssueIn(
         title=title,
-        source=MeetingSource(source),
-        source_url=source_url,
-        occurred_at=occurred,
-        logged_by=logged_by,
-        attendees=_parse_json_list(attendees, "attendees"),
-        summary=summary,
-        raw_notes=raw_notes,
-        decisions=[Decision(**d) for d in _parse_json_list(decisions, "decisions")],
-        action_items=[
-            ActionItem(**a) for a in _parse_json_list(action_items, "action-items")
-        ],
+        description=description,
+        status=IssueStatus(status),
+        priority=IssuePriority(priority),
+        owner=owner,
+        requirement_ids=[i.strip() for i in requirement_ids.split(",") if i.strip()],
+        update_ids=[i.strip() for i in update_ids.split(",") if i.strip()],
     )
-    row = minutes_db.insert_minute(conn, minute_in)
-    _emit({"ok": True, "meeting": row.model_dump(mode="json")})
+    row = issues_db.insert_issue(conn, issue_in, created_by=created_by)
+    _emit({"ok": True, "issue": row.model_dump(mode="json")})
 
 
-@minute.command("show", help="Show one meeting by id.")
-@click.argument("minute_id")
+@issue.command("show", help="Show a single issue.")
+@click.argument("issue_id")
 @click.pass_context
-def minute_show(ctx: click.Context, minute_id: str) -> None:
-    """Display one meeting record as JSON.
-
-    Args:
-        ctx: Click context.
-        minute_id: Meeting identifier to fetch.
-    """
+def issue_show(ctx: click.Context, issue_id: str) -> None:
+    """Display a single issue as JSON."""
     conn = _open_conn()
-    row = minutes_db.get_minute(conn, minute_id)
+    row = issues_db.get_issue(conn, issue_id)
     if not row:
-        _fail(f"Meeting '{minute_id}' not found.")
-    _emit({"ok": True, "meeting": row.model_dump(mode="json")})
+        _fail(f"Issue '{issue_id}' not found.")
+    _emit({"ok": True, "issue": row.model_dump(mode="json")})
 
 
-@minute.command("list", help="List meetings with optional filters.")
+@issue.command("search", help="Field-based search.")
 @click.option(
-    "--source", type=click.Choice([s.value for s in MeetingSource]), default=None
+    "--status", type=click.Choice([s.value for s in IssueStatus]), default=None
 )
-@click.option("--unintegrated", is_flag=True, default=False)
-@click.option("--since", default=None, help="ISO datetime lower bound.")
+@click.option(
+    "--priority",
+    type=click.Choice([p.value for p in IssuePriority]),
+    default=None,
+)
+@click.option("--owner", default=None)
+@click.option("--req-id", "requirement_id", default=None)
 @click.pass_context
-def minute_list(
+def issue_search(
     ctx: click.Context,
-    source: Optional[str],
-    unintegrated: bool,
-    since: Optional[str],
+    status: Optional[str],
+    priority: Optional[str],
+    owner: Optional[str],
+    requirement_id: Optional[str],
 ) -> None:
-    """List meetings with optional source, integration, and date filters.
-
-    Args:
-        ctx: Click context.
-        source: Filter by meeting source platform.
-        unintegrated: If True, return only meetings not yet integrated.
-        since: ISO datetime lower bound for occurred_at filter.
-    """
+    """Search issues using field-based filters."""
     conn = _open_conn()
-    rows = minutes_db.list_minutes(
-        conn, source=source, unintegrated=unintegrated, since=since
+    rows = issues_db.search_issues(
+        conn,
+        status=status,
+        priority=priority,
+        owner=owner,
+        requirement_id=requirement_id,
     )
     _emit(
         {
             "ok": True,
             "count": len(rows),
-            "meetings": [m.model_dump(mode="json") for m in rows],
+            "issues": [r.model_dump(mode="json") for r in rows if r],
         }
     )
 
 
-@minute.command("integrate", help="Mark a meeting as integrated.")
-@click.argument("minute_id")
+@issue.command("log-action", help="Record an action taken for an issue.")
+@click.option("--id", "issue_id", required=True)
+@click.option("--description", required=True)
 @click.pass_context
-def minute_integrate(ctx: click.Context, minute_id: str) -> None:
-    """Mark a meeting as integrated into the project status.
+def issue_log_action(ctx: click.Context, issue_id: str, description: str) -> None:
+    """Record an action taken for an issue."""
+    from ..models import IssueActionIn
 
-    Args:
-        ctx: Click context.
-        minute_id: Meeting identifier to mark as integrated.
-    """
     conn = _open_conn()
-    if not minutes_db.get_minute(conn, minute_id):
-        _fail(f"Meeting '{minute_id}' not found.")
-    row = minutes_db.mark_integrated(conn, minute_id)
-    _emit({"ok": True, "meeting_id": row.id, "integrated_at": row.integrated_at})
+    action_in = IssueActionIn(issue_id=issue_id, description=description)
+    row = issues_db.log_issue_action(conn, action_in)
+    _emit({"ok": True, "action": row.model_dump(mode="json")})
 
 
-@minute.command("decisions", help="List decisions across all meetings.")
-@click.option(
-    "--status", type=click.Choice([s.value for s in DecisionStatus]), default=None
-)
-@click.option("--affects-req", "affects_req", default=None)
+@issue.command("list-actions", help="List all actions for an issue.")
+@click.argument("issue_id")
 @click.pass_context
-def minute_decisions(
-    ctx: click.Context, status: Optional[str], affects_req: Optional[str]
-) -> None:
-    """List decisions extracted across all meetings.
-
-    Args:
-        ctx: Click context.
-        status: Filter by decision status.
-        affects_req: Filter by affected requirement identifier.
-    """
+def issue_list_actions(ctx: click.Context, issue_id: str) -> None:
+    """List all actions for an issue."""
     conn = _open_conn()
-    decs = minutes_db.list_decisions(conn, status=status, affects_req=affects_req)
-    _emit({"ok": True, "count": len(decs), "decisions": decs})
+    rows = issues_db.list_issue_actions(conn, issue_id)
+    _emit(
+        {
+            "ok": True,
+            "issue_id": issue_id,
+            "count": len(rows),
+            "actions": [r.model_dump(mode="json") for r in rows],
+        }
+    )
 
 
 # ───────────────────── update history subgroup ─────────────────────

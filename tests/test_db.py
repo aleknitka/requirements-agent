@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS req_embeddings (
 
 CREATE TABLE IF NOT EXISTS updates (
     id             TEXT PRIMARY KEY,
-    entity_type    TEXT NOT NULL CHECK (entity_type IN ('requirement', 'project_md')),
+    entity_type    TEXT NOT NULL CHECK (entity_type IN ('requirement', 'project', 'issue')),
     entity_id      TEXT NOT NULL,
     changed_at     TEXT NOT NULL,
     changed_by     TEXT NOT NULL,
@@ -95,21 +95,27 @@ CREATE TABLE IF NOT EXISTS updates (
 
 CREATE INDEX IF NOT EXISTS idx_upd_entity ON updates(entity_type, entity_id);
 
-CREATE TABLE IF NOT EXISTS minutes (
-    id                      TEXT PRIMARY KEY,
-    title                   TEXT NOT NULL,
-    source                  TEXT NOT NULL DEFAULT 'other',
-    source_url              TEXT,
-    occurred_at             TEXT NOT NULL,
-    logged_at               TEXT NOT NULL,
-    logged_by               TEXT NOT NULL,
-    attendees               TEXT NOT NULL DEFAULT '[]',
-    summary                 TEXT NOT NULL DEFAULT '',
-    raw_notes               TEXT NOT NULL DEFAULT '',
-    decisions               TEXT NOT NULL DEFAULT '[]',
-    action_items            TEXT NOT NULL DEFAULT '[]',
-    integrated_into_status  INTEGER NOT NULL DEFAULT 0,
-    integrated_at           TEXT
+CREATE TABLE IF NOT EXISTS issues (
+    id             TEXT PRIMARY KEY,
+    title          TEXT NOT NULL,
+    description    TEXT NOT NULL DEFAULT '',
+    status         TEXT NOT NULL DEFAULT 'open',
+    priority       TEXT NOT NULL DEFAULT 'medium',
+    owner          TEXT,
+    created_at     TEXT NOT NULL,
+    updated_at     TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS issue_requirements (
+    issue_id       TEXT NOT NULL REFERENCES issues(id),
+    requirement_id TEXT NOT NULL REFERENCES requirements(id),
+    PRIMARY KEY (issue_id, requirement_id)
+);
+
+CREATE TABLE IF NOT EXISTS issue_updates (
+    issue_id       TEXT NOT NULL REFERENCES issues(id),
+    update_id      TEXT NOT NULL REFERENCES updates(id),
+    PRIMARY KEY (issue_id, update_id)
 );
 """
 

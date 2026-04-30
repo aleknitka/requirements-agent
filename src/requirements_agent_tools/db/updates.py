@@ -1,9 +1,9 @@
 """Append-only change log for any auditable entity in the project DB.
 
-Two entity kinds share this table:
+Three entity kinds share this table:
   - ``requirement`` — entity_id is the requirement id (e.g. ``REQ-FUN-...``)
-  - ``project_md`` — entity_id is the singleton project_id; one row per
-    PROJECT.md write or section append.
+  - ``project``     — entity_id is the singleton project_id
+  - ``issue``       — entity_id is the issue id
 """
 
 from __future__ import annotations
@@ -68,13 +68,6 @@ def get_updates(
         (entity_type, entity_id),
     ).fetchall()
     return [_row_to_record(dict(row)) for row in rows]
-
-
-def get_project_md_history(
-    conn: sqlite3.Connection, project_id: str
-) -> list[UpdateRecord]:
-    """Return the full PROJECT.md change history for a project, oldest first."""
-    return get_updates(conn, project_id, entity_type="project_md")
 
 
 def _row_to_record(d: dict) -> UpdateRecord:

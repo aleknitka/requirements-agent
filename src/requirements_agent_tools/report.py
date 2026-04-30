@@ -8,11 +8,9 @@ Commands
 """
 
 import argparse
-import json
 from datetime import datetime, timezone
-from . import CONSTANTS as C
 from ._cli_io import ok as _ok
-from .db.minutes import list_decisions, list_minutes
+from .db.issues import search_issues
 from .db.requirements import search_requirements
 from .db.updates import get_updates
 from .project_session import get_project_conn
@@ -22,9 +20,8 @@ from .db.projects import get_project as _get_project
 def _build_report(conn, meta) -> dict:
     """Assemble the full status report dict from the project DB.
 
-    Queries requirements, meetings, decisions, action items, and recent
-    changes to produce a structured report dict suitable for JSON output
-    or Markdown rendering.
+    Queries requirements, issues, and recent changes to produce a
+    structured report dict suitable for JSON output or Markdown rendering.
 
     Args:
         conn: Open SQLite connection to the project DB.
@@ -32,11 +29,10 @@ def _build_report(conn, meta) -> dict:
 
     Returns:
         Dict containing project metadata, requirement counts, FRET
-        coverage, meeting/decision/action summaries, and a health signal.
+        coverage, issue summaries, and a health signal.
     """
     reqs = search_requirements(conn)
-    mins = list_minutes(conn)
-    decs = list_decisions(conn)
+    issues = search_issues(conn)
 
     req_counts: dict = {}
     status_counts: dict = {}
@@ -48,9 +44,7 @@ def _build_report(conn, meta) -> dict:
     total = len(reqs)
     fret_pct = round(with_fret / total * 100, 1) if total else 0
 
-    open_decs = [d for d in decs if d["status"] == "open"]
-    pending_acts = [a for m in mins for a in m.action_items if not a.done]
-    unint_mins = [m for m in mins if not m.integrated_into_status]
+    open_issues = [i for i in issues if i.status.value in ("open", "in-progress")]
 
     # Recent changes (last 5 update records across all reqs)
     recent_changes = []
@@ -92,51 +86,34 @@ def _build_report(conn, meta) -> dict:
                 if r.priority.value == "critical" and r.status.value == "open"
             ],
         },
-        "meetings": {
-            "total": len(mins),
-            "unintegrated": len(unint_mins),
-            "unintegrated_ids": [m.id for m in unint_mins],
-        },
-        "decisions": {
-            "total": len(decs),
-            "open": len(open_decs),
+        "issues": {
+            "total": len(issues),
+            "open": len(open_issues),
             "open_items": [
                 {
-                    "decision_id": d["decision_id"],
-                    "title": d["title"],
-                    "made_by": d["made_by"],
-                    "action_owner": d.get("action_owner"),
-                    "due_date": str(d.get("due_date")) if d.get("due_date") else None,
+                    "id": i.id,
+                    "title": i.title,
+                    "priority": i.priority.value,
+                    "status": i.status.value,
+                    "owner": i.owner,
                 }
-                for d in open_decs
-            ],
-        },
-        "action_items": {
-            "pending": len(pending_acts),
-            "pending_items": [
-                {
-                    "action_id": a.action_id,
-                    "description": a.description,
-                    "owner": a.owner,
-                    "due_date": str(a.due_date) if a.due_date else None,
-                }
-                for a in pending_acts
+                for i in open_issues
             ],
         },
         "recent_changes": recent_changes,
         "status_summary": meta.status_summary or "(no status summary written yet)",
-        "health": _health_signal(reqs, open_decs, pending_acts, unint_mins),
+        "health": _health_signal(reqs, open_issues),
     }
 
 
-def _health_signal(reqs, open_decs, pending_acts, unint_mins) -> str:
-    """Simple traffic-light based on open criticals + overdue items."""
+def _health_signal(reqs, open_issues) -> str:
+    """Simple traffic-light based on open criticals + issues."""
     critical_open = sum(
         1 for r in reqs if r.priority.value == "critical" and r.status.value == "open"
     )
-    if critical_open > 3 or len(open_decs) > 5:
+    if critical_open > 3 or len(open_issues) > 10:
         return "RED — significant open issues require attention"
-    if critical_open > 0 or len(pending_acts) > 5 or len(unint_mins) > 3:
+    if critical_open > 0 or len(open_issues) > 3:
         return "AMBER — some items need follow-up"
     return "GREEN — project looks on track"
 
@@ -177,21 +154,11 @@ def _report_to_md(report: dict) -> str:
 
     lines += [
         "",
-        f"## Open Decisions ({r['decisions']['open']})",
+        f"## Open Issues ({r['issues']['open']})",
     ]
-    for d in r["decisions"]["open_items"]:
-        owner = f" → {d['action_owner']}" if d.get("action_owner") else ""
-        due = f" (due {d['due_date']})" if d.get("due_date") else ""
-        lines.append(f"- [{d['decision_id']}] {d['title']}{owner}{due}")
-
-    lines += [
-        "",
-        f"## Pending Actions ({r['action_items']['pending']})",
-    ]
-    for a in r["action_items"]["pending_items"]:
-        owner = f" — {a['owner']}" if a.get("owner") else ""
-        due = f" (due {a['due_date']})" if a.get("due_date") else ""
-        lines.append(f"- [{a['action_id']}]{owner} {a['description']}{due}")
+    for i in r["issues"]["open_items"]:
+        owner = f" — {i['owner']}" if i.get("owner") else ""
+        lines.append(f"- [{i['id']}] {i['title']}{owner} ({i['priority']})")
 
     lines += [
         "",
@@ -226,37 +193,11 @@ def cmd_generate(args):
         _ok({"report": report})
 
 
-def cmd_save(args):
-    """Generate a project status report and save it to timestamped files.
-
-    Writes both a Markdown file (STATUS-<timestamp>.md) and a JSON file
-    (STATUS-<timestamp>.json) to the project directory.
-
-    Args:
-        args: Parsed CLI arguments from build_parser().
-    """
-    conn = get_project_conn()
-    meta = _get_project(conn)
-    report = _build_report(conn, meta)
-
-    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    md_out = C.PROJECT_DIR / f"STATUS-{ts}.md"
-    json_out = C.PROJECT_DIR / f"STATUS-{ts}.json"
-
-    md_out.write_text(_report_to_md(report), encoding="utf-8")
-    json_out.write_text(
-        json.dumps({"ok": True, "report": report}, indent=2, default=str),
-        encoding="utf-8",
-    )
-
-    _ok({"md": str(md_out), "json": str(json_out), "health": report["health"]})
-
-
 def build_parser():
     """Build and return the report argument parser.
 
     Returns:
-        Configured ArgumentParser with generate and save subcommands.
+        Configured ArgumentParser with generate subcommand.
     """
     p = argparse.ArgumentParser(description="Status report generator")
     sub = p.add_subparsers(dest="command", required=True)
@@ -264,14 +205,13 @@ def build_parser():
     gn = sub.add_parser("generate")
     gn.add_argument("--format", choices=["json", "md"], default="json")
 
-    sub.add_parser("save")
     return p
 
 
 def main():
     """Entry point for the report CLI."""
     args = build_parser().parse_args()
-    {"generate": cmd_generate, "save": cmd_save}[args.command](args)
+    {"generate": cmd_generate}[args.command](args)
 
 
 if __name__ == "__main__":
