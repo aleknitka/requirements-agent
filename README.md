@@ -21,7 +21,7 @@ In the fast-paced world of AI and Data Science, the "Requirements Gap" is a freq
 This tool acts as a **Digital Requirements Engineer** that bridges the gap between stakeholders and implementation teams. It doesn't just store text; it enforces a lifecycle of discovery, refinement, and validation.
 
 ### Core Value Add
-1. **Eliminate Assumptions**: The agent is designed to be "relentless in pursuit of clarity," forcing the translation of vague desires into testable FRET statements.
+1. **Eliminate Assumptions**: The agent is designed to be "relentless in pursuit of clarity," forcing the translation of vague desires into testable statements.
 2. **Regulatory & Audit Readiness**: By logging every change with a diff and a reason, it provides a "Black Box" for project decisions—essential for high-risk AI applications in finance, healthcare, and infrastructure.
 3. **Automated Synthesis**: It reduces the administrative overhead of requirement management by automatically extracting decisions from meeting minutes and generating comprehensive status reports.
 4. **Hybrid Intelligence**: Combines traditional keyword search with semantic (vector) understanding, allowing teams to find related requirements even when they use different terminology.
@@ -44,7 +44,7 @@ This tool acts as a **Digital Requirements Engineer** that bridges the gap betwe
 
 ### 📂 Project Structure
 Each project lives in its own directory under `projects/<slug>/`:
-- `<slug>.db`: A SQLite database containing requirements, meetings, updates, and vector embeddings.
+- `<slug>.db`: A SQLite database containing requirements, meetings, updates, issues, and vector embeddings.
 - `PROJECT.md`: A human-readable summary of project aims, stakeholders, and progress.
 - `logs/`: Daily operational logs.
 
@@ -56,6 +56,7 @@ The agent maintains several key tables:
 - `meeting_minutes`: Records of meetings, attendees, and summaries.
 - `decisions`: Key decisions made during meetings, linked to requirements.
 - `action_items`: Tasks arising from meetings with owners and due dates.
+- `issues`: Todos for the agent and coworkers.
 
 ---
 
@@ -92,7 +93,7 @@ uv sync
 
 ## 🛠️ CLI Toolset Reference
 
-The agent provides several specialized CLI tools, exposed as scripts via `pyproject.toml`.
+The agent relies on several specialized CLI tools, exposed as scripts via `pyproject.toml`.
 
 ### 1. `init-project` — Project Management
 Used to create and manage project metadata.
