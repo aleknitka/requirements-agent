@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Plan 01-02 complete (2026-04-30) — foundation layer rewritten (CONSTANTS/models/schema/connection)
-last_updated: "2026-04-30T18:32:00.000Z"
+stopped_at: Plan 01-03 complete (2026-04-30) — slug-free db/projects.py, _serialization.py, project_md.py verified
+last_updated: "2026-04-30T18:37:00.000Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 9
-  completed_plans: 6
-  percent: 67
+  completed_plans: 7
+  percent: 78
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 ## Current Position
 
 Phase: 1 of 5 (Project Initialisation) — In Progress
-Plan: 2 of 5 in current phase (01-01, 01-02 complete)
-Status: In progress — foundation layer complete; Plans 03-05 remaining
+Plan: 3 of 5 in current phase (01-01, 01-02, 01-03 complete)
+Status: In progress — service layer slug removal verified; Plans 04-05 remaining
 Last activity: 2026-04-30
 
-Progress: [████████░░] 80% (Phase 1 foundation, 2/5 plans done)
+Progress: [█████████░] 90% (Phase 1 plans 1-3 done, 2 remaining)
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [████████░░] 80% (Phase 1 foundation, 2/5 plans do
 *Updated after each plan completion*
 | Phase 01 P01 | 6 minutes | 2 tasks | 5 files |
 | Phase 01 P02 | 7 minutes | 2 tasks | 20 files |
+| Phase 01 P03 | 5 minutes | 2 tasks (verification only) | 0 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,7 @@ Recent decisions affecting current work:
 - 01-02: get_db()/bootstrap() now accept sqlite_vec_enabled=False — no unconditional sqlite-vec loading
 - 01-02: cascade fixes: db/projects.py slug removed; project_md.py slug param removed; test fixtures updated (no sys.modules patching)
 - 01-02: ty unknown-argument=warn added to pyproject.toml; db/cli.py and init_project.py slug= errors deferred to Plans 03/04
+- 01-03: Plan 03 scope fully pre-applied as cascade fixes in Plan 02 commit 506aa9a — no new changes required; all must_haves verified (31 tests pass)
 
 ### Pending Todos
 
@@ -107,6 +109,6 @@ Topics: AI governance reqs, conflict detection, external links, FRET formalisati
 
 ## Session Continuity
 
-Last session: 2026-04-30T18:32:00Z
-Stopped at: Plan 01-02 complete (2026-04-30) — foundation layer rewritten (CONSTANTS/models/schema/connection)
+Last session: 2026-04-30T18:37:00Z
+Stopped at: Plan 01-03 complete (2026-04-30) — slug-free db/projects.py, _serialization.py, project_md.py verified
 Resume file: None
