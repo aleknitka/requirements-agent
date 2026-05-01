@@ -153,6 +153,31 @@ Field-based search with comprehensive filters and sorting.
 
 <a href="../src/requirements_agent_tools/db/requirements.py#L342"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
+## <kbd>function</kbd> `fts_search_requirements`
+
+```python
+fts_search_requirements(conn: 'Connection', query: 'str') → list[RequirementRow]
+```
+
+Search requirements using FTS5 across records and updates. 
+
+
+
+**Args:**
+ 
+ - <b>`conn`</b>:  Open DB connection. 
+ - <b>`query`</b>:  FTS5 query string. 
+
+
+
+**Returns:**
+ List of matching RequirementRow instances. 
+
+
+---
+
+<a href="../src/requirements_agent_tools/db/requirements.py#L372"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
 ## <kbd>function</kbd> `get_requirement_by_title`
 
 ```python
@@ -167,7 +192,7 @@ Return the requirement whose ``title`` matches exactly, or ``None``.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/requirements.py#L359"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/requirements.py#L389"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `find_requirements_updated_between`
 
@@ -186,7 +211,7 @@ Both bounds are inclusive. ISO-8601 string comparison on the stored timestamp co
 
 ---
 
-<a href="../src/requirements_agent_tools/db/requirements.py#L384"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/requirements.py#L414"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_requirements_report`
 

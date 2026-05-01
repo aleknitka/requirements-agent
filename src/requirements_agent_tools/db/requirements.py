@@ -339,6 +339,36 @@ def search_requirements(
     return [ser.row_to_requirement(r) for r in rows]
 
 
+def fts_search_requirements(
+    conn: sqlite3.Connection,
+    query: str,
+) -> list[RequirementRow]:
+    """Search requirements using FTS5 across records and updates.
+
+    Args:
+        conn: Open DB connection.
+        query: FTS5 query string.
+
+    Returns:
+        List of matching RequirementRow instances.
+    """
+    sql = """
+        SELECT id FROM fts_requirements WHERE fts_requirements MATCH :query
+        UNION
+        SELECT entity_id FROM fts_updates
+        WHERE entity_type = 'requirement' AND fts_updates MATCH :query
+    """
+    rows = conn.execute(sql, {"query": query}).fetchall()
+    ids = [r["id"] for r in rows]
+
+    results = []
+    for rid in ids:
+        obj = get_requirement(conn, rid)
+        if obj:
+            results.append(obj)
+    return results
+
+
 def get_requirement_by_title(
     conn: sqlite3.Connection, title: str
 ) -> Optional[RequirementRow]:

@@ -68,4 +68,5 @@ def bootstrap(conn: sqlite3.Connection, sqlite_vec_enabled: bool = False) -> Non
         conn.executescript(schema.VEC_SCHEMA_SQL)
     conn.commit()
     schema.seed_reference_tables(conn)
+    schema.reindex_fts(conn)
     logger.debug("Bootstrap complete")

@@ -118,6 +118,31 @@ Search issues with comprehensive filters and sorting.
 
 <a href="../src/requirements_agent_tools/db/issues.py#L255"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
+## <kbd>function</kbd> `fts_search_issues`
+
+```python
+fts_search_issues(conn: 'Connection', query: 'str') → list[IssueRow]
+```
+
+Search issues using FTS5 across records, updates, and actions. 
+
+
+
+**Args:**
+ 
+ - <b>`conn`</b>:  Open DB connection. 
+ - <b>`query`</b>:  FTS5 query string. 
+
+
+
+**Returns:**
+ List of matching IssueRow instances. 
+
+
+---
+
+<a href="../src/requirements_agent_tools/db/issues.py#L289"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
 ## <kbd>function</kbd> `update_issue`
 
 ```python
@@ -134,7 +159,7 @@ Apply partial updates to an issue.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/issues.py#L307"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/issues.py#L341"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `log_issue_action`
 
@@ -162,7 +187,7 @@ Record an action taken for an issue.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/issues.py#L341"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/issues.py#L375"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_issue_action`
 
@@ -178,7 +203,7 @@ Return one issue action by id.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/issues.py#L359"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/issues.py#L393"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `list_issue_actions`
 
@@ -191,7 +216,7 @@ Return all actions for a given issue, newest first.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/issues.py#L364"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/issues.py#L398"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `search_issue_actions`
 

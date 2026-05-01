@@ -252,6 +252,40 @@ def search_issues(
     return results
 
 
+def fts_search_issues(
+    conn: sqlite3.Connection,
+    query: str,
+) -> list[IssueRow]:
+    """Search issues using FTS5 across records, updates, and actions.
+
+    Args:
+        conn: Open DB connection.
+        query: FTS5 query string.
+
+    Returns:
+        List of matching IssueRow instances.
+    """
+    sql = """
+        SELECT id FROM fts_issues WHERE fts_issues MATCH :query
+        UNION
+        SELECT entity_id FROM fts_updates
+        WHERE entity_type = 'issue' AND fts_updates MATCH :query
+        UNION
+        SELECT issue_id FROM fts_issue_actions
+        WHERE fts_issue_actions MATCH :query
+    """
+    rows = conn.execute(sql, {"query": query}).fetchall()
+    # IDs are in the first column regardless of the select source in UNION
+    ids = [r[0] for r in rows]
+
+    results = []
+    for issue_id in ids:
+        obj = get_issue(conn, issue_id)
+        if obj:
+            results.append(obj)
+    return results
+
+
 def update_issue(
     conn: sqlite3.Connection,
     issue_id: str,

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import sqlite3
 
+from loguru import logger
+
 from .. import CONSTANTS as C
 from ..models import (
     IssuePriority,
@@ -156,6 +158,74 @@ CREATE TABLE IF NOT EXISTS issue_statuses (
 CREATE TABLE IF NOT EXISTS issue_priorities (
     value TEXT PRIMARY KEY
 );
+
+-- ── Full Text Search (FTS5) ──────────────────────────────────────────
+CREATE VIRTUAL TABLE IF NOT EXISTS fts_requirements USING fts5(
+    id UNINDEXED,
+    title,
+    description,
+    tokenize="unicode61 remove_diacritics 1"
+);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS fts_issues USING fts5(
+    id UNINDEXED,
+    title,
+    description,
+    tokenize="unicode61 remove_diacritics 1"
+);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS fts_updates USING fts5(
+    entity_id UNINDEXED,
+    entity_type UNINDEXED,
+    summary,
+    tokenize="unicode61 remove_diacritics 1"
+);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS fts_issue_actions USING fts5(
+    issue_id UNINDEXED,
+    description,
+    tokenize="unicode61 remove_diacritics 1"
+);
+
+-- ── FTS Triggers ─────────────────────────────────────────────────────
+
+-- Requirements
+CREATE TRIGGER IF NOT EXISTS tr_req_fts_ins AFTER INSERT ON requirements BEGIN
+    INSERT INTO fts_requirements(id, title, description) VALUES (new.id, new.title, new.description);
+END;
+CREATE TRIGGER IF NOT EXISTS tr_req_fts_upd AFTER UPDATE ON requirements BEGIN
+    UPDATE fts_requirements SET title = new.title, description = new.description WHERE id = new.id;
+END;
+CREATE TRIGGER IF NOT EXISTS tr_req_fts_del AFTER DELETE ON requirements BEGIN
+    DELETE FROM fts_requirements WHERE id = old.id;
+END;
+
+-- Issues
+CREATE TRIGGER IF NOT EXISTS tr_issue_fts_ins AFTER INSERT ON issues BEGIN
+    INSERT INTO fts_issues(id, title, description) VALUES (new.id, new.title, new.description);
+END;
+CREATE TRIGGER IF NOT EXISTS tr_issue_fts_upd AFTER UPDATE ON issues BEGIN
+    UPDATE fts_issues SET title = new.title, description = new.description WHERE id = new.id;
+END;
+CREATE TRIGGER IF NOT EXISTS tr_issue_fts_del AFTER DELETE ON issues BEGIN
+    DELETE FROM fts_issues WHERE id = old.id;
+END;
+
+-- Updates
+CREATE TRIGGER IF NOT EXISTS tr_upd_fts_ins AFTER INSERT ON updates BEGIN
+    INSERT INTO fts_updates(entity_id, entity_type, summary) VALUES (new.entity_id, new.entity_type, new.summary);
+END;
+CREATE TRIGGER IF NOT EXISTS tr_upd_fts_del AFTER DELETE ON updates BEGIN
+    DELETE FROM fts_updates WHERE entity_id = old.entity_id AND entity_type = old.entity_type AND summary = old.summary;
+END;
+
+-- Issue Actions
+CREATE TRIGGER IF NOT EXISTS tr_action_fts_ins AFTER INSERT ON issue_actions_log BEGIN
+    INSERT INTO fts_issue_actions(issue_id, description) VALUES (new.issue_id, new.description);
+END;
+CREATE TRIGGER IF NOT EXISTS tr_action_fts_del AFTER DELETE ON issue_actions_log BEGIN
+    DELETE FROM fts_issue_actions WHERE issue_id = old.issue_id AND description = old.description;
+END;
 """
 
 
@@ -195,3 +265,31 @@ def seed_reference_tables(conn: sqlite3.Connection) -> None:
             [(e.value,) for e in enum_cls],
         )
     conn.commit()
+
+
+def reindex_fts(conn: sqlite3.Connection) -> None:
+    """Populate FTS5 virtual tables from base tables if they are empty.
+
+    Args:
+        conn: Open SQLite connection.
+    """
+    # Check if FTS tables are empty
+    has_data = conn.execute("SELECT 1 FROM fts_requirements LIMIT 1").fetchone()
+    if has_data:
+        return
+
+    logger.info("Populating initial full-text search index...")
+    conn.execute(
+        "INSERT INTO fts_requirements(id, title, description) SELECT id, title, description FROM requirements"
+    )
+    conn.execute(
+        "INSERT INTO fts_issues(id, title, description) SELECT id, title, description FROM issues"
+    )
+    conn.execute(
+        "INSERT INTO fts_updates(entity_id, entity_type, summary) SELECT entity_id, entity_type, summary FROM updates"
+    )
+    conn.execute(
+        "INSERT INTO fts_issue_actions(issue_id, description) SELECT issue_id, description FROM issue_actions_log"
+    )
+    conn.commit()
+    logger.success("FTS index populated")

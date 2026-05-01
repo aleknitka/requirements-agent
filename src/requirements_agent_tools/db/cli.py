@@ -426,6 +426,7 @@ def req_show(ctx: click.Context, req_id: str) -> None:
 @click.option("--owner", default=None)
 @click.option("--tag", default=None)
 @click.option("--keyword", default=None)
+@click.option("--fts", "fts_query", help="Full-text search query (FTS5).")
 @click.option("--since", help="Created at/after (ISO).")
 @click.option("--until", help="Created before/at (ISO).")
 @click.option("--updated-since", help="Updated at/after (ISO).")
@@ -445,6 +446,7 @@ def req_search(
     owner: Optional[str],
     tag: Optional[str],
     keyword: Optional[str],
+    fts_query: Optional[str],
     since: Optional[str],
     until: Optional[str],
     updated_since: Optional[str],
@@ -456,21 +458,50 @@ def req_search(
     from datetime import datetime
 
     conn = _open_conn()
-    rows = req_db.search_requirements(
-        conn,
-        status=status,
-        priority=priority,
-        req_type=req_type,
-        owner=owner,
-        tag=tag,
-        keyword=keyword,
-        since=datetime.fromisoformat(since) if since else None,
-        until=datetime.fromisoformat(until) if until else None,
-        updated_since=datetime.fromisoformat(updated_since) if updated_since else None,
-        updated_until=datetime.fromisoformat(updated_until) if updated_until else None,
-        sort_by=sort_by,
-        desc=not asc,
-    )
+
+    if fts_query:
+        rows = req_db.fts_search_requirements(conn, fts_query)
+        # Apply other filters in-memory if provided (simple version)
+        if status:
+            rows = [r for r in rows if r.status.value == status]
+        if priority:
+            rows = [r for r in rows if r.priority.value == priority]
+        if req_type:
+            rows = [r for r in rows if r.req_type.value == req_type]
+        if owner:
+            rows = [r for r in rows if r.owner == owner]
+        if tag:
+            rows = [r for r in rows if tag in r.tags]
+
+        # Sort
+        rev = not asc
+        if sort_by == "created_at":
+            rows.sort(key=lambda r: r.created_at, reverse=rev)
+        elif sort_by == "updated_at":
+            rows.sort(key=lambda r: r.updated_at, reverse=rev)
+        elif sort_by == "title":
+            rows.sort(key=lambda r: r.title, reverse=rev)
+    else:
+        rows = req_db.search_requirements(
+            conn,
+            status=status,
+            priority=priority,
+            req_type=req_type,
+            owner=owner,
+            tag=tag,
+            keyword=keyword,
+            since=datetime.fromisoformat(since) if since else None,
+            until=datetime.fromisoformat(until) if until else None,
+            updated_since=datetime.fromisoformat(updated_since)
+            if updated_since
+            else None,
+            updated_until=datetime.fromisoformat(updated_until)
+            if updated_until
+            else None,
+            sort_by=sort_by,
+            desc=not asc,
+        )
+
     _emit(
         {
             "ok": True,
@@ -588,6 +619,7 @@ def issue_show(ctx: click.Context, issue_id: str) -> None:
 )
 @click.option("--owner", default=None)
 @click.option("--req-id", "requirement_id", default=None)
+@click.option("--fts", "fts_query", help="Full-text search query (FTS5).")
 @click.option("--since", help="Created at/after (ISO).")
 @click.option("--until", help="Created before/at (ISO).")
 @click.option("--updated-since", help="Updated at/after (ISO).")
@@ -605,6 +637,7 @@ def issue_search(
     priority: Optional[str],
     owner: Optional[str],
     requirement_id: Optional[str],
+    fts_query: Optional[str],
     since: Optional[str],
     until: Optional[str],
     updated_since: Optional[str],
@@ -616,19 +649,46 @@ def issue_search(
     from datetime import datetime
 
     conn = _open_conn()
-    rows = issues_db.search_issues(
-        conn,
-        status=status,
-        priority=priority,
-        owner=owner,
-        requirement_id=requirement_id,
-        since=datetime.fromisoformat(since) if since else None,
-        until=datetime.fromisoformat(until) if until else None,
-        updated_since=datetime.fromisoformat(updated_since) if updated_since else None,
-        updated_until=datetime.fromisoformat(updated_until) if updated_until else None,
-        sort_by=sort_by,
-        desc=not asc,
-    )
+
+    if fts_query:
+        rows = issues_db.fts_search_issues(conn, fts_query)
+        # Apply other filters in-memory if provided
+        if status:
+            rows = [r for r in rows if r.status.value == status]
+        if priority:
+            rows = [r for r in rows if r.priority.value == priority]
+        if owner:
+            rows = [r for r in rows if r.owner == owner]
+        if requirement_id:
+            rows = [r for r in rows if requirement_id in r.requirement_ids]
+
+        # Sort
+        rev = not asc
+        if sort_by == "created_at":
+            rows.sort(key=lambda r: r.created_at, reverse=rev)
+        elif sort_by == "updated_at":
+            rows.sort(key=lambda r: r.updated_at, reverse=rev)
+        elif sort_by == "title":
+            rows.sort(key=lambda r: r.title, reverse=rev)
+    else:
+        rows = issues_db.search_issues(
+            conn,
+            status=status,
+            priority=priority,
+            owner=owner,
+            requirement_id=requirement_id,
+            since=datetime.fromisoformat(since) if since else None,
+            until=datetime.fromisoformat(until) if until else None,
+            updated_since=datetime.fromisoformat(updated_since)
+            if updated_since
+            else None,
+            updated_until=datetime.fromisoformat(updated_until)
+            if updated_until
+            else None,
+            sort_by=sort_by,
+            desc=not asc,
+        )
+
     _emit(
         {
             "ok": True,
