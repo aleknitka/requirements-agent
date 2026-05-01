@@ -111,6 +111,33 @@ def project_show(ctx: click.Context) -> None:
     _emit({"ok": True, "project": meta.model_dump(mode="json")})
 
 
+@project.command("list", help="List project(s) matching filters.")
+@click.option("--name")
+@click.option("--code")
+@click.option("--phase", type=click.Choice([p.value for p in ProjectPhase]))
+@click.option("--owner", "project_owner")
+@click.pass_context
+def project_list(
+    ctx: click.Context,
+    name: Optional[str],
+    code: Optional[str],
+    phase: Optional[str],
+    project_owner: Optional[str],
+) -> None:
+    """Search for the singleton project row using any parameter."""
+    conn = _open_conn()
+    rows = projects_db.search_projects(
+        conn, name=name, code=code, phase=phase, owner=project_owner
+    )
+    _emit(
+        {
+            "ok": True,
+            "count": len(rows),
+            "projects": [r.model_dump(mode="json") for r in rows],
+        }
+    )
+
+
 @project.command("upsert", help="Insert or update the single project row.")
 @click.option("--name", required=True)
 @click.option("--code", default=None)
@@ -320,7 +347,7 @@ def req_show(ctx: click.Context, req_id: str) -> None:
     _emit({"ok": True, "requirement": row.model_dump(mode="json")})
 
 
-@req.command("search", help="Field-based search.")
+@req.command("search", help="Comprehensive search and list.")
 @click.option(
     "--status", type=click.Choice([s.value for s in RequirementStatus]), default=None
 )
@@ -338,6 +365,16 @@ def req_show(ctx: click.Context, req_id: str) -> None:
 @click.option("--owner", default=None)
 @click.option("--tag", default=None)
 @click.option("--keyword", default=None)
+@click.option("--since", help="Created at/after (ISO).")
+@click.option("--until", help="Created before/at (ISO).")
+@click.option("--updated-since", help="Updated at/after (ISO).")
+@click.option("--updated-until", help="Updated before/at (ISO).")
+@click.option(
+    "--sort-by",
+    type=click.Choice(["created_at", "updated_at", "status", "priority", "title"]),
+    default="updated_at",
+)
+@click.option("--asc", is_flag=True, default=False, help="Sort ascending.")
 @click.pass_context
 def req_search(
     ctx: click.Context,
@@ -347,18 +384,16 @@ def req_search(
     owner: Optional[str],
     tag: Optional[str],
     keyword: Optional[str],
+    since: Optional[str],
+    until: Optional[str],
+    updated_since: Optional[str],
+    updated_until: Optional[str],
+    sort_by: str,
+    asc: bool,
 ) -> None:
-    """Search requirements using field-based filters.
+    """Search requirements using comprehensive filters."""
+    from datetime import datetime
 
-    Args:
-        ctx: Click context.
-        status: Filter by status value.
-        priority: Filter by priority value.
-        req_type: Filter by requirement type code.
-        owner: Filter by owner identifier.
-        tag: Filter by tag string.
-        keyword: Filter by keyword substring match in title or description.
-    """
     conn = _open_conn()
     rows = req_db.search_requirements(
         conn,
@@ -368,6 +403,12 @@ def req_search(
         owner=owner,
         tag=tag,
         keyword=keyword,
+        since=datetime.fromisoformat(since) if since else None,
+        until=datetime.fromisoformat(until) if until else None,
+        updated_since=datetime.fromisoformat(updated_since) if updated_since else None,
+        updated_until=datetime.fromisoformat(updated_until) if updated_until else None,
+        sort_by=sort_by,
+        desc=not asc,
     )
     _emit(
         {
@@ -463,19 +504,19 @@ def issue_add(
     _emit({"ok": True, "issue": row.model_dump(mode="json")})
 
 
-@issue.command("show", help="Show a single issue.")
+@issue.command("show", help="Show a single issue (full data).")
 @click.argument("issue_id")
 @click.pass_context
 def issue_show(ctx: click.Context, issue_id: str) -> None:
-    """Display a single issue as JSON."""
+    """Display a single issue with all linked updates and actions."""
     conn = _open_conn()
-    row = issues_db.get_issue(conn, issue_id)
-    if not row:
+    data = issues_db.get_issue_full(conn, issue_id)
+    if not data:
         _fail(f"Issue '{issue_id}' not found.")
-    _emit({"ok": True, "issue": row.model_dump(mode="json")})
+    _emit({"ok": True, "issue": data})
 
 
-@issue.command("search", help="Field-based search.")
+@issue.command("search", help="Comprehensive search and list.")
 @click.option(
     "--status", type=click.Choice([s.value for s in IssueStatus]), default=None
 )
@@ -486,6 +527,16 @@ def issue_show(ctx: click.Context, issue_id: str) -> None:
 )
 @click.option("--owner", default=None)
 @click.option("--req-id", "requirement_id", default=None)
+@click.option("--since", help="Created at/after (ISO).")
+@click.option("--until", help="Created before/at (ISO).")
+@click.option("--updated-since", help="Updated at/after (ISO).")
+@click.option("--updated-until", help="Updated before/at (ISO).")
+@click.option(
+    "--sort-by",
+    type=click.Choice(["created_at", "updated_at", "status", "priority", "title"]),
+    default="updated_at",
+)
+@click.option("--asc", is_flag=True, default=False, help="Sort ascending.")
 @click.pass_context
 def issue_search(
     ctx: click.Context,
@@ -493,8 +544,16 @@ def issue_search(
     priority: Optional[str],
     owner: Optional[str],
     requirement_id: Optional[str],
+    since: Optional[str],
+    until: Optional[str],
+    updated_since: Optional[str],
+    updated_until: Optional[str],
+    sort_by: str,
+    asc: bool,
 ) -> None:
-    """Search issues using field-based filters."""
+    """Search issues using comprehensive filters."""
+    from datetime import datetime
+
     conn = _open_conn()
     rows = issues_db.search_issues(
         conn,
@@ -502,6 +561,12 @@ def issue_search(
         priority=priority,
         owner=owner,
         requirement_id=requirement_id,
+        since=datetime.fromisoformat(since) if since else None,
+        until=datetime.fromisoformat(until) if until else None,
+        updated_since=datetime.fromisoformat(updated_since) if updated_since else None,
+        updated_until=datetime.fromisoformat(updated_until) if updated_until else None,
+        sort_by=sort_by,
+        desc=not asc,
     )
     _emit(
         {
@@ -526,17 +591,36 @@ def issue_log_action(ctx: click.Context, issue_id: str, description: str) -> Non
     _emit({"ok": True, "action": row.model_dump(mode="json")})
 
 
-@issue.command("list-actions", help="List all actions for an issue.")
-@click.argument("issue_id")
+@issue.command("search-actions", help="Comprehensive search for actions.")
+@click.option("--issue-id", help="Filter by issue.")
+@click.option("--since")
+@click.option("--until")
+@click.option("--keyword")
+@click.option("--asc", is_flag=True, default=False)
 @click.pass_context
-def issue_list_actions(ctx: click.Context, issue_id: str) -> None:
-    """List all actions for an issue."""
+def issue_search_actions(
+    ctx: click.Context,
+    issue_id: Optional[str],
+    since: Optional[str],
+    until: Optional[str],
+    keyword: Optional[str],
+    asc: bool,
+) -> None:
+    """Search issue actions with date and keyword filters."""
+    from datetime import datetime
+
     conn = _open_conn()
-    rows = issues_db.list_issue_actions(conn, issue_id)
+    rows = issues_db.search_issue_actions(
+        conn,
+        issue_id=issue_id,
+        since=datetime.fromisoformat(since) if since else None,
+        until=datetime.fromisoformat(until) if until else None,
+        keyword=keyword,
+        desc=not asc,
+    )
     _emit(
         {
             "ok": True,
-            "issue_id": issue_id,
             "count": len(rows),
             "actions": [r.model_dump(mode="json") for r in rows],
         }
@@ -569,6 +653,52 @@ def update_show(ctx: click.Context, req_id: str) -> None:
             "requirement_id": req_id,
             "count": len(history),
             "history": [u.model_dump(mode="json") for u in history],
+        }
+    )
+
+
+@update.command("search", help="Search the global audit log.")
+@click.option(
+    "--type", "entity_type", type=click.Choice(["requirement", "project", "issue"])
+)
+@click.option("--id", "entity_id")
+@click.option("--by", "changed_by")
+@click.option("--since")
+@click.option("--until")
+@click.option(
+    "--sort-by", type=click.Choice(["changed_at", "changed_by"]), default="changed_at"
+)
+@click.option("--asc", is_flag=True, default=False)
+@click.pass_context
+def update_search(
+    ctx: click.Context,
+    entity_type: Optional[str],
+    entity_id: Optional[str],
+    changed_by: Optional[str],
+    since: Optional[str],
+    until: Optional[str],
+    sort_by: str,
+    asc: bool,
+) -> None:
+    """Search audit records by any parameter."""
+    from datetime import datetime
+
+    conn = _open_conn()
+    rows = updates_db.search_updates(
+        conn,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        changed_by=changed_by,
+        since=datetime.fromisoformat(since) if since else None,
+        until=datetime.fromisoformat(until) if until else None,
+        sort_by=sort_by,
+        desc=not asc,
+    )
+    _emit(
+        {
+            "ok": True,
+            "count": len(rows),
+            "updates": [r.model_dump(mode="json") for r in rows],
         }
     )
 

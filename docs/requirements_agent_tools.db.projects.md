@@ -76,6 +76,42 @@ list_projects(conn: 'Connection') → list[ProjectMeta]
 Return every project row in this database, ordered by ``created_at``. 
 
 
+---
+
+<a href="../src/requirements_agent_tools/db/projects.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `search_projects`
+
+```python
+search_projects(
+    conn: 'Connection',
+    name: 'Optional[str]' = None,
+    code: 'Optional[str]' = None,
+    phase: 'Optional[str]' = None,
+    owner: 'Optional[str]' = None
+) → list[ProjectMeta]
+```
+
+Search for projects matching the given criteria. 
+
+Since our architecture is single-project-per-DB, this will return either zero or one row for a given set of filters. 
+
+
+
+**Args:**
+ 
+ - <b>`conn`</b>:  Open DB connection. 
+ - <b>`name`</b>:  Substring match on project name. 
+ - <b>`code`</b>:  Exact match on project code. 
+ - <b>`phase`</b>:  Exact match on project phase. 
+ - <b>`owner`</b>:  Exact match on project owner. 
+
+
+
+**Returns:**
+ List of matching ProjectMeta instances. 
+
+
 
 
 ---

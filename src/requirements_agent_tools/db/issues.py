@@ -9,7 +9,7 @@ from __future__ import annotations
 import sqlite3
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Optional
 
 from loguru import logger
 
@@ -20,7 +20,9 @@ from ..models import (
     IssuePriority,
     IssueRow,
     IssueStatus,
+    UpdateRecord,
 )
+from .updates import write_update
 
 
 def insert_issue(
@@ -74,6 +76,18 @@ def insert_issue(
             (issue_id, upd_id),
         )
 
+    write_update(
+        conn,
+        UpdateRecord(
+            entity_type="issue",
+            entity_id=issue_id,
+            changed_by=created_by,
+            summary="Issue created.",
+            diffs=[],
+            full_snapshot=None,
+        ),
+    )
+
     conn.commit()
     logger.info("Inserted issue {} by {}", issue_id, created_by)
 
@@ -120,6 +134,36 @@ def get_issue(conn: sqlite3.Connection, issue_id: str) -> Optional[IssueRow]:
     )
 
 
+def get_issue_full(conn: sqlite3.Connection, issue_id: str) -> Optional[dict]:
+    """Return one issue with all its linked data, including updates.
+
+    Returns a dict with IssueRow model dump plus 'updates' list.
+    """
+    from .updates import _row_to_record
+
+    row = get_issue(conn, issue_id)
+    if not row:
+        return None
+
+    # Fetch full update records
+    updates = []
+    if row.update_ids:
+        placeholders = ", ".join("?" for _ in row.update_ids)
+        upd_rows = conn.execute(
+            f"SELECT * FROM updates WHERE id IN ({placeholders})",  # nosec B608
+            row.update_ids,
+        ).fetchall()
+        updates = [_row_to_record(dict(r)).model_dump(mode="json") for r in upd_rows]
+
+    # Fetch actions
+    actions = [a.model_dump(mode="json") for a in list_issue_actions(conn, issue_id)]
+
+    res = row.model_dump(mode="json")
+    res["updates"] = updates
+    res["actions"] = actions
+    return res
+
+
 def search_issues(
     conn: sqlite3.Connection,
     *,
@@ -127,28 +171,85 @@ def search_issues(
     priority: Optional[str] = None,
     owner: Optional[str] = None,
     requirement_id: Optional[str] = None,
+    since: Optional[datetime] = None,
+    until: Optional[datetime] = None,
+    updated_since: Optional[datetime] = None,
+    updated_until: Optional[datetime] = None,
+    sort_by: str = "created_at",
+    desc: bool = True,
+    **extra_filters: Any,
 ) -> list[IssueRow]:
-    """Search issues with optional filters."""
-    query = "SELECT * FROM issues WHERE 1=1"
-    params = []
+    """Search issues with comprehensive filters and sorting.
+
+    Args:
+        conn: Open DB connection.
+        status: Filter by status value.
+        priority: Filter by priority value.
+        owner: Filter by owner identifier.
+        requirement_id: Filter by linked requirement.
+        since: Created at or after this date.
+        until: Created at or before this date.
+        updated_since: Updated at or after this date.
+        updated_until: Updated at or before this date.
+        sort_by: Column to sort by (created_at, updated_at, status, priority).
+        desc: Sort descending if True.
+        **extra_filters: Key-value pairs for exact matches on other columns.
+
+    Returns:
+        List of matching IssueRow instances.
+    """
+    clauses = ["1=1"]
+    params: dict[str, Any] = {}
 
     if status:
-        query += " AND status = ?"
-        params.append(status)
+        clauses.append("status = :status")
+        params["status"] = status
     if priority:
-        query += " AND priority = ?"
-        params.append(priority)
+        clauses.append("priority = :priority")
+        params["priority"] = priority
     if owner:
-        query += " AND owner = ?"
-        params.append(owner)
+        clauses.append("owner = :owner")
+        params["owner"] = owner
 
     if requirement_id:
-        query += " AND id IN (SELECT issue_id FROM issue_requirements WHERE requirement_id = ?)"
-        params.append(requirement_id)
+        clauses.append(
+            "id IN (SELECT issue_id FROM issue_requirements WHERE requirement_id = :req_id)"
+        )
+        params["req_id"] = requirement_id
 
-    query += " ORDER BY created_at DESC"
-    rows = conn.execute(query, params).fetchall()
-    return [get_issue(conn, r["id"]) for r in rows]  # type: ignore[misc]
+    if since:
+        clauses.append("created_at >= :since")
+        params["since"] = since.isoformat()
+    if until:
+        clauses.append("created_at <= :until")
+        params["until"] = until.isoformat()
+    if updated_since:
+        clauses.append("updated_at >= :upd_since")
+        params["upd_since"] = updated_since.isoformat()
+    if updated_until:
+        clauses.append("updated_at <= :upd_until")
+        params["upd_until"] = updated_until.isoformat()
+
+    # Allowed columns for dynamic filtering
+    ALLOWED_COLS = {"title", "description"}
+    for k, v in extra_filters.items():
+        if k in ALLOWED_COLS:
+            clauses.append(f"{k} = :{k}")
+            params[k] = v
+
+    order = "DESC" if desc else "ASC"
+    # Whitelist sort_by to prevent injection
+    SAFE_SORT = {"created_at", "updated_at", "status", "priority", "title"}
+    sort_col = sort_by if sort_by in SAFE_SORT else "created_at"
+
+    sql = f"SELECT id FROM issues WHERE {' AND '.join(clauses)} ORDER BY {sort_col} {order}"  # nosec B608
+    rows = conn.execute(sql, params).fetchall()
+    results = []
+    for r in rows:
+        obj = get_issue(conn, r["id"])
+        if obj:
+            results.append(obj)
+    return results
 
 
 def update_issue(
@@ -257,10 +358,55 @@ def get_issue_action(
 
 def list_issue_actions(conn: sqlite3.Connection, issue_id: str) -> list[IssueActionRow]:
     """Return all actions for a given issue, newest first."""
-    rows = conn.execute(
-        "SELECT * FROM issue_actions_log WHERE issue_id = ? ORDER BY occurred_at DESC",
-        (issue_id,),
-    ).fetchall()
+    return search_issue_actions(conn, issue_id=issue_id)
+
+
+def search_issue_actions(
+    conn: sqlite3.Connection,
+    *,
+    issue_id: Optional[str] = None,
+    since: Optional[datetime] = None,
+    until: Optional[datetime] = None,
+    keyword: Optional[str] = None,
+    sort_by: str = "occurred_at",
+    desc: bool = True,
+) -> list[IssueActionRow]:
+    """Search issue actions with comprehensive filters.
+
+    Args:
+        conn: Open DB connection.
+        issue_id: Filter by parent issue.
+        since: Occurred at/after (datetime).
+        until: Occurred before/at (datetime).
+        keyword: Substring match on description.
+        sort_by: Column to sort by (occurred_at).
+        desc: Sort descending if True.
+
+    Returns:
+        List of matching IssueActionRow instances.
+    """
+    clauses = ["1=1"]
+    params: dict[str, Any] = {}
+
+    if issue_id:
+        clauses.append("issue_id = :issue_id")
+        params["issue_id"] = issue_id
+    if since:
+        clauses.append("occurred_at >= :since")
+        params["since"] = since.isoformat()
+    if until:
+        clauses.append("occurred_at <= :until")
+        params["until"] = until.isoformat()
+    if keyword:
+        clauses.append("description LIKE :kw")
+        params["kw"] = f"%{keyword}%"
+
+    order = "DESC" if desc else "ASC"
+    SAFE_SORT = {"occurred_at", "issue_id"}
+    sort_col = sort_by if sort_by in SAFE_SORT else "occurred_at"
+
+    sql = f"SELECT * FROM issue_actions_log WHERE {' AND '.join(clauses)} ORDER BY {sort_col} {order}"  # nosec B608
+    rows = conn.execute(sql, params).fetchall()
     return [
         IssueActionRow(
             id=r["id"],

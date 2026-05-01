@@ -247,8 +247,15 @@ def search_requirements(
     owner: Optional[str] = None,
     tag: Optional[str] = None,
     keyword: Optional[str] = None,
+    since: Optional[datetime] = None,
+    until: Optional[datetime] = None,
+    updated_since: Optional[datetime] = None,
+    updated_until: Optional[datetime] = None,
+    sort_by: str = "created_at",
+    desc: bool = True,
+    **extra_filters: Any,
 ) -> list[RequirementRow]:
-    """Field-based search with optional substring match on title/description.
+    """Field-based search with comprehensive filters and sorting.
 
     Args:
         conn: Open DB connection.
@@ -258,9 +265,16 @@ def search_requirements(
         owner: Filter by exact owner name.
         tag: Filter rows whose JSON ``tags`` array contains this value.
         keyword: ``LIKE %keyword%`` match against title or description.
+        since: Created at or after this date.
+        until: Created at or before this date.
+        updated_since: Updated at or after this date.
+        updated_until: Updated at or before this date.
+        sort_by: Column to sort by (created_at, updated_at, status, priority, req_type).
+        desc: Sort descending if True.
+        **extra_filters: Key-value pairs for exact matches on other columns.
 
     Returns:
-        A list of :class:`RequirementRow` ordered by ``created_at``.
+        A list of :class:`RequirementRow` matching the criteria.
     """
     clauses: list[str] = []
     params: dict[str, Any] = {}
@@ -281,12 +295,37 @@ def search_requirements(
         clauses.append("(r.title LIKE :kw OR r.description LIKE :kw)")
         params["kw"] = f"%{keyword}%"
 
+    if since:
+        clauses.append("r.created_at >= :since")
+        params["since"] = since.isoformat()
+    if until:
+        clauses.append("r.created_at <= :until")
+        params["until"] = until.isoformat()
+    if updated_since:
+        clauses.append("r.updated_at >= :upd_since")
+        params["upd_since"] = updated_since.isoformat()
+    if updated_until:
+        clauses.append("r.updated_at <= :upd_until")
+        params["upd_until"] = updated_until.isoformat()
+
+    # Allowed columns for dynamic filtering
+    ALLOWED_COLS = {"title", "description"}
+    for k, v in extra_filters.items():
+        if k in ALLOWED_COLS:
+            clauses.append(f"r.{k} = :{k}")
+            params[k] = v
+
     tag_join = ""
     if tag:
         tag_join = "JOIN json_each(r.tags) ON json_each.value = :tag"
         params["tag"] = tag
 
     where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+
+    order = "DESC" if desc else "ASC"
+    SAFE_SORT = {"created_at", "updated_at", "status", "priority", "req_type", "title"}
+    sort_col = sort_by if sort_by in SAFE_SORT else "created_at"
+
     sql = f"""
         SELECT r.*,
                CASE WHEN e.requirement_id IS NOT NULL THEN 1 ELSE 0 END AS has_embedding
@@ -294,8 +333,8 @@ def search_requirements(
         LEFT JOIN req_embeddings e ON e.requirement_id = r.id
         {tag_join}
         {where}
-        ORDER BY r.created_at
-    """  # nosec B608 — tag_join and where built from hardcoded column/table names; values are parameterized
+        ORDER BY r.{sort_col} {order}
+    """  # nosec B608
     rows = conn.execute(sql, params).fetchall()
     return [ser.row_to_requirement(r) for r in rows]
 

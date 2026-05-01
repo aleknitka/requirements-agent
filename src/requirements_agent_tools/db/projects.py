@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Optional
 
 from loguru import logger
 
@@ -104,5 +104,48 @@ def get_project(conn: sqlite3.Connection) -> Optional[ProjectMeta]:
 
 def list_projects(conn: sqlite3.Connection) -> list[ProjectMeta]:
     """Return every project row in this database, ordered by ``created_at``."""
-    rows = conn.execute("SELECT * FROM projects ORDER BY created_at").fetchall()
+    return search_projects(conn)
+
+
+def search_projects(
+    conn: sqlite3.Connection,
+    *,
+    name: Optional[str] = None,
+    code: Optional[str] = None,
+    phase: Optional[str] = None,
+    owner: Optional[str] = None,
+) -> list[ProjectMeta]:
+    """Search for projects matching the given criteria.
+
+    Since our architecture is single-project-per-DB, this will return
+    either zero or one row for a given set of filters.
+
+    Args:
+        conn: Open DB connection.
+        name: Substring match on project name.
+        code: Exact match on project code.
+        phase: Exact match on project phase.
+        owner: Exact match on project owner.
+
+    Returns:
+        List of matching ProjectMeta instances.
+    """
+    clauses = ["1=1"]
+    params: dict[str, Any] = {}
+
+    if name:
+        clauses.append("name LIKE :name")
+        params["name"] = f"%{name}%"
+    if code:
+        clauses.append("code = :code")
+        params["code"] = code
+    if phase:
+        clauses.append("phase = :phase")
+        params["phase"] = phase
+    if owner:
+        clauses.append("project_owner = :owner")
+        params["owner"] = owner
+
+    sql = f"SELECT * FROM projects WHERE {' AND '.join(clauses)} ORDER BY created_at"  # nosec B608
+    rows = conn.execute(sql, params).fetchall()
     return [ser.row_to_project(r) for r in rows]

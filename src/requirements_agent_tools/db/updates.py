@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from datetime import datetime
+from typing import Any, Optional
 
 from loguru import logger
 
@@ -68,6 +69,61 @@ def get_updates(
         (entity_type, entity_id),
     ).fetchall()
     return [_row_to_record(dict(row)) for row in rows]
+
+
+def search_updates(
+    conn: sqlite3.Connection,
+    *,
+    entity_type: Optional[str] = None,
+    entity_id: Optional[str] = None,
+    changed_by: Optional[str] = None,
+    since: Optional[datetime] = None,
+    until: Optional[datetime] = None,
+    sort_by: str = "changed_at",
+    desc: bool = True,
+) -> list[UpdateRecord]:
+    """Search the audit log with comprehensive filters.
+
+    Args:
+        conn: Open DB connection.
+        entity_type: Filter by kind (requirement, project, issue).
+        entity_id: Filter by specific entity identifier.
+        changed_by: Filter by author.
+        since: Changed at/after (datetime).
+        until: Changed before/at (datetime).
+        sort_by: Column to sort by (changed_at, changed_by).
+        desc: Sort descending if True.
+
+    Returns:
+        List of matching UpdateRecord instances.
+    """
+    clauses = ["1=1"]
+    params: dict[str, Any] = {}
+
+    if entity_type:
+        clauses.append("entity_type = :type")
+        params["type"] = entity_type
+    if entity_id:
+        clauses.append("entity_id = :eid")
+        params["eid"] = entity_id
+    if changed_by:
+        clauses.append("changed_by = :by")
+        params["by"] = changed_by
+
+    if since:
+        clauses.append("changed_at >= :since")
+        params["since"] = since.isoformat()
+    if until:
+        clauses.append("changed_at <= :until")
+        params["until"] = until.isoformat()
+
+    order = "DESC" if desc else "ASC"
+    SAFE_SORT = {"changed_at", "changed_by", "entity_type"}
+    sort_col = sort_by if sort_by in SAFE_SORT else "changed_at"
+
+    sql = f"SELECT * FROM updates WHERE {' AND '.join(clauses)} ORDER BY {sort_col} {order}"  # nosec B608
+    rows = conn.execute(sql, params).fetchall()
+    return [_row_to_record(dict(r)) for r in rows]
 
 
 def _row_to_record(d: dict) -> UpdateRecord:

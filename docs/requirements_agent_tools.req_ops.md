@@ -75,7 +75,7 @@ Fetch and display a single requirement by ID.
 cmd_list(args)
 ```
 
-List all requirements with optional field filters. 
+List all requirements with comprehensive field filters and sorting. 
 
 
 
@@ -86,7 +86,7 @@ List all requirements with optional field filters.
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L181"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L194"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_search`
 
@@ -105,7 +105,7 @@ Keyword search across requirement titles and descriptions.
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L206"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L219"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_history`
 
@@ -124,7 +124,7 @@ Display the full change history for a requirement.
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L232"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L245"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_vector`
 
@@ -145,7 +145,7 @@ Requires EMBEDDING_API_KEY environment variable to be set.
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L262"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L275"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_parser`
 
@@ -163,7 +163,7 @@ Build and return the req-ops argument parser.
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L328"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L351"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 

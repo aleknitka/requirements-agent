@@ -110,11 +110,18 @@ search_requirements(
     req_type: 'Optional[str]' = None,
     owner: 'Optional[str]' = None,
     tag: 'Optional[str]' = None,
-    keyword: 'Optional[str]' = None
+    keyword: 'Optional[str]' = None,
+    since: 'Optional[datetime]' = None,
+    until: 'Optional[datetime]' = None,
+    updated_since: 'Optional[datetime]' = None,
+    updated_until: 'Optional[datetime]' = None,
+    sort_by: 'str' = 'created_at',
+    desc: 'bool' = True,
+    **extra_filters: 'Any'
 ) → list[RequirementRow]
 ```
 
-Field-based search with optional substring match on title/description. 
+Field-based search with comprehensive filters and sorting. 
 
 
 
@@ -127,17 +134,24 @@ Field-based search with optional substring match on title/description.
  - <b>`owner`</b>:  Filter by exact owner name. 
  - <b>`tag`</b>:  Filter rows whose JSON ``tags`` array contains this value. 
  - <b>`keyword`</b>:  ``LIKE %keyword%`` match against title or description. 
+ - <b>`since`</b>:  Created at or after this date. 
+ - <b>`until`</b>:  Created at or before this date. 
+ - <b>`updated_since`</b>:  Updated at or after this date. 
+ - <b>`updated_until`</b>:  Updated at or before this date. 
+ - <b>`sort_by`</b>:  Column to sort by (created_at, updated_at, status, priority, req_type). 
+ - <b>`desc`</b>:  Sort descending if True. 
+ - <b>`**extra_filters`</b>:  Key-value pairs for exact matches on other columns. 
 
 
 
 **Returns:**
  
- - <b>`A list of `</b>: class:`RequirementRow` ordered by ``created_at``. 
+ - <b>`A list of `</b>: class:`RequirementRow` matching the criteria. 
 
 
 ---
 
-<a href="../src/requirements_agent_tools/db/requirements.py#L303"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/requirements.py#L342"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_requirement_by_title`
 
@@ -153,7 +167,7 @@ Return the requirement whose ``title`` matches exactly, or ``None``.
 
 ---
 
-<a href="../src/requirements_agent_tools/db/requirements.py#L320"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/requirements.py#L359"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `find_requirements_updated_between`
 
@@ -172,7 +186,7 @@ Both bounds are inclusive. ISO-8601 string comparison on the stored timestamp co
 
 ---
 
-<a href="../src/requirements_agent_tools/db/requirements.py#L345"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/requirements.py#L384"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_requirements_report`
 

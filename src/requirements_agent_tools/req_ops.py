@@ -141,11 +141,13 @@ def cmd_get(args):
 
 
 def cmd_list(args):
-    """List all requirements with optional field filters.
+    """List all requirements with comprehensive field filters and sorting.
 
     Args:
         args: Parsed CLI arguments from build_parser().
     """
+    from datetime import datetime
+
     conn = get_project_conn()
     rows = search_requirements(
         conn,
@@ -155,6 +157,16 @@ def cmd_list(args):
         owner=args.owner,
         tag=args.tag,
         keyword=args.keyword,
+        since=datetime.fromisoformat(args.since) if args.since else None,
+        until=datetime.fromisoformat(args.until) if args.until else None,
+        updated_since=datetime.fromisoformat(args.updated_since)
+        if args.updated_since
+        else None,
+        updated_until=datetime.fromisoformat(args.updated_until)
+        if args.updated_until
+        else None,
+        sort_by=args.sort_by or "created_at",
+        desc=not args.asc,
     )
     _ok(
         {
@@ -170,6 +182,7 @@ def cmd_list(args):
                     "tags": r.tags,
                     "has_fret": False,
                     "has_embedding": r.has_embedding,
+                    "created_at": r.created_at.isoformat(),
                     "updated_at": r.updated_at.isoformat(),
                 }
                 for r in rows
@@ -311,6 +324,16 @@ def build_parser():
     ls.add_argument("--owner")
     ls.add_argument("--tag")
     ls.add_argument("--keyword")
+    ls.add_argument("--since")
+    ls.add_argument("--until")
+    ls.add_argument("--updated-since", dest="updated_since")
+    ls.add_argument("--updated-until", dest="updated_until")
+    ls.add_argument(
+        "--sort-by",
+        dest="sort_by",
+        choices=["created_at", "updated_at", "status", "priority", "req_type", "title"],
+    )
+    ls.add_argument("--asc", action="store_true", default=False)
 
     sr = sub.add_parser("search")
     sr.add_argument("--query", required=True)
