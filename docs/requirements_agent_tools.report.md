@@ -29,7 +29,7 @@ Generate a project status report and print it to stdout.
 
 ---
 
-<a href="../src/requirements_agent_tools/report.py#L196"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/report.py#L198"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_parser`
 
@@ -47,7 +47,7 @@ Build and return the report argument parser.
 
 ---
 
-<a href="../src/requirements_agent_tools/report.py#L211"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/report.py#L218"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 

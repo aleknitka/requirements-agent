@@ -21,6 +21,7 @@ from typing import Any, NoReturn, Optional
 
 import click
 from loguru import logger
+from tabulate import tabulate
 
 from .. import CONSTANTS as C
 from ..models import (
@@ -45,7 +46,57 @@ from .embeddings import vector_search
 
 
 def _emit(payload: dict) -> None:
-    """Print ``payload`` as pretty JSON and flush stdout."""
+    """Print ``payload`` as pretty JSON or human-readable text.
+
+    Uses ``ctx.obj["format"]`` to determine the output style.
+    """
+    ctx = click.get_current_context()
+    fmt = ctx.obj.get("format", "json")
+
+    if fmt == "json":
+        click.echo(json.dumps(payload, indent=2, default=str))
+        return
+
+    # ── Human-readable formatting ──
+    # Check if payload is a collection (list) or single item
+    for key in ["requirements", "issues", "updates", "actions", "projects"]:
+        if key in payload and isinstance(payload[key], list):
+            items = payload[key]
+            if not items:
+                click.secho(f"No {key} found.", fg="yellow")
+                return
+            click.secho(f"\n{key.upper()} ({len(items)})", fg="cyan", bold=True)
+            click.echo(tabulate(items, headers="keys", tablefmt="simple"))
+            return
+
+    # Special case: single entities (e.g. "requirement", "issue", "project")
+    for key in ["requirement", "issue", "project", "action"]:
+        if key in payload and isinstance(payload[key], dict):
+            data = payload[key]
+            click.secho(
+                f"\n{key.upper()}: {data.get('id', data.get('project_id', ''))}",
+                fg="cyan",
+                bold=True,
+            )
+
+            # Print main fields
+            main_fields = {
+                k: v for k, v in data.items() if not isinstance(v, (list, dict))
+            }
+            click.echo(tabulate(main_fields.items(), tablefmt="plain"))
+
+            # Print nested lists (e.g. stakeholders, updates, actions)
+            for k, v in data.items():
+                if isinstance(v, list) and v:
+                    click.secho(f"\n{k.upper()}:", fg="blue", bold=True)
+                    if all(isinstance(i, dict) for i in v):
+                        click.echo(tabulate(v, headers="keys", tablefmt="simple"))
+                    else:
+                        for i in v:
+                            click.echo(f" - {i}")
+            return
+
+    # Fallback for unexpected shapes
     click.echo(json.dumps(payload, indent=2, default=str))
 
 
@@ -78,14 +129,24 @@ def _parse_json_list(raw: Optional[str], label: str) -> list[Any]:
 
 
 @click.group(help=(__doc__ or "").split("\n", 1)[0])
+@click.option(
+    "--format",
+    "-f",
+    "output_format",
+    type=click.Choice(["json", "human"]),
+    default="json",
+    help="Output format (default: json).",
+)
 @click.pass_context
-def cli(ctx: click.Context) -> None:
+def cli(ctx: click.Context, output_format: str) -> None:
     """Entry point for the db CLI.
 
     Args:
         ctx: Click context object.
+        output_format: Desired output style (json or human).
     """
     ctx.ensure_object(dict)
+    ctx.obj["format"] = output_format
 
 
 # ───────────────────── project subgroup ─────────────────────

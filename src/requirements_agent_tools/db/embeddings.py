@@ -73,6 +73,16 @@ def store_embedding(
             """,
             (req_id, blob),
         )
+        # Also sync to virtual table if it exists
+        has_vec = conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='req_embeddings_vec'"
+        ).fetchone()
+        if has_vec:
+            conn.execute(
+                "INSERT OR REPLACE INTO req_embeddings_vec(requirement_id, embedding) VALUES (?, ?)",
+                (req_id, blob),
+            )
+
         logger.debug("Stored embedding for {}", req_id)
     except Exception as e:  # noqa: BLE001 — non-fatal
         logger.warning("Embedding generation failed for {}: {}", req_id, e)
@@ -94,13 +104,20 @@ def vector_search(
     Returns:
         ``(RequirementRow, distance)`` tuples sorted by ascending distance.
     """
+    has_vec = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='req_embeddings_vec'"
+    ).fetchone()
+    if not has_vec:
+        logger.warning("Vector search requested but req_embeddings_vec table missing.")
+        return []
+
     q_vec = embed(query_text)
     q_blob = ser.vec_to_blob(q_vec)
 
     vec_rows = conn.execute(
         """
         SELECT requirement_id, distance
-        FROM req_embeddings
+        FROM req_embeddings_vec
         WHERE embedding MATCH ?
           AND k = ?
         ORDER BY distance

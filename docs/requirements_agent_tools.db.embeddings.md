@@ -68,7 +68,7 @@ Silently skips when no API key is configured. Embedding failures are logged as w
 
 ---
 
-<a href="../src/requirements_agent_tools/db/embeddings.py#L81"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/db/embeddings.py#L91"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `vector_search`
 

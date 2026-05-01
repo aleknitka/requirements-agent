@@ -86,7 +86,7 @@ Run all review checks and output a combined review report as JSON.
 
 ---
 
-<a href="../src/requirements_agent_tools/review.py#L300"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/review.py#L303"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_parser`
 
@@ -104,7 +104,7 @@ Build and return the review argument parser.
 
 ---
 
-<a href="../src/requirements_agent_tools/review.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/review.py#L326"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 

@@ -124,6 +124,12 @@ CREATE TABLE IF NOT EXISTS issue_actions_log (
 
 CREATE INDEX IF NOT EXISTS idx_issue_action_issue ON issue_actions_log(issue_id);
 
+-- ── Vector metadata (always present to avoid join failures) ──────────
+CREATE TABLE IF NOT EXISTS req_embeddings (
+    requirement_id TEXT PRIMARY KEY REFERENCES requirements(id) ON DELETE CASCADE,
+    embedding      BLOB
+);
+
 -- ── Reference / lookup tables (enum catalogues) ───────────────────────
 CREATE TABLE IF NOT EXISTS requirement_types (
     code        TEXT PRIMARY KEY,
@@ -156,7 +162,7 @@ CREATE TABLE IF NOT EXISTS issue_priorities (
 VEC_SCHEMA_SQL: str = f"""
 -- ── Vec virtual table for requirement embeddings ───────────────────────
 -- Created only when sqlite_vec: true in config/project.yaml.
-CREATE VIRTUAL TABLE IF NOT EXISTS req_embeddings
+CREATE VIRTUAL TABLE IF NOT EXISTS req_embeddings_vec
 USING vec0(
     requirement_id TEXT PRIMARY KEY,
     embedding      FLOAT[{C.EMBEDDING_DIM}]

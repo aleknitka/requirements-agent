@@ -29,7 +29,7 @@ Add a new requirement to the active project.
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L71"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L72"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_update`
 
@@ -48,7 +48,7 @@ Apply a partial field update to an existing requirement.
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L130"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L132"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_get`
 
@@ -67,7 +67,7 @@ Fetch and display a single requirement by ID.
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L143"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L145"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_list`
 
@@ -86,7 +86,7 @@ List all requirements with comprehensive field filters and sorting.
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L194"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L197"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_search`
 
@@ -105,7 +105,7 @@ Keyword search across requirement titles and descriptions.
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L219"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L223"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_history`
 
@@ -124,7 +124,7 @@ Display the full change history for a requirement.
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L245"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L250"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_vector`
 
@@ -145,7 +145,7 @@ Requires EMBEDDING_API_KEY environment variable to be set.
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L275"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L281"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_parser`
 
@@ -163,7 +163,7 @@ Build and return the req-ops argument parser.
 
 ---
 
-<a href="../src/requirements_agent_tools/req_ops.py#L351"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/req_ops.py#L364"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 

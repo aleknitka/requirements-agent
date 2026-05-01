@@ -23,7 +23,7 @@ List requirements that still need a FRET statement.
 
 ---
 
-<a href="../src/requirements_agent_tools/refine.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/refine.py#L45"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_show`
 
@@ -36,7 +36,7 @@ Show a requirement with full FRET status for refinement session.
 
 ---
 
-<a href="../src/requirements_agent_tools/refine.py#L63"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/refine.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_apply`
 
@@ -49,7 +49,7 @@ Write a refined description to a requirement. FRET grammar fields (scope/conditi
 
 ---
 
-<a href="../src/requirements_agent_tools/refine.py#L99"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/refine.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cmd_coverage`
 
@@ -62,7 +62,7 @@ Show FRET coverage across all requirements.
 
 ---
 
-<a href="../src/requirements_agent_tools/refine.py#L117"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/refine.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_parser`
 
@@ -77,7 +77,7 @@ build_parser()
 
 ---
 
-<a href="../src/requirements_agent_tools/refine.py#L141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/requirements_agent_tools/refine.py#L154"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 

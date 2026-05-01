@@ -64,7 +64,8 @@ def cmd_add(args):
             "status": row.status.value,
             "priority": row.priority.value,
             "has_embedding": row.has_embedding,
-        }
+        },
+        fmt=args.format,
     )
 
 
@@ -123,7 +124,8 @@ def cmd_update(args):
             "updated_fields": list(changes.keys()),
             "status": row.status.value,
             "updated_at": row.updated_at.isoformat(),
-        }
+        },
+        fmt=args.format,
     )
 
 
@@ -137,7 +139,7 @@ def cmd_get(args):
     row = get_requirement(conn, args.id)
     if not row:
         _err(f"Requirement '{args.id}' not found.")
-    _ok({"requirement": row.model_dump(mode="json")})
+    _ok({"requirement": row.model_dump(mode="json")}, fmt=args.format)
 
 
 def cmd_list(args):
@@ -187,7 +189,8 @@ def cmd_list(args):
                 }
                 for r in rows
             ],
-        }
+        },
+        fmt=args.format,
     )
 
 
@@ -212,7 +215,8 @@ def cmd_search(args):
                 }
                 for r in rows
             ],
-        }
+        },
+        fmt=args.format,
     )
 
 
@@ -238,7 +242,8 @@ def cmd_history(args):
                 }
                 for u in updates
             ],
-        }
+        },
+        fmt=args.format,
     )
 
 
@@ -268,7 +273,8 @@ def cmd_vector(args):
                 }
                 for r, dist in results
             ],
-        }
+        },
+        fmt=args.format,
     )
 
 
@@ -280,6 +286,13 @@ def build_parser():
         history, and vector subcommands.
     """
     p = argparse.ArgumentParser(description="Requirement operations")
+    p.add_argument(
+        "--format",
+        "-f",
+        choices=["json", "human"],
+        default="json",
+        help="Output format (default: json).",
+    )
     sub = p.add_subparsers(dest="command", required=True)
 
     TYPES = [t.value for t in RequirementType]

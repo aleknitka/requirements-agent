@@ -229,7 +229,7 @@ def cmd_gaps(args):
     conn = get_project_conn()
     meta = _get_project(conn)
     reqs = search_requirements(conn)
-    _ok(_check_gaps(reqs, meta))
+    _ok(_check_gaps(reqs, meta), fmt=args.format)
 
 
 def cmd_conflicts(args):
@@ -240,7 +240,7 @@ def cmd_conflicts(args):
     """
     conn = get_project_conn()
     reqs = search_requirements(conn)
-    _ok(_check_conflicts(reqs))
+    _ok(_check_conflicts(reqs), fmt=args.format)
 
 
 def cmd_coverage(args):
@@ -252,7 +252,7 @@ def cmd_coverage(args):
     conn = get_project_conn()
     meta = _get_project(conn)
     reqs = search_requirements(conn)
-    _ok(_check_coverage(reqs, meta))
+    _ok(_check_coverage(reqs, meta), fmt=args.format)
 
 
 def cmd_report(args):
@@ -285,15 +285,18 @@ def cmd_report(args):
                 "conflicts": conflicts["conflict_count"],
                 "uncovered_criteria": uncovered,
             },
-            "gaps": gaps,
-            "conflicts": conflicts,
-            "coverage": coverage,
+            "report": {  # Nest under 'report' for human formatting in _cli_io
+                "gaps": gaps,
+                "conflicts": conflicts,
+                "coverage": coverage,
+            },
             "recommendation": (
                 "Requirements look complete."
                 if total_issues == 0 and uncovered == 0
                 else "Review flagged issues before moving to next phase."
             ),
-        }
+        },
+        fmt=args.format,
     )
 
 
@@ -305,6 +308,13 @@ def build_parser():
         and report subcommands.
     """
     p = argparse.ArgumentParser(description="Requirements review and gap analysis")
+    p.add_argument(
+        "--format",
+        "-f",
+        choices=["json", "human"],
+        default="json",
+        help="Output format (default: json).",
+    )
     sub = p.add_subparsers(dest="command", required=True)
     sub.add_parser("gaps")
     sub.add_parser("conflicts")

@@ -189,6 +189,8 @@ def cmd_generate(args):
     report = _build_report(conn, meta)
     if args.format == "md":
         print(_report_to_md(report))
+    elif args.format == "human":
+        _ok({"report": report}, fmt="human")
     else:
         _ok({"report": report})
 
@@ -200,11 +202,16 @@ def build_parser():
         Configured ArgumentParser with generate subcommand.
     """
     p = argparse.ArgumentParser(description="Status report generator")
+    p.add_argument(
+        "--format",
+        "-f",
+        choices=["json", "md", "human"],
+        default="json",
+        help="Output format (default: json).",
+    )
     sub = p.add_subparsers(dest="command", required=True)
 
-    gn = sub.add_parser("generate")
-    gn.add_argument("--format", choices=["json", "md"], default="json")
-
+    sub.add_parser("generate")
     return p
 
 

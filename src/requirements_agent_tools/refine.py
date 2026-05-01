@@ -37,7 +37,8 @@ def cmd_pending(args):
                 }
                 for r in reqs
             ],
-        }
+        },
+        fmt=args.format,
     )
 
 
@@ -49,14 +50,17 @@ def cmd_show(args):
         _err(f"Requirement '{args.id}' not found.")
     _ok(
         {
-            "id": req.id,
-            "req_type": req.req_type.value,
-            "title": req.title,
-            "description": req.description,
-            "status": req.status.value,
-            "priority": req.priority.value,
-            "has_fret": False,  # fret fields deferred to Phase 3
-        }
+            "requirement": {  # Nest under 'requirement' for human formatting in _cli_io
+                "id": req.id,
+                "req_type": req.req_type.value,
+                "title": req.title,
+                "description": req.description,
+                "status": req.status.value,
+                "priority": req.priority.value,
+                "has_fret": False,  # fret fields deferred to Phase 3
+            }
+        },
+        fmt=args.format,
     )
 
 
@@ -92,7 +96,8 @@ def cmd_apply(args):
             "id": row.id,
             "updated_at": row.updated_at.isoformat(),
             "note": "FRET grammar fields will be added in Phase 3",
-        }
+        },
+        fmt=args.format,
     )
 
 
@@ -110,12 +115,20 @@ def cmd_coverage(args):
             "coverage_pct": 0.0,
             "note": "FRET grammar fields deferred to Phase 3",
             "pending_ids": [r.id for r in all_reqs],
-        }
+        },
+        fmt=args.format,
     )
 
 
 def build_parser():
     p = argparse.ArgumentParser(description="FRET requirement refinement")
+    p.add_argument(
+        "--format",
+        "-f",
+        choices=["json", "human"],
+        default="json",
+        help="Output format (default: json).",
+    )
     sub = p.add_subparsers(dest="command", required=True)
 
     sub.add_parser("pending")
