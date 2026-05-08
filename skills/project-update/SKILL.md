@@ -9,6 +9,7 @@ description: >
   be deleted — only their status changed. All changes are logged with diffs.
   Also handles vector/semantic search when OPENAI_API_KEY is set.
 license: MIT
+allowed-tools: Read Edit Grep Glob
 metadata:
   author: aleksander nitka
   version: "1.0.0"
@@ -20,17 +21,22 @@ metadata:
 CRUD for requirements. All writes validated through Pydantic, logged in updates table.
 
 ## Session start
+
+Pass `--project <slug>` to all commands, or omit if only one project exists.
+
 ```bash
 # If project is ambiguous, resolve first:
-python skills/project-init/scripts/init.py list
+uv run init-project list
 ```
-Pass `--project <slug>` to all commands, or omit if only one project exists.
 
 ## Commands
 
 ```bash
+# If project is ambiguous, resolve first:
+uv run init-project list
+
 # Add (status defaults to 'open' — no removal, change status instead)
-python skills/project-update/scripts/req_ops.py add \
+uv run req-ops add [--project <slug>] \
   --title "..." --by "<agent/user>" \
   --type CORE|DATA|MODEL|INFRA|OPS|UX|COMPLIANCE \
   [--description "..."] [--priority low|medium|high|critical] \
@@ -41,16 +47,16 @@ python skills/project-update/scripts/req_ops.py add \
   [--external-links '[{"system":"Jira","label":"PROJ-42","url":"..."}]']
 
 # Update
-python skills/project-update/scripts/req_ops.py update \
+uv run req-ops update [--project <slug>] \
   --id REQ-DATA-XXXX --by "<n>" --summary "<why>" \
-  [--status open|in-progress|done|rejected] [--priority ...] [...]
+  [--status open|in-progress|done|rejected] [--priority ...]
 
 # Read
-python skills/project-update/scripts/req_ops.py get     --id REQ-DATA-XXXX
-python skills/project-update/scripts/req_ops.py list    [--type DATA] [--status open] [--has-fret] [--no-fret]
-python skills/project-update/scripts/req_ops.py search  --query "<keyword>"
-python skills/project-update/scripts/req_ops.py history --id REQ-DATA-XXXX
-python skills/project-update/scripts/req_ops.py vector  --query "<natural language>" [--top-k 10]
+uv run req-ops get     [--project <slug>] --id REQ-DATA-XXXX
+uv run req-ops list    [--project <slug>] [--type DATA] [--status open] [--has-fret] [--no-fret]
+uv run req-ops search  [--project <slug>] --query "<keyword>"
+uv run req-ops history [--project <slug>] --id REQ-DATA-XXXX
+uv run req-ops vector  [--project <slug>] --query "<natural language>" [--top-k 10]
 ```
 
 ## Requirement types → IDs

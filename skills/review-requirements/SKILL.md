@@ -1,7 +1,15 @@
 ---
 name: review-requirements
 description: >
-  Review requirements for completeness, gaps, conflicts, and coverage againstsuccess criteria. Use this skill when the user asks to "review requirements", "check for gaps", "are we missing any requirement types?", "do we have conflicts?", "are our requirements covering the success criteria?", "requirements health check", or before moving to the next project phase.
+  Review requirements for quality issues — gaps in success-criteria coverage, conflicting
+  statements, and missing FRET fields. Use this skill when the user asks to audit, review,
+  or validate the current requirement set.
+license: MIT
+allowed-tools: Read Grep Glob
+metadata:
+  author: aleksander nitka
+  version: "1.0.0"
+  category: requirements
 ---
 
 # Review Requirements Skill
@@ -17,10 +25,10 @@ Runs automated checks across the full requirements set and reports issues.
 ## Commands
 
 ```bash
-python skills/review-requirements/scripts/review.py report    # full review (recommended)
-python skills/review-requirements/scripts/review.py gaps      # gaps only
-python skills/review-requirements/scripts/review.py conflicts # conflicts only
-python skills/review-requirements/scripts/review.py coverage  # success criteria coverage
+uv run review report    [--project <slug>]   # full review (recommended)
+uv run review gaps      [--project <slug>]   # gaps only
+uv run review conflicts [--project <slug>]   # conflicts only
+uv run review coverage  [--project <slug>]   # success criteria coverage
 ```
 
 ## After review
