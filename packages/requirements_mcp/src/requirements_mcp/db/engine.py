@@ -1,11 +1,19 @@
 """SQLAlchemy engine and session-factory helpers for SQLite.
 
-SQLite does not enforce foreign-key constraints by default. Because the
-schema relies on foreign keys to keep the audit trail consistent
-(requirement-to-status, requirement-to-type, issue-to-priority, the
-requirement-issue link table, and so on), an event listener is
-attached to every new connection that issues
-``PRAGMA foreign_keys=ON`` before any application SQL runs.
+Two SQLite-specific behaviours are configured on every new connection
+via an event listener:
+
+* ``PRAGMA foreign_keys=ON`` — SQLite does not enforce foreign-key
+  constraints by default, but the schema relies on FKs to keep the
+  audit trail consistent (requirement-to-status, requirement-to-type,
+  issue-to-priority, the requirement-issue link table). Without this
+  pragma, invalid references would be silently accepted.
+* ``PRAGMA journal_mode=WAL`` — write-ahead logging permits concurrent
+  readers while a writer is active, which matters once the MCP server
+  and the Gradio frontend touch the database at the same time. WAL is
+  a database-wide setting that persists in the file, but issuing the
+  pragma per connection is harmless and ensures a freshly created
+  database is upgraded immediately.
 """
 
 from __future__ import annotations
@@ -16,13 +24,14 @@ from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
 
-def _enable_sqlite_fk(dbapi_connection, connection_record) -> None:  # noqa: ANN001
-    """Enable SQLite foreign-key enforcement on a freshly opened connection.
+def _configure_sqlite_connection(dbapi_connection, connection_record) -> None:  # noqa: ANN001
+    """Apply SQLite per-connection pragmas required by the schema.
 
-    Bound to the engine's ``connect`` event in :func:`make_engine` so that
-    every new DBAPI connection turns FK enforcement on before the
-    application sees it. Without this hook SQLite would silently allow
-    invalid references.
+    Bound to the engine's ``connect`` event in :func:`make_engine` so the
+    pragmas run before any application SQL on a freshly opened DBAPI
+    connection. Two pragmas are issued: foreign-key enforcement (which
+    SQLite leaves off by default) and WAL journalling (for concurrent
+    reader/writer access from the MCP server and the Gradio frontend).
 
     Args:
         dbapi_connection: The raw DBAPI connection just opened by the
@@ -33,6 +42,7 @@ def _enable_sqlite_fk(dbapi_connection, connection_record) -> None:  # noqa: ANN
     cursor = dbapi_connection.cursor()
     try:
         cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA journal_mode=WAL")
     finally:
         cursor.close()
 
@@ -43,8 +53,8 @@ def make_engine(db_path: Path | str, *, echo: bool = False) -> Engine:
     The path is resolved to an absolute location before being inserted
     into the SQLite URL so that engines built from relative paths still
     refer to the same file regardless of the caller's working directory.
-    Foreign-key enforcement is wired up via an event listener; callers
-    do not need to issue any pragmas themselves.
+    Foreign-key enforcement and WAL journalling are wired up via an event
+    listener; callers do not need to issue any pragmas themselves.
 
     Args:
         db_path: Filesystem location of the SQLite database file. The
@@ -66,7 +76,7 @@ def make_engine(db_path: Path | str, *, echo: bool = False) -> Engine:
         echo=echo,
         future=True,
     )
-    event.listen(engine, "connect", _enable_sqlite_fk)
+    event.listen(engine, "connect", _configure_sqlite_connection)
     return engine
 
 

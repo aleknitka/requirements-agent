@@ -13,6 +13,7 @@ import argparse
 import sys
 from typing import Sequence
 
+from requirements_mcp.config import resolve_db_path
 from requirements_mcp.db.init import init_db
 from requirements_mcp.logging import configure_logging
 
@@ -87,14 +88,22 @@ def db_init(argv: Sequence[str] | None = None) -> int:
 
     Returns:
         ``0`` on success. ``1`` when ``--reset`` was requested but the
-        user declined the interactive confirmation prompt.
+        user declined the confirmation prompt, or when ``--reset`` was
+        requested in a non-interactive environment without ``--yes``.
     """
     args = _build_db_init_parser().parse_args(argv)
     configure_logging(name="requirements_mcp", level=args.log_level)
 
     if args.reset and not args.yes:
+        if not sys.stdin.isatty():
+            print(
+                "Error: --reset requires --yes in non-interactive environments.",
+                file=sys.stderr,
+            )
+            return 1
+        resolved_path = resolve_db_path(args.db)
         confirmation = input(
-            f"This will DROP all tables at {args.db or '<default>'}. Continue? [y/N] "
+            f"This will DROP all tables at {resolved_path}. Continue? [y/N] "
         )
         if confirmation.strip().lower() not in {"y", "yes"}:
             print("Aborted.", file=sys.stderr)

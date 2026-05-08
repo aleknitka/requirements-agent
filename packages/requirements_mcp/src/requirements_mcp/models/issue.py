@@ -64,13 +64,13 @@ class Issue(Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String, nullable=False, default="")
     issue_type_code: Mapped[str] = mapped_column(
-        String(8), ForeignKey("issue_types.code"), nullable=False
+        String(8), ForeignKey("issue_types.code"), nullable=False, index=True
     )
     status_code: Mapped[str] = mapped_column(
-        String(64), ForeignKey("issue_statuses.code"), nullable=False
+        String(64), ForeignKey("issue_statuses.code"), nullable=False, index=True
     )
     priority_code: Mapped[str] = mapped_column(
-        String(8), ForeignKey("issue_priorities.code"), nullable=False
+        String(8), ForeignKey("issue_priorities.code"), nullable=False, index=True
     )
     impact: Mapped[str] = mapped_column(String, nullable=False, default="")
     risk: Mapped[str] = mapped_column(String, nullable=False, default="")

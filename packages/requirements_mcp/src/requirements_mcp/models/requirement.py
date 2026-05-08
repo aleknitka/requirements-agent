@@ -70,10 +70,10 @@ class Requirement(Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     requirement_statement: Mapped[str] = mapped_column(String, nullable=False)
     type_code: Mapped[str] = mapped_column(
-        String(8), ForeignKey("requirement_types.code"), nullable=False
+        String(8), ForeignKey("requirement_types.code"), nullable=False, index=True
     )
     status_code: Mapped[str] = mapped_column(
-        String(64), ForeignKey("requirement_statuses.code"), nullable=False
+        String(64), ForeignKey("requirement_statuses.code"), nullable=False, index=True
     )
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     author: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -90,23 +90,23 @@ class Requirement(Base):
         String, nullable=False, default=""
     )
 
-    users: Mapped[list[Any]] = mapped_column(JSONList, nullable=False, default=list)
-    triggers: Mapped[list[Any]] = mapped_column(JSONList, nullable=False, default=list)
-    preconditions: Mapped[list[Any]] = mapped_column(
+    users: Mapped[list[str]] = mapped_column(JSONList, nullable=False, default=list)
+    triggers: Mapped[list[str]] = mapped_column(JSONList, nullable=False, default=list)
+    preconditions: Mapped[list[str]] = mapped_column(
         JSONList, nullable=False, default=list
     )
-    postconditions: Mapped[list[Any]] = mapped_column(
+    postconditions: Mapped[list[str]] = mapped_column(
         JSONList, nullable=False, default=list
     )
-    inputs: Mapped[list[Any]] = mapped_column(JSONList, nullable=False, default=list)
-    outputs: Mapped[list[Any]] = mapped_column(JSONList, nullable=False, default=list)
-    business_logic: Mapped[list[Any]] = mapped_column(
+    inputs: Mapped[list[str]] = mapped_column(JSONList, nullable=False, default=list)
+    outputs: Mapped[list[str]] = mapped_column(JSONList, nullable=False, default=list)
+    business_logic: Mapped[list[str]] = mapped_column(
         JSONList, nullable=False, default=list
     )
-    exception_handling: Mapped[list[Any]] = mapped_column(
+    exception_handling: Mapped[list[str]] = mapped_column(
         JSONList, nullable=False, default=list
     )
-    acceptance_criteria: Mapped[list[Any]] = mapped_column(
+    acceptance_criteria: Mapped[list[str]] = mapped_column(
         JSONList, nullable=False, default=list
     )
 
