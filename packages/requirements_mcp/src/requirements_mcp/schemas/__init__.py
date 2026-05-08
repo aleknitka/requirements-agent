@@ -7,6 +7,25 @@ concerns; these schemas carry tool-call concerns. Inputs use
 validation error instead of silently being ignored.
 """
 
+from requirements_mcp.schemas.issues import (
+    IssueCreate,
+    IssueOut,
+    IssuePriorityCode,
+    IssuePriorityOut,
+    IssueSearchHit,
+    IssueSearchQuery,
+    IssueStatusCode,
+    IssueStatusOut,
+    IssueTypeCode,
+    IssueTypeOut,
+    IssueUpdate,
+    IssueUpdateAdd,
+    IssueUpdateOut,
+    IssueUpdateTypeCode,
+    RequirementIssueLinkCreate,
+    RequirementIssueLinkOut,
+    RequirementIssueLinkType,
+)
 from requirements_mcp.schemas.requirements import (
     RequirementChangeOut,
     RequirementCreate,
@@ -21,8 +40,25 @@ from requirements_mcp.schemas.requirements import (
 )
 
 __all__ = [
+    "IssueCreate",
+    "IssueOut",
+    "IssuePriorityCode",
+    "IssuePriorityOut",
+    "IssueSearchHit",
+    "IssueSearchQuery",
+    "IssueStatusCode",
+    "IssueStatusOut",
+    "IssueTypeCode",
+    "IssueTypeOut",
+    "IssueUpdate",
+    "IssueUpdateAdd",
+    "IssueUpdateOut",
+    "IssueUpdateTypeCode",
     "RequirementChangeOut",
     "RequirementCreate",
+    "RequirementIssueLinkCreate",
+    "RequirementIssueLinkOut",
+    "RequirementIssueLinkType",
     "RequirementOut",
     "RequirementSearchHit",
     "RequirementSearchQuery",

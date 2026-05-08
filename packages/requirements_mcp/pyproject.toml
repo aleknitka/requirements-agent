@@ -14,7 +14,7 @@ dependencies = [
 
 [project.scripts]
 requirements-db-init = "requirements_mcp.cli:db_init"
-requirements-mcp-server = "requirements_mcp.server:main"
+requirements-mcp-server = "requirements_mcp.app:main"
 
 [build-system]
 requires = ["hatchling"]

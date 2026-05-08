@@ -34,7 +34,10 @@ from requirements_mcp.schemas.requirements import (
     RequirementSearchQuery,
     RequirementUpdate,
 )
-from requirements_mcp.services.diff import DIFFABLE_FIELDS, compute_diff
+from requirements_mcp.services.diff import (
+    REQUIREMENT_DIFFABLE_FIELDS,
+    compute_diff,
+)
 
 __all__ = [
     "RequirementNotFoundError",
@@ -151,10 +154,10 @@ def update_requirement(
     # that would only surface as a NOT-NULL IntegrityError at commit.
     updates: dict[str, Any] = {
         field: submitted[field]
-        for field in DIFFABLE_FIELDS
+        for field in REQUIREMENT_DIFFABLE_FIELDS
         if field in submitted and submitted[field] is not None
     }
-    diff = compute_diff(requirement, updates)
+    diff = compute_diff(requirement, updates, REQUIREMENT_DIFFABLE_FIELDS)
 
     if not diff:
         logger.debug(
