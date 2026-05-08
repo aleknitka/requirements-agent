@@ -19,7 +19,7 @@ repos:
     rev: 1.9.4
     hooks:
       - id: bandit
-        args: [-r, src/]
+        args: [-r, packages/agent_runtime/src, packages/requirements_mcp/src]
         pass_filenames: false
 
   # ── Type checking (local — no astral-sh/ty-pre-commit repo exists) ─────
@@ -37,18 +37,8 @@ repos:
     rev: 1.7.0
     hooks:
       - id: interrogate
-        args: [src/]
+        args: [packages/agent_runtime/src, packages/requirements_mcp/src]
         pass_filenames: false
-
-  # ── Documentation regeneration (lazydocs → docs/) ─────────────────────
-  - repo: local
-    hooks:
-      - id: lazydocs
-        name: regenerate API docs (lazydocs)
-        entry: uv run --with lazydocs lazydocs --output-path docs/ requirements_agent_tools
-        language: system
-        pass_filenames: false
-        always_run: true
 
   # ── Tests ──────────────────────────────────────────────────────────────
   - repo: local

@@ -1,228 +1,238 @@
-# Requirements Agent 🤖
+# Requirements Agent
 
 [![Python Version](https://img.shields.io/badge/python-3.13%2B-blue)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-**Requirements Agent** is an enterprise-grade autonomous agent for managing software and AI project requirements, meetings, and status reporting. Built for Data Science, ML, and AI projects where specialized requirement engineering might be absent, it provides a rigorous, auditable, and searchable source of truth.
+An AI agent for **requirements engineering** — interviewing stakeholders,
+formulating structured requirements, and tracking the open questions, risks,
+and follow-ups that arise along the way — backed by a local, audit-friendly
+SQLite store exposed through the Model Context Protocol (MCP).
+
+The agent reasons and decides; the MCP layer validates, persists, and audits.
+Every meaningful change to a requirement or issue is paired with a structured
+diff so the database is always its own complete history of how the project
+got to where it is.
 
 ---
 
-## 🎯 Why this Project?
+## What it gives you
 
-In the fast-paced world of AI and Data Science, the "Requirements Gap" is a frequent cause of project failure. Data Scientists often focus on model performance metrics while business stakeholders focus on high-level outcomes, leaving a void where technical constraints, data privacy requirements, and operational edge cases should live.
-
-### The Problem
-- **Ambiguity**: Requirements like "the model should be fast" are untestable and lead to scope creep.
-- **Fragmented Truth**: Decisions are buried in Slack threads, emails, and meeting notes, making auditability impossible.
-- **Missing Engineering Rigor**: Unlike traditional software, AI requirements often involve complex data dependencies that are frequently overlooked.
-
-### The Solution: The Requirements Agent
-This tool acts as a **Digital Requirements Engineer** that bridges the gap between stakeholders and implementation teams. It doesn't just store text; it enforces a lifecycle of discovery, refinement, and validation.
-
-### Core Value Add
-1. **Eliminate Assumptions**: The agent is designed to be "relentless in pursuit of clarity," forcing the translation of vague desires into testable statements.
-2. **Regulatory & Audit Readiness**: By logging every change with a diff and a reason, it provides a "Black Box" for project decisions—essential for high-risk AI applications in finance, healthcare, and infrastructure.
-3. **Automated Synthesis**: It reduces the administrative overhead of requirement management by automatically extracting decisions from meeting minutes and generating comprehensive status reports.
-4. **Hybrid Intelligence**: Combines traditional keyword search with semantic (vector) understanding, allowing teams to find related requirements even when they use different terminology.
-
----
-
-## 🌟 Key Features
-
-- **Multi-Project Management**: Isolated environments using unique project `slugs`.
-- **Hybrid Search**: Keyword and semantic (vector) search powered by `sqlite-vec`.
-- **Auditable History**: Every change is logged with a diff and metadata (who, when, why).
-- **Meeting Intelligence**: Log minutes, extract decisions, and track action items linked to requirements.
-- **Automated Reporting**: Generate comprehensive project status reports in JSON and Markdown.
-- **Pydantic Validation**: Strong typing and validation for all data models.
-- **Extensible Roadmap**: Designed for future integration with Slack, MS Teams, and formal methods like FRET.
+- **A relentless interviewer** that turns vague stakeholder input
+  ("the system should be fast and secure") into testable, formally-shaped
+  requirements with explicit users, triggers, preconditions, postconditions,
+  inputs, outputs, business logic, exception handling, and acceptance
+  criteria.
+- **An issue tracker that is also the agent's todo list.** Ambiguities,
+  missing information, risks, blockers, decisions awaiting input, and
+  follow-up actions are first-class records, each linked back to the
+  requirements they affect.
+- **A complete audit trail.** Every requirement edit produces a JSON diff in
+  `requirements_changes`; every issue transition produces a row in
+  `issue_updates`. There is no supported path that mutates a record without
+  also recording why and how.
+- **A safe boundary for autonomous work.** The agent never executes raw SQL,
+  never opens its own database connection, and never imports ORM models
+  directly. It can only reach the data through validated MCP tools, so an
+  errant LLM call cannot silently corrupt the system of record.
+- **A local, file-based deployment.** A single SQLite file under `data/`
+  contains everything; daily log files under `logs/`. Nothing needs to leave
+  the machine.
 
 ---
 
-## 🏗️ Core Concepts
+## Architecture at a glance
 
-### 📂 Project Structure
-Each project lives in its own directory under `projects/<slug>/`:
-- `<slug>.db`: A SQLite database containing requirements, meetings, updates, issues, and vector embeddings.
-- `PROJECT.md`: A human-readable summary of project aims, stakeholders, and progress.
-- `logs/`: Daily operational logs.
+```
+┌──────────────────────────┐        MCP (stdio)         ┌──────────────────────────┐
+│                          │ ─────────────────────────► │                          │
+│       agent_runtime      │                            │     requirements_mcp     │
+│                          │ ◄───────────────────────── │                          │
+│  identity, skills, model │      validated tools        │  Pydantic + SQLAlchemy   │
+│  selection, hooks        │                            │  audit trail, seeds, CLI │
+│                          │                            │  Gradio frontend         │
+└──────────────────────────┘                            └─────────────┬────────────┘
+                                                                       │
+                                                          ┌────────────▼────────────┐
+                                                          │  data/requirements.db   │
+                                                          │  (SQLite, FK-enforced)  │
+                                                          └─────────────────────────┘
+```
 
-### 🗃️ Database Schema
-The agent maintains several key tables:
-- `projects`: Metadata about the project (owner, sponsor, objectives).
-- `requirements`: The core requirements (Functional, Non-Functional, Data, etc.).
-- `updates`: A full audit trail of every requirement change.
-- `meeting_minutes`: Records of meetings, attendees, and summaries.
-- `decisions`: Key decisions made during meetings, linked to requirements.
-- `action_items`: Tasks arising from meetings with owners and due dates.
-- `issues`: Todos for the agent and coworkers.
+The repository is a single Git repo and a `uv` workspace with two packages:
+
+- **`packages/agent_runtime/`** — agent identity, skill loading, MCP tool
+  registration, runtime hooks. Owns *how* the agent thinks; owns nothing
+  about persistence.
+- **`packages/requirements_mcp/`** — the system of record. Owns the
+  SQLAlchemy ORM, Pydantic seed models, idempotent database initialiser,
+  audit-trail logic, MCP tool implementations, and the Gradio frontend.
+  Everything that touches the database lives here.
+
+Root-level files (`agent.yaml`, `SOUL.md`, `RULES.md`, `skills/`, `tools/`,
+`hooks/`, `compliance/`, `memory/`) configure the agent itself.
 
 ---
 
-## 🛡️ Core Principles & Guardrails
+## Persistence model
 
-The Requirements Agent operates under a strict set of rules to ensure data integrity and auditability:
+The schema is split between three concerns: the requirements themselves,
+their audit log, and an issue subsystem that doubles as the agent's
+operational memory.
 
-- **Soft-Delete Only**: Requirements are never hard-deleted from the database. They are marked as `removed` to maintain a full history.
-- **Audit Traceability**: Every modification must be accompanied by a reason and is logged in the `updates` table with a before/after diff.
-- **Human-in-the-Loop (HITL)**: Destructive operations (like archiving a project or bulk-modifying statuses) require explicit human confirmation and a stated reason.
-- **No Ambiguity**: The agent is designed to be relentless in pursuit of clarity, asking clarifying questions until all assumptions are eliminated.
-- **Regulatory Readiness**: Built with compliance in mind, ensuring all decisions have a reasoning trace for audit purposes.
+| Table | Purpose |
+|---|---|
+| `requirements` | Current state of every requirement: title, statement, version, author, list-shaped fields (users, triggers, pre/postconditions, inputs, outputs, business logic, exception handling, acceptance criteria) stored as JSON. |
+| `requirements_changes` | Append-only audit log. One row per update with a structured `{"field": {"from": ..., "to": ...}}` diff. |
+| `requirement_statuses`, `requirement_types` | Controlled vocabularies (11 statuses, 19 types) seeded idempotently from versioned Python lists. |
+| `issues` | Open items: ambiguities, missing information, conflicts, risks, blockers, stakeholder questions, decisions, evidence gaps, follow-up tasks. |
+| `issue_updates` | Append-only audit + action log: status transitions, emails sent/received, evidence attached, resolutions proposed. |
+| `issue_statuses`, `issue_types`, `issue_priorities` | Controlled vocabularies (10 statuses, 11 types, 4 priorities). |
+| `requirement_issues` | Typed many-to-many link between issues and the requirements they affect (`related`, `blocks`, `clarifies`, `conflicts_with`, `risk_for`, `caused_by`, `resolved_by`). |
+
+SQLite foreign-key enforcement is turned on for every connection, so invalid
+status codes or dangling links are rejected at write time rather than
+discovered later. The schema uses a deterministic constraint-naming
+convention so a future move to PostgreSQL is a configuration change rather
+than a migration project.
 
 ---
 
-## 🚀 Installation
+## Design principles
 
-The project uses `uv` for lightning-fast dependency management.
+1. **MCP owns persistence.** The agent never executes SQL, never opens a
+   SQLite connection, never imports an ORM model. Every read and write
+   crosses a validated tool boundary.
+2. **The audit trail is mandatory.** No silent state changes: every
+   requirement update produces a `requirements_changes` row, every issue
+   action produces an `issue_updates` row, in the same transaction.
+3. **Issues are operational memory.** They are not just bugs. They are how
+   the agent remembers what it does not yet know, what it is waiting on,
+   and what it owes someone.
+4. **Local-first, migration-friendly.** SQLite for the file simplicity;
+   schema choices kept portable for an eventual PostgreSQL deployment.
+5. **Validate everything at the boundary.** Pydantic models on every MCP
+   tool input, on every seed declaration, on every Gradio form. SQLAlchemy
+   alone is not a validation layer.
+
+---
+
+## Installation
+
+The project uses [`uv`](https://docs.astral.sh/uv/) for dependency and
+workspace management.
 
 ```bash
-# Clone the repository
 git clone https://github.com/aleksander-nitka/requirements-agent.git
 cd requirements-agent
-
-# Create virtual environment and install dependencies
-uv sync
+uv sync --all-packages
 ```
 
-### Dependencies
-- **Core**: `click`, `pydantic`, `sqlite-vec`, `loguru`, `openai` (for embeddings).
-- **Dev**: `pytest`, `ruff`, `lazydocs`.
+Initialise a development database:
+
+```bash
+uv run --package requirements-mcp requirements-db-init --db ./data/requirements.db
+```
+
+The command creates the schema if missing and seeds the controlled
+vocabularies (requirement statuses and types; issue statuses, types,
+priorities) idempotently. Re-running it is safe — existing rows are left
+untouched, locally-edited descriptions survive.
+
+A `REQUIREMENTS_DB_PATH` environment variable can replace the
+`--db` flag; the default when neither is set is `./data/requirements.db`.
 
 ---
 
-## 🛠️ CLI Toolset Reference
+## Tech stack
 
-The agent relies on several specialized CLI tools, exposed as scripts via `pyproject.toml`.
+- **Python 3.13+**
+- **SQLAlchemy 2** for ORM, with a future Alembic migration path
+- **Pydantic v2** for input validation, seed models, and Gradio form schemas
+- **MCP Python SDK** for the stdio tool transport
+- **Gradio** for local human-facing workflows (planned)
+- **loguru** for structured logging — stdout plus a daily file under `logs/`
+- **uv** for workspace and lockfile management
+- **pytest** + **interrogate** + **ruff** + **bandit** for quality gates
 
-### 1. `init-project` — Project Management
-Used to create and manage project metadata.
-```bash
-# Create a new project
-init-project new --name "AI Customer Service" --owner "Jane Doe" --phase discovery
+---
 
-# List all projects
-init-project list
+## Repository layout
 
-# Update project metadata
-init-project update --project ai-customer-service --sponsor "John Smith"
 ```
+requirements-agent/
+  agent.yaml                       # agent identity, model preferences, compliance config
+  SOUL.md  RULES.md  CLAUDE.md     # agent operating constraints
+  skills/  tools/  hooks/          # agent capabilities
+  memory/  knowledge/              # agent state
+  compliance/  config/             # governance and runtime config
+  logs/                            # daily loguru output
 
-### 2. `req-ops` — Requirement Operations
-The primary tool for managing the requirements lifecycle.
-```bash
-# Add a requirement
-req-ops add --project ai-customer-service --title "Login API" --type functional --priority high --by "Alice"
+  pyproject.toml                   # uv workspace root
+  uv.lock
 
-# Search requirements
-req-ops search --project ai-customer-service --status open --priority critical
+  packages/
+    agent_runtime/                 # agent identity & wiring
+      pyproject.toml
+      src/agent_runtime/
+      tests/
 
-# Semantic search (requires embeddings)
-req-ops vector --project ai-customer-service --query "authentication and security" --top-k 3
+    requirements_mcp/              # system of record (this is where the work happens)
+      pyproject.toml
+      src/requirements_mcp/
+        __init__.py                # configure_logging, init_db, resolve_db_path
+        config.py                  # CLI > env > default DB path resolver
+        cli.py                     # `requirements-db-init` entry point
+        logging.py                 # loguru: stdout + daily file sink
+        db/                        # Base, engine, session factory, init_db
+        models/                    # SQLAlchemy ORM (requirement, issue, *_meta, JSONList)
+        seeds/                     # Pydantic seed models + idempotent apply_seeds
+      tests/                       # 40+ unit tests
 
-# View requirement history
-req-ops history --project ai-customer-service --id <req_id>
-```
-
-### 3. `meeting` — Meeting Management
-Capture minutes and extract actionable data.
-```bash
-# Log a meeting
-meeting log --project ai-customer-service --title "Architecture Review" --by "Alice" \
-  --decisions '[{"title": "Use OAuth2", "decision_id": "D1"}]' \
-  --action-items '[{"title": "Draft security spec", "owner": "Bob"}]'
-
-# List decisions
-meeting decisions --project ai-customer-service --status open
-```
-
-### 4. `refine` — Requirement Refinement
-Interactive FRET (Formal Requirements Elicitation Tool) refinement.
-```bash
-# List requirements needing refinement
-refine pending --project ai-customer-service
-
-# Apply a FRET statement to a requirement
-refine apply --project ai-customer-service --id <req_id> \
-  --fret-statement "WHEN user is logged in SHALL allow access" --by "Alice"
-```
-
-### 5. `review` — Quality Assurance
-Gap analysis and conflict detection.
-```bash
-# Identify missing requirement types and incomplete fields
-review gaps --project ai-customer-service
-
-# Detect potential conflicts between requirements
-review conflicts --project ai-customer-service
-
-# Cross-check requirements against success criteria
-review coverage --project ai-customer-service
-```
-
-### 6. `report` — Status Reporting
-Generate project health snapshots.
-```bash
-# Generate a report to stdout
-report generate --project ai-customer-service
-
-# Save a timestamped report to the project folder
-report save --project ai-customer-service
-```
-
-### 7. `db` — Direct Database Access
-A Click-based CLI for granular CRUD operations.
-```bash
-db --project ai-customer-service req show --id <id>
-db --project ai-customer-service project show
+  data/                            # SQLite databases (gitignored)
 ```
 
 ---
 
-## 📈 Roadmap
+## Development
 
-### Phase 1: Foundation (Current)
-- [x] Robust SQLite + `sqlite-vec` storage.
-- [x] Full CLI coverage for Projects, Requirements, and Meetings.
-- [x] Basic reporting and audit logging.
-- [x] Pydantic model integration.
-
-### Phase 2: Intelligence & Issues
-- [ ] Automated review of requirements for ambiguity.
-- [ ] Dedicated `ISSUES` table for stakeholder follow-ups.
-- [ ] Introduction of formalization methods (FRET).
-
-### Phase 3: Autonomous Ingestion
-- [ ] Ingest unstructured data from PDF, TXT, and MD.
-- [ ] Autonomous "Daily Wake-up" tasks for research and ideation.
-- [ ] Evidence linking in the database.
-
-### Phase 4: Enterprise Integration
-- [ ] Slack, MS Teams, and Telegram listeners.
-- [ ] Real-time summarization of multi-user conversations.
-- [ ] Advanced audit trials for distributed decisions.
-
----
-
-## 🧪 Development
-
-### Running Tests
 ```bash
-uv run pytest
-```
+# Run the full test suite
+uv run --package requirements-mcp pytest packages/requirements_mcp/tests -v
 
-### Linting & Formatting
-We use `ruff` for code quality.
-```bash
+# Docstring coverage gate (configured at 80% minimum, project sits at 100%)
+uv run interrogate packages/requirements_mcp/src
+
+# Lint and format
 uv run ruff check .
 uv run ruff format .
 ```
 
-### Documentation
-API documentation is generated via `lazydocs` and stored in the `docs/` directory.
+Tests are hermetic: every test that touches the database routes through a
+`tmp_path`-scoped fixture, so test runs never write to the real `data/` or
+`logs/` directories.
 
 ---
 
-## 📄 License
+## Roadmap
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+The project is being built in phases that each produce something usable end
+to end before adding the next layer.
+
+| Phase | Scope | Status |
+|---|---|---|
+| **1. Core database & seeds** | SQLAlchemy ORM, Pydantic seeds, idempotent `init_db`, `requirements-db-init` CLI, loguru wiring | ✅ Implemented |
+| **2. Requirement tools** | `create_requirement`, `update_requirement`, `get_requirement`, `search_requirements`, `list_requirement_changes` | 🚧 Next |
+| **3. Issue tools** | `create_issue`, `update_issue`, `add_issue_update`, `link_issue_to_requirement`, `list_open_issues`, `list_blocking_issues` | ⏳ Planned |
+| **4. Gradio frontend** | Browser UI for adding/searching/updating requirements, managing issues, and reading audit history | ⏳ Planned |
+| **5. Agent integration** | Skill ↔ MCP wiring, end-to-end stakeholder-interview scenarios, agent autonomy patterns | ⏳ Planned |
+
+Future extensions kept explicitly out of scope today but not architecturally
+blocked: PostgreSQL deployment, vector search, evidence ingestion, email
+ingestion, Slack/Teams integration, multi-user authentication.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).

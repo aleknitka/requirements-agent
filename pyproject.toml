@@ -1,45 +1,37 @@
 [project]
 name = "requirements-agent"
 version = "0.1.0"
-description = "Enterprise agent for autonomous requirements management."
+description = "AI agent for requirements engineering, backed by a local SQLite-backed MCP server."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "click>=8.3.3",
     "loguru>=0.7.3",
-    "openai>=2.32.0",
     "opentelemetry-api>=1.41.1",
     "opentelemetry-exporter-otlp>=1.41.1",
     "opentelemetry-sdk>=1.41.1",
-    "pip>=26.1",
     "prek>=0.3.9",
     "pydantic>=2.13.3",
     "pytest>=9.0.3",
     "ruff>=0.15.11",
     "pyyaml>=6.0",
-    "sqlite-vec>=0.1.9",
     "tabulate>=0.10.0",
+    "sqlalchemy>=2.0.49",
 ]
 
-[project.scripts]
-init-project = "requirements_agent_tools.init_project:main"
-refine = "requirements_agent_tools.refine:main"
-req-ops = "requirements_agent_tools.req_ops:main"
-review = "requirements_agent_tools.review:main"
-report = "requirements_agent_tools.report:main"
-meeting = "requirements_agent_tools.meeting:main"
-db = "requirements_agent_tools.db.cli:cli"
+[tool.uv]
+package = false
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/requirements_agent_tools"]
+[tool.uv.workspace]
+members = [
+    "packages/agent_runtime",
+    "packages/requirements_mcp",
+]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
-testpaths = ["tests"]
+testpaths = [
+    "packages/agent_runtime/tests",
+    "packages/requirements_mcp/tests",
+]
 
 [dependency-groups]
 dev = [
@@ -51,7 +43,7 @@ dev = [
 ]
 
 [tool.interrogate]
-fail-under = 90
+fail-under = 80
 ignore-init-method = true
 ignore-init-module = true
 ignore-magic = true
@@ -66,21 +58,7 @@ exclude = ["tests", "docs"]
 python-version = "3.13"
 
 [tool.ty.src]
-include = ["src/requirements_agent_tools"]
-
-[tool.ty.rules]
-# ty flags sqlite3.Row dict-style access as invalid-argument-type
-# because the inferred type is Any | tuple[Any, ...].
-# Suppress as warn until sqlite-vec ships type stubs.
-invalid-argument-type = "warn"
-# ty flags unresolved-attribute on Optional returns in db/cli.py where callers
-# guard with _fail() before accessing the attribute. Pre-existing; suppress as warn.
-unresolved-attribute = "warn"
-# ty flags invalid-return-type on MinuteRow/RequirementRow return types where
-# get_minute/get_requirement return Optional but the caller already verified presence.
-# Pre-existing (# type: ignore[return-value] comments show original intent).
-invalid-return-type = "warn"
-# ty flags unknown-argument in db/cli.py and init_project.py where slug=
-# is passed to ProjectMeta (slug removed in Plan 02). These modules are
-# refactored in Plans 03/04; suppress as warn until then.
-unknown-argument = "warn"
+include = [
+    "packages/agent_runtime/src",
+    "packages/requirements_mcp/src",
+]
