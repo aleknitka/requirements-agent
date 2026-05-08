@@ -70,7 +70,7 @@ class TestUpdateRequirement:
             tools.update_requirement(
                 seeded_session_factory,
                 "missing",
-                RequirementUpdate(author="bob", title="x"),
+                RequirementUpdate(author="bob", change_description="x", title="x"),
             )
 
 
@@ -102,7 +102,9 @@ class TestListRequirementChanges:
         tools.update_requirement(
             seeded_session_factory,
             created.id,
-            RequirementUpdate(author="bob", status_code="approved"),
+            RequirementUpdate(
+                author="bob", change_description="approve", status_code="approved"
+            ),
         )
 
         history = tools.list_requirement_changes(seeded_session_factory, created.id)

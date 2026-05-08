@@ -16,9 +16,53 @@ Three model families live here:
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+# These literal types must stay in lock-step with the seed lists in
+# :mod:`requirements_mcp.seeds.requirement_types` and
+# :mod:`requirements_mcp.seeds.requirement_statuses`. A test in
+# ``tests/test_schemas_requirements.py`` enforces the synchronisation so
+# adding a new code to a seed list without also updating the Literal here
+# fails CI.
+RequirementTypeCode = Literal[
+    "FUN",
+    "NFR",
+    "BUS",
+    "STK",
+    "USR",
+    "SYS",
+    "INT",
+    "DAT",
+    "SEC",
+    "PRV",
+    "COM",
+    "PER",
+    "AVL",
+    "USB",
+    "OPS",
+    "AIM",
+    "REP",
+    "CNS",
+    "TRN",
+]
+"""Closed set of requirement type codes accepted by the MCP tool inputs."""
+
+RequirementStatusCode = Literal[
+    "draft",
+    "in_review",
+    "needs_clarification",
+    "approved",
+    "in_progress",
+    "implemented",
+    "verified",
+    "rejected",
+    "deferred",
+    "deprecated",
+    "removed",
+]
+"""Closed set of requirement status codes accepted by the MCP tool inputs."""
 
 __all__ = [
     "RequirementChangeOut",
@@ -26,7 +70,9 @@ __all__ = [
     "RequirementOut",
     "RequirementSearchHit",
     "RequirementSearchQuery",
+    "RequirementStatusCode",
     "RequirementStatusOut",
+    "RequirementTypeCode",
     "RequirementTypeOut",
     "RequirementUpdate",
 ]
@@ -43,8 +89,8 @@ class RequirementCreate(BaseModel):
 
     title: str = Field(min_length=1, max_length=255)
     requirement_statement: str = Field(min_length=1)
-    type_code: str = Field(min_length=1, max_length=8)
-    status_code: str = "draft"
+    type_code: RequirementTypeCode
+    status_code: RequirementStatusCode = "draft"
     author: str = Field(min_length=1, max_length=255)
     extended_description: str = ""
     users: list[str] = Field(default_factory=list)
@@ -64,18 +110,21 @@ class RequirementUpdate(BaseModel):
     """Input payload for ``update_requirement``.
 
     Every diffable field is optional; only fields explicitly supplied by
-    the caller participate in the diff. ``author`` is required because
-    the audit row needs to record who is making the change, and
-    ``change_description`` is a short commit-message-style note that
-    appears alongside the structured diff.
+    the caller participate in the diff. Two non-diffable fields are
+    required on every call so the audit row is always self-explanatory:
+    ``author`` records who is making the change and
+    ``change_description`` is a short commit-message-style note about
+    why. The audit row is only written when at least one diffable field
+    actually changes; for a no-op update the caller's
+    ``change_description`` is discarded.
     """
 
     author: str = Field(min_length=1, max_length=255)
-    change_description: str = ""
+    change_description: str = Field(min_length=1)
     title: str | None = Field(default=None, min_length=1, max_length=255)
     requirement_statement: str | None = Field(default=None, min_length=1)
-    type_code: str | None = Field(default=None, min_length=1, max_length=8)
-    status_code: str | None = Field(default=None, min_length=1, max_length=64)
+    type_code: RequirementTypeCode | None = None
+    status_code: RequirementStatusCode | None = None
     extended_description: str | None = None
     users: list[str] | None = None
     triggers: list[str] | None = None

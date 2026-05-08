@@ -145,8 +145,14 @@ def update_requirement(
         raise RequirementNotFoundError(requirement_id)
 
     submitted = payload.model_dump(exclude_unset=True)
+    # Drop ``None`` values: every diffable column on Requirement is
+    # NOT NULL, so a caller cannot meaningfully clear a field by passing
+    # ``None``. Filtering here keeps the service from issuing an INSERT
+    # that would only surface as a NOT-NULL IntegrityError at commit.
     updates: dict[str, Any] = {
-        field: submitted[field] for field in DIFFABLE_FIELDS if field in submitted
+        field: submitted[field]
+        for field in DIFFABLE_FIELDS
+        if field in submitted and submitted[field] is not None
     }
     diff = compute_diff(requirement, updates)
 
@@ -170,7 +176,6 @@ def update_requirement(
             date=datetime.now(timezone.utc),
         )
     )
-    session.flush()
 
     logger.info(
         "Updated requirement {} -> v{} ({} fields changed)",

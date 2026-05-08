@@ -13,7 +13,9 @@ from requirements_mcp.schemas.requirements import (
     RequirementOut,
     RequirementSearchHit,
     RequirementSearchQuery,
+    RequirementStatusCode,
     RequirementStatusOut,
+    RequirementTypeCode,
     RequirementTypeOut,
     RequirementUpdate,
 )
@@ -24,7 +26,9 @@ __all__ = [
     "RequirementOut",
     "RequirementSearchHit",
     "RequirementSearchQuery",
+    "RequirementStatusCode",
     "RequirementStatusOut",
+    "RequirementTypeCode",
     "RequirementTypeOut",
     "RequirementUpdate",
 ]

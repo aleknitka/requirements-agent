@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import get_args
 
 import pytest
 from pydantic import ValidationError
@@ -13,10 +14,13 @@ from requirements_mcp.schemas import (
     RequirementOut,
     RequirementSearchHit,
     RequirementSearchQuery,
+    RequirementStatusCode,
     RequirementStatusOut,
+    RequirementTypeCode,
     RequirementTypeOut,
     RequirementUpdate,
 )
+from requirements_mcp.seeds import REQUIREMENT_STATUSES, REQUIREMENT_TYPES
 
 
 def _minimal_create_kwargs(**overrides: object) -> dict[str, object]:
@@ -48,20 +52,62 @@ class TestRequirementCreate:
         with pytest.raises(ValidationError):
             RequirementCreate(**_minimal_create_kwargs(requirement_statement=""))
 
+    def test_rejects_unknown_type_code(self) -> None:
+        with pytest.raises(ValidationError):
+            RequirementCreate(**_minimal_create_kwargs(type_code="ZZZ"))
+
+    def test_rejects_unknown_status_code(self) -> None:
+        with pytest.raises(ValidationError):
+            RequirementCreate(**_minimal_create_kwargs(status_code="not-a-status"))
+
 
 class TestRequirementUpdate:
-    def test_author_required(self) -> None:
+    def test_author_and_change_description_required(self) -> None:
         with pytest.raises(ValidationError):
             RequirementUpdate(title="x")  # type: ignore[call-arg]
+        with pytest.raises(ValidationError):
+            RequirementUpdate(author="alice", title="x")  # type: ignore[call-arg]
 
-    def test_only_author_is_legal(self) -> None:
-        payload = RequirementUpdate(author="alice")
-        # No diffable fields supplied — payload model_dump should reflect that.
-        assert payload.model_dump(exclude_unset=True) == {"author": "alice"}
+    def test_minimal_legal_payload(self) -> None:
+        payload = RequirementUpdate(author="alice", change_description="why")
+        assert payload.model_dump(exclude_unset=True) == {
+            "author": "alice",
+            "change_description": "why",
+        }
+
+    def test_rejects_empty_change_description(self) -> None:
+        with pytest.raises(ValidationError):
+            RequirementUpdate(author="alice", change_description="")
 
     def test_rejects_extra_field(self) -> None:
         with pytest.raises(ValidationError):
-            RequirementUpdate(author="alice", unknown="x")  # type: ignore[call-arg]
+            RequirementUpdate(  # type: ignore[call-arg]
+                author="alice",
+                change_description="why",
+                unknown="x",
+            )
+
+    def test_rejects_unknown_type_code(self) -> None:
+        with pytest.raises(ValidationError):
+            RequirementUpdate(author="alice", change_description="why", type_code="ZZZ")
+
+    def test_rejects_unknown_status_code(self) -> None:
+        with pytest.raises(ValidationError):
+            RequirementUpdate(
+                author="alice", change_description="why", status_code="bogus"
+            )
+
+
+def test_type_code_literal_matches_seeds() -> None:
+    """Literal must list every seeded requirement type code, and only those."""
+    assert set(get_args(RequirementTypeCode)) == {s.code for s in REQUIREMENT_TYPES}
+
+
+def test_status_code_literal_matches_seeds() -> None:
+    """Literal must list every seeded requirement status code, and only those."""
+    assert set(get_args(RequirementStatusCode)) == {
+        s.code for s in REQUIREMENT_STATUSES
+    }
 
 
 class TestRequirementSearchQuery:

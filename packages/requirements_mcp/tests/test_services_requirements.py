@@ -7,7 +7,6 @@ matching ``requirements_changes`` row.
 from __future__ import annotations
 
 import pytest
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from requirements_mcp.models import RequirementChange
@@ -69,20 +68,6 @@ class TestCreateRequirement:
         assert change.diff == {}
         assert change.author == "alice"
 
-    def test_create_with_unknown_type_fails_at_commit(
-        self, seeded_session: Session
-    ) -> None:
-        create_requirement(seeded_session, _create_payload(type_code="ZZZ"))
-        with pytest.raises(IntegrityError):
-            seeded_session.commit()
-
-    def test_create_with_unknown_status_fails_at_commit(
-        self, seeded_session: Session
-    ) -> None:
-        create_requirement(seeded_session, _create_payload(status_code="bogus"))
-        with pytest.raises(IntegrityError):
-            seeded_session.commit()
-
 
 class TestUpdateRequirement:
     def test_updates_field_and_logs_change(self, seeded_session: Session) -> None:
@@ -125,7 +110,7 @@ class TestUpdateRequirement:
         updated = update_requirement(
             seeded_session,
             req.id,
-            RequirementUpdate(author="bob", title="t"),
+            RequirementUpdate(author="bob", change_description="no-op", title="t"),
         )
         seeded_session.commit()
 
@@ -137,7 +122,7 @@ class TestUpdateRequirement:
             update_requirement(
                 seeded_session,
                 "missing",
-                RequirementUpdate(author="bob", title="t"),
+                RequirementUpdate(author="bob", change_description="x", title="t"),
             )
 
     def test_list_field_update_recorded(self, seeded_session: Session) -> None:
@@ -193,7 +178,11 @@ class TestUpdateRequirement:
         update_requirement(
             seeded_session,
             req.id,
-            RequirementUpdate(author="bob", **{field: changed}),  # type: ignore[arg-type]
+            RequirementUpdate(
+                author="bob",
+                change_description=f"update {field}",
+                **{field: changed},
+            ),  # type: ignore[arg-type]
         )
         seeded_session.commit()
 
@@ -233,7 +222,9 @@ class TestSearchRequirements:
         update_requirement(
             seeded_session,
             a.id,
-            RequirementUpdate(author="bob", status_code="approved"),
+            RequirementUpdate(
+                author="bob", change_description="approve", status_code="approved"
+            ),
         )
         seeded_session.commit()
 
@@ -288,7 +279,9 @@ class TestListRequirementChanges:
         update_requirement(
             seeded_session,
             req.id,
-            RequirementUpdate(author="bob", status_code="approved"),
+            RequirementUpdate(
+                author="bob", change_description="approve", status_code="approved"
+            ),
         )
         seeded_session.commit()
 
