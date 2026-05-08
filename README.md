@@ -222,8 +222,8 @@ to end before adding the next layer.
 | Phase | Scope | Status |
 |---|---|---|
 | **1. Core database & seeds** | SQLAlchemy ORM, Pydantic seeds, idempotent `init_db`, `requirements-db-init` CLI, loguru wiring | ✅ Implemented |
-| **2. Requirement tools** | `create_requirement`, `update_requirement`, `get_requirement`, `search_requirements`, `list_requirement_changes` | 🚧 Next |
-| **3. Issue tools** | `create_issue`, `update_issue`, `add_issue_update`, `link_issue_to_requirement`, `list_open_issues`, `list_blocking_issues` | ⏳ Planned |
+| **2. Requirement tools** | `create_requirement`, `update_requirement`, `get_requirement`, `search_requirements`, `list_requirement_changes`, `list_requirement_statuses`, `list_requirement_types` — exposed over stdio via `requirements-mcp-server` | ✅ Implemented |
+| **3. Issue tools** | `create_issue`, `update_issue`, `add_issue_update`, `link_issue_to_requirement`, `list_open_issues`, `list_blocking_issues` | 🚧 Next |
 | **4. Gradio frontend** | Browser UI for adding/searching/updating requirements, managing issues, and reading audit history | ⏳ Planned |
 | **5. Agent integration** | Skill ↔ MCP wiring, end-to-end stakeholder-interview scenarios, agent autonomy patterns | ⏳ Planned |
 
