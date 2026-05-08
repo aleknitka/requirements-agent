@@ -151,9 +151,18 @@ uv run --package requirements-mcp requirements-mcp-server \
 
 By default the server binds to `127.0.0.1:7860`. The Gradio UI is at
 `http://127.0.0.1:7860/` and the MCP endpoint (Server-Sent Events) is at
-`http://127.0.0.1:7860/gradio_api/mcp/sse`. All 17 tools are exposed
+`http://127.0.0.1:7860/gradio_api/mcp/sse`. All 17 MCP tools are exposed
 through both surfaces, backed by the same Python functions — there is no
 parallel registration.
+
+The UI is organised into four tabs:
+
+- **Requirements** — search/filter, view full detail with audit history, create, and edit (with structured-list fields collapsed into an accordion).
+- **Issues** — search/filter (free text + status/type/priority/owner), quick filters for open and blocking issues, view detail with action log, create, edit (clear-owner supported), append action-log entries, and link / unlink to a requirement.
+- **Audit** — paste a requirement or issue id and see the full change history with diffs rendered.
+- **Metadata** — read-only browser of every controlled vocabulary (statuses, types, priorities).
+
+UI button click handlers are marked `api_visibility="private"` so they do not appear over MCP — the MCP tool surface stays exactly the canonical 17 tools registered via `gr.api(...)` in `app.py`.
 
 `--port`, `--host`, `--log-level`, `--share`, and `--no-init` are
 documented via `requirements-mcp-server --help`.
@@ -207,7 +216,8 @@ requirements-agent/
         services/                  # SQLAlchemy business logic + diff utility
         seeds/                     # Pydantic seed models + idempotent apply_seeds
         tools/                     # Thin tool wrappers used by app.py
-      tests/                       # 200+ unit tests
+        ui/                        # Per-tab Gradio Blocks builders
+      tests/                       # 210+ unit tests
 
   data/                            # SQLite databases (gitignored)
 ```
@@ -244,8 +254,8 @@ to end before adding the next layer.
 | **1. Core database & seeds** | SQLAlchemy ORM, Pydantic seeds, idempotent `init_db`, `requirements-db-init` CLI, loguru wiring | ✅ Implemented |
 | **2. Requirement tools** | `create_requirement`, `update_requirement`, `get_requirement`, `search_requirements`, `list_requirement_changes`, `list_requirement_statuses`, `list_requirement_types` | ✅ Implemented |
 | **3. Issue tools + Gradio MCP app** | `create_issue`, `update_issue`, `get_issue`, `search_issues`, `list_issue_updates`, `list_open_issues`, `list_blocking_issues`, `add_issue_update`, `link_issue_to_requirement`, `unlink_issue_from_requirement` — all 17 tools exposed via a single Gradio app with `mcp_server=True` (UI on `/`, MCP-over-SSE on `/gradio_api/mcp/sse`) | ✅ Implemented |
-| **4. UI polish** | Richer per-tab forms (search/filter, edit, audit-history viewers, pickers) on top of the Gradio Blocks scaffold from Phase 3 | 🚧 Next |
-| **5. Agent integration** | Skill ↔ MCP wiring, end-to-end stakeholder-interview scenarios, agent autonomy patterns | ⏳ Planned |
+| **4. UI tabs** | Per-subsystem tabs with search/filter, view-with-history, create, edit, link/unlink, action-log append, and a metadata browser. UI handlers reuse the same tool wrappers as the MCP endpoints; they're marked `api_visibility="private"` so the MCP surface stays exactly the canonical 17 tools. | ✅ Implemented |
+| **5. Agent integration** | Skill ↔ MCP wiring, end-to-end stakeholder-interview scenarios, agent autonomy patterns | 🚧 Next |
 
 Future extensions kept explicitly out of scope today but not architecturally
 blocked: PostgreSQL deployment, vector search, evidence ingestion, email

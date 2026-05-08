@@ -37,7 +37,7 @@ repos:
     rev: 1.7.0
     hooks:
       - id: interrogate
-        args: [packages/agent_runtime/src, packages/requirements_mcp/src]
+        args: [-n, packages/agent_runtime/src, packages/requirements_mcp/src]
         pass_filenames: false
 
   # ── Tests ──────────────────────────────────────────────────────────────

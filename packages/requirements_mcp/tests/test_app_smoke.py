@@ -19,16 +19,19 @@ from requirements_mcp.tools import requirements as req_tools
 
 
 def _registered_api_names(app: gr.Blocks) -> set[str]:
-    """Return the set of api_name strings registered on a Gradio Blocks app.
+    """Return the set of public ``api_name`` strings on a Gradio Blocks app.
 
-    Pulls from each ``Dependency``'s ``api_name`` attribute. The
-    representation matches what Gradio publishes via its API and MCP
-    introspection, so this is the same surface an MCP client would see.
+    Mirrors Gradio's own MCP filter: only endpoints with
+    ``api_visibility="public"`` and a string ``api_name`` end up in the
+    MCP tool list. UI button click handlers default to ``"public"`` but
+    are downgraded to ``"private"`` by ``_seal_ui_handlers`` in
+    :mod:`requirements_mcp.app`, so they should not appear here.
     """
     names: set[str] = set()
     for dep in app.fns.values():
         api_name = getattr(dep, "api_name", None)
-        if isinstance(api_name, str):
+        api_visibility = getattr(dep, "api_visibility", "public")
+        if isinstance(api_name, str) and api_visibility == "public":
             names.add(api_name)
     return names
 
@@ -44,6 +47,19 @@ def test_all_seventeen_tools_registered(seeded_session_factory) -> None:
     assert set(REGISTERED_TOOLS).issubset(registered), (
         f"missing: {set(REGISTERED_TOOLS) - registered}"
     )
+
+
+def test_ui_handlers_do_not_leak_into_mcp_surface(seeded_session_factory) -> None:
+    """UI tab handlers must not be exposed as MCP tools.
+
+    The Gradio app registers UI button click handlers and the
+    seventeen ``gr.api`` tool endpoints. Only the latter should
+    surface as MCP tools (i.e. only they should carry an
+    ``api_name``). This test asserts the exposed-API set is exactly
+    :data:`REGISTERED_TOOLS` — no more, no less.
+    """
+    app = build_app(seeded_session_factory)
+    assert _registered_api_names(app) == set(REGISTERED_TOOLS)
 
 
 def test_registered_tools_count() -> None:
