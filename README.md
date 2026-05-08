@@ -142,15 +142,31 @@ untouched, locally-edited descriptions survive.
 A `REQUIREMENTS_DB_PATH` environment variable can replace the
 `--db` flag; the default when neither is set is `./data/requirements.db`.
 
+Launch the Gradio + MCP app:
+
+```bash
+uv run --package requirements-mcp requirements-mcp-server \
+  --db ./data/requirements.db --no-init
+```
+
+By default the server binds to `127.0.0.1:7860`. The Gradio UI is at
+`http://127.0.0.1:7860/` and the MCP endpoint (Server-Sent Events) is at
+`http://127.0.0.1:7860/gradio_api/mcp/sse`. All 17 tools are exposed
+through both surfaces, backed by the same Python functions — there is no
+parallel registration.
+
+`--port`, `--host`, `--log-level`, `--share`, and `--no-init` are
+documented via `requirements-mcp-server --help`.
+
 ---
 
 ## Tech stack
 
 - **Python 3.13+**
 - **SQLAlchemy 2** for ORM, with a future Alembic migration path
-- **Pydantic v2** for input validation, seed models, and Gradio form schemas
-- **MCP Python SDK** for the stdio tool transport
-- **Gradio** for local human-facing workflows (planned)
+- **Pydantic v2** for input validation, seed models, and tool I/O
+- **Gradio 6** with `mcp_server=True` — single app for UI + MCP-over-SSE
+- **MCP Python SDK** under the hood (used by Gradio's MCP server)
 - **loguru** for structured logging — stdout plus a daily file under `logs/`
 - **uv** for workspace and lockfile management
 - **pytest** + **interrogate** + **ruff** + **bandit** for quality gates
@@ -183,11 +199,15 @@ requirements-agent/
         __init__.py                # configure_logging, init_db, resolve_db_path
         config.py                  # CLI > env > default DB path resolver
         cli.py                     # `requirements-db-init` entry point
+        app.py                     # `requirements-mcp-server` (Gradio + MCP-over-SSE)
         logging.py                 # loguru: stdout + daily file sink
         db/                        # Base, engine, session factory, init_db
         models/                    # SQLAlchemy ORM (requirement, issue, *_meta, JSONList)
+        schemas/                   # Pydantic input/output models for the MCP tools
+        services/                  # SQLAlchemy business logic + diff utility
         seeds/                     # Pydantic seed models + idempotent apply_seeds
-      tests/                       # 40+ unit tests
+        tools/                     # Thin tool wrappers used by app.py
+      tests/                       # 200+ unit tests
 
   data/                            # SQLite databases (gitignored)
 ```
@@ -222,9 +242,9 @@ to end before adding the next layer.
 | Phase | Scope | Status |
 |---|---|---|
 | **1. Core database & seeds** | SQLAlchemy ORM, Pydantic seeds, idempotent `init_db`, `requirements-db-init` CLI, loguru wiring | ✅ Implemented |
-| **2. Requirement tools** | `create_requirement`, `update_requirement`, `get_requirement`, `search_requirements`, `list_requirement_changes`, `list_requirement_statuses`, `list_requirement_types` — exposed over stdio via `requirements-mcp-server` | ✅ Implemented |
-| **3. Issue tools** | `create_issue`, `update_issue`, `add_issue_update`, `link_issue_to_requirement`, `list_open_issues`, `list_blocking_issues` | 🚧 Next |
-| **4. Gradio frontend** | Browser UI for adding/searching/updating requirements, managing issues, and reading audit history | ⏳ Planned |
+| **2. Requirement tools** | `create_requirement`, `update_requirement`, `get_requirement`, `search_requirements`, `list_requirement_changes`, `list_requirement_statuses`, `list_requirement_types` | ✅ Implemented |
+| **3. Issue tools + Gradio MCP app** | `create_issue`, `update_issue`, `get_issue`, `search_issues`, `list_issue_updates`, `list_open_issues`, `list_blocking_issues`, `add_issue_update`, `link_issue_to_requirement`, `unlink_issue_from_requirement` — all 17 tools exposed via a single Gradio app with `mcp_server=True` (UI on `/`, MCP-over-SSE on `/gradio_api/mcp/sse`) | ✅ Implemented |
+| **4. UI polish** | Richer per-tab forms (search/filter, edit, audit-history viewers, pickers) on top of the Gradio Blocks scaffold from Phase 3 | 🚧 Next |
 | **5. Agent integration** | Skill ↔ MCP wiring, end-to-end stakeholder-interview scenarios, agent autonomy patterns | ⏳ Planned |
 
 Future extensions kept explicitly out of scope today but not architecturally
