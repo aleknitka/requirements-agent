@@ -96,6 +96,20 @@ discovered later. The schema uses a deterministic constraint-naming
 convention so a future move to PostgreSQL is a configuration change rather
 than a migration project.
 
+Primary keys are short, prefixed slugs rather than opaque UUIDs so an id
+in a log line, a tool response, or a UI cell is immediately recognisable:
+
+| Table | Format | Example |
+|---|---|---|
+| `requirements` | `REQ-<TYPE>-<6>` | `REQ-USR-g4bD84` |
+| `requirements_changes` | `REQ-UPDATE-<6>` | `REQ-UPDATE-fg3dcf` |
+| `issues` | `ISSUE-<TYPE>-<6>` | `ISSUE-BLK-14gH7d` |
+| `issue_updates` | `ISSUE-UPDATE-<6>` | `ISSUE-UPDATE-45hgb3` |
+
+`<TYPE>` is the row's three-letter type code (`USR`, `FUN`, `BLK`, ...);
+`<6>` is a 6-character base62 suffix from `secrets.choice`. ID generation
+lives in `requirements_mcp.ids`.
+
 ---
 
 ## Design principles
