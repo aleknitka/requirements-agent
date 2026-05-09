@@ -38,7 +38,12 @@ from requirements_mcp.services.issues import (
 )
 from requirements_mcp.services.requirements import RequirementNotFoundError
 from requirements_mcp.tools import issues as tools
-from requirements_mcp.ui._helpers import format_diff, rows_to_table, safe_strip
+from requirements_mcp.ui._helpers import (
+    format_diff,
+    rows_to_table,
+    safe_strip,
+    selected_row_id,
+)
 
 __all__ = ["build_issues_tab"]
 
@@ -377,11 +382,11 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
             issue.id,  # l_id
         )
 
-    def _select_row(evt: gr.SelectData, table: list[list[Any]]) -> tuple:
-        if not table or evt.index is None:
+    def _select_row(evt: gr.SelectData, table: Any) -> tuple:
+        row_id = selected_row_id(table, evt)
+        if row_id is None:
             return _empty_select()
-        row_index = evt.index[0]
-        return _load_detail(table[row_index][0])
+        return _load_detail(row_id)
 
     results.select(_select_row, inputs=results, outputs=select_outputs)
     view_refresh.click(_load_detail, inputs=view_id, outputs=select_outputs)
