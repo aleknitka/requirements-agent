@@ -36,10 +36,11 @@ def init_db(
 
     The function performs three steps in order:
 
-    1. Resolve the target path via
-       :func:`requirements_mcp.config.resolve_db_path` (CLI argument,
-       ``REQUIREMENTS_DB_PATH`` environment variable, or default), and
-       create the enclosing directory if it is missing.
+    1. Resolve the target path. When ``db_path`` is ``None`` the fixed
+       project location :func:`requirements_mcp.config.resolve_db_path`
+       (``./data/requirements.db``) is used. The ``db_path`` keyword is
+       a *programmatic* seam used by tests to redirect at a
+       ``tmp_path``; it is not exposed through any user-facing CLI.
     2. Open a SQLAlchemy engine, optionally drop every table when
        ``drop_first`` is ``True``, and call ``Base.metadata.create_all``
        to ensure all ORM tables exist.
@@ -50,10 +51,8 @@ def init_db(
     follow database provisioning in development logs.
 
     Args:
-        db_path: Optional override for the database location. When
-            ``None``, the path is resolved from the CLI/env/default
-            chain in :func:`resolve_db_path`. Accepts strings and
-            path-like objects.
+        db_path: Optional override for tests. When ``None``, the locked
+            project path returned by :func:`resolve_db_path` is used.
         drop_first: When ``True``, drop every table before recreating
             the schema. This destroys all stored data and exists to
             support the CLI's ``--reset`` flag and tests that need a
@@ -69,7 +68,11 @@ def init_db(
         OSError: If the target directory does not exist and cannot be
             created (for example because of insufficient permissions).
     """
-    resolved = resolve_db_path(db_path)
+    resolved = (
+        Path(db_path).expanduser().resolve()
+        if db_path is not None
+        else resolve_db_path()
+    )
     logger.info("Initialising database at {}", resolved)
     resolved.parent.mkdir(parents=True, exist_ok=True)
 

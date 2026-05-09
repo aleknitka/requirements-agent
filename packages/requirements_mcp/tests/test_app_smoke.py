@@ -101,8 +101,6 @@ def test_parser_accepts_documented_flags() -> None:
     parser = _build_parser()
     args = parser.parse_args(
         [
-            "--db",
-            "/tmp/x.db",
             "--log-level",
             "DEBUG",
             "--no-init",
@@ -113,7 +111,6 @@ def test_parser_accepts_documented_flags() -> None:
             "--share",
         ]
     )
-    assert args.db == "/tmp/x.db"
     assert args.log_level == "DEBUG"
     assert args.no_init is True
     assert args.host == "0.0.0.0"
@@ -126,12 +123,19 @@ def test_parser_defaults() -> None:
     # defaults are applied by ``resolve_host`` / ``resolve_port`` so the
     # YAML config file and env vars can fill them in.
     args = _build_parser().parse_args([])
-    assert args.db is None
     assert args.log_level == "INFO"
     assert args.no_init is False
     assert args.host is None
     assert args.port is None
     assert args.share is False
+
+
+def test_parser_rejects_db_flag() -> None:
+    """The --db flag is gone; argparse must reject it loud."""
+    import pytest
+
+    with pytest.raises(SystemExit):
+        _build_parser().parse_args(["--db", "anything"])
 
 
 def test_main_exits_cleanly_on_invalid_port(monkeypatch) -> None:

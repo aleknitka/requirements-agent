@@ -18,7 +18,7 @@ Run via the ``requirements-mcp-server`` console script:
 .. code-block:: bash
 
    uv run --package requirements-mcp \\
-     requirements-mcp-server --db ./data/requirements.db --no-init
+     requirements-mcp-server --no-init
 """
 
 from __future__ import annotations
@@ -442,16 +442,6 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
-        "--db",
-        dest="db",
-        default=None,
-        help=(
-            "Path to the SQLite database file. Overrides the "
-            "REQUIREMENTS_DB_PATH environment variable. Default: "
-            "./data/requirements.db."
-        ),
-    )
-    parser.add_argument(
         "--log-level",
         default="INFO",
         help="Loguru level for stdout and the daily log file. Default: INFO.",
@@ -523,7 +513,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         logger.error("{}", exc)
         return 1
 
-    resolved = resolve_db_path(args.db)
+    resolved = resolve_db_path()
     if args.no_init:
         logger.info("Skipping init_db (--no-init); using {}", resolved)
     else:

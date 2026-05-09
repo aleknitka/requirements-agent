@@ -14,8 +14,10 @@ import sys
 from typing import Sequence
 
 from requirements_mcp.config import resolve_db_path
+from requirements_mcp.db.engine import make_engine, make_session_factory
 from requirements_mcp.db.init import init_db
 from requirements_mcp.logging import configure_logging
+from requirements_mcp.seeds.demo import apply_demo_data
 
 
 def _build_db_init_parser() -> argparse.ArgumentParser:
@@ -32,20 +34,10 @@ def _build_db_init_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="requirements-db-init",
         description=(
-            "Initialise the SQLite database used by the requirements MCP "
-            "server. Creates the schema if it does not yet exist and "
-            "upserts controlled-vocabulary metadata in a single, "
-            "idempotent operation. Safe to re-run."
-        ),
-    )
-    parser.add_argument(
-        "--db",
-        dest="db",
-        default=None,
-        help=(
-            "Path to the SQLite database file. Overrides the "
-            "REQUIREMENTS_DB_PATH environment variable. When neither is "
-            "set, the default ./data/requirements.db is used."
+            "Initialise the SQLite database at ./data/requirements.db. "
+            "Creates the schema if it does not yet exist and upserts "
+            "controlled-vocabulary metadata in a single, idempotent "
+            "operation. The path is fixed; there is no --db flag."
         ),
     )
     parser.add_argument(
@@ -61,6 +53,17 @@ def _build_db_init_parser() -> argparse.ArgumentParser:
         "--yes",
         action="store_true",
         help="Skip the interactive confirmation prompt for --reset.",
+    )
+    parser.add_argument(
+        "--demo-data",
+        dest="demo_data",
+        action="store_true",
+        help=(
+            "After init/seed, populate the database with ~10 sample "
+            "requirements and ~5 sample issues for demo / play. Skipped "
+            "if any requirements already exist; combine with --reset "
+            "--yes to start clean."
+        ),
     )
     parser.add_argument(
         "--log-level",
@@ -101,7 +104,7 @@ def db_init(argv: Sequence[str] | None = None) -> int:
                 file=sys.stderr,
             )
             return 1
-        resolved_path = resolve_db_path(args.db)
+        resolved_path = resolve_db_path()
         confirmation = input(
             f"This will DROP all tables at {resolved_path}. Continue? [y/N] "
         )
@@ -109,10 +112,26 @@ def db_init(argv: Sequence[str] | None = None) -> int:
             print("Aborted.", file=sys.stderr)
             return 1
 
-    resolved, report = init_db(db_path=args.db, drop_first=args.reset)
+    resolved, report = init_db(drop_first=args.reset)
     print(f"Database ready at: {resolved}")
     print(f"Seeds inserted: {report.inserted}")
     print(f"Seeds skipped:  {report.skipped}")
+
+    if args.demo_data:
+        engine = make_engine(resolved)
+        session_factory = make_session_factory(engine)
+        with session_factory() as session:
+            demo_report = apply_demo_data(session)
+            session.commit()
+        if demo_report.skipped:
+            print("Demo data: skipped (existing requirements found).")
+        else:
+            print(
+                f"Demo data: {demo_report.requirements} requirements, "
+                f"{demo_report.issues} issues, "
+                f"{demo_report.links} links inserted."
+            )
+
     return 0
 
 

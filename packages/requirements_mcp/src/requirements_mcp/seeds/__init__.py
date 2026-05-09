@@ -18,6 +18,14 @@ init runs.
 
 from requirements_mcp.seeds._base import SeedBase
 from requirements_mcp.seeds.apply import SeedReport, apply_seeds
+from requirements_mcp.seeds.demo import (
+    DEMO_AUTHOR,
+    DEMO_ISSUES,
+    DEMO_LINKS,
+    DEMO_REQUIREMENTS,
+    DemoReport,
+    apply_demo_data,
+)
 from requirements_mcp.seeds.issue_priorities import (
     ISSUE_PRIORITIES,
     IssuePrioritySeed,
@@ -34,6 +42,11 @@ from requirements_mcp.seeds.requirement_types import (
 )
 
 __all__ = [
+    "DEMO_AUTHOR",
+    "DEMO_ISSUES",
+    "DEMO_LINKS",
+    "DEMO_REQUIREMENTS",
+    "DemoReport",
     "ISSUE_PRIORITIES",
     "ISSUE_STATUSES",
     "ISSUE_TYPES",
@@ -46,5 +59,6 @@ __all__ = [
     "RequirementTypeSeed",
     "SeedBase",
     "SeedReport",
+    "apply_demo_data",
     "apply_seeds",
 ]

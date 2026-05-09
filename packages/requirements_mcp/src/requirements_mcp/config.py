@@ -42,10 +42,24 @@ import yaml
 from loguru import logger
 
 DEFAULT_DB_PATH = Path("data") / "requirements.db"
-"""Default SQLite location when neither CLI nor environment overrides it."""
+"""Fixed SQLite location used by every command.
+
+The path is *not* configurable. CLI flags and the
+:data:`ENV_VAR` environment variable do not override it; the project
+intentionally pins itself to a single database file under ``./data``
+to keep onboarding and the ``--demo-data`` initialiser unambiguous.
+"""
 
 ENV_VAR = "REQUIREMENTS_DB_PATH"
-"""Name of the environment variable that overrides :data:`DEFAULT_DB_PATH`."""
+"""Deprecated: name of the historical override environment variable.
+
+Kept as a module-level string solely so external tooling that reads
+``requirements_mcp.config.ENV_VAR`` does not raise ``ImportError``,
+and as a single place to document the prior behaviour. Setting this
+environment variable has **no** runtime effect today — the database
+path is fixed at :data:`DEFAULT_DB_PATH`. This is a deliberate
+behavioural change, not backwards-compatible support.
+"""
 
 DEFAULT_CONFIG_PATH = Path("config") / "default.yaml"
 """Project-relative path to the YAML config file."""
@@ -66,27 +80,19 @@ _MIN_PORT = 1
 _MAX_PORT = 65535
 
 
-def resolve_db_path(cli_arg: str | os.PathLike[str] | None = None) -> Path:
-    """Choose the database path from CLI, environment, and default sources.
+def resolve_db_path() -> Path:
+    """Return the fixed absolute path of the project's SQLite database.
 
-    Priority order: ``cli_arg`` > ``REQUIREMENTS_DB_PATH`` env var >
-    :data:`DEFAULT_DB_PATH`. The selected path is expanded (``~``) and
-    resolved to absolute form. The file itself does not need to exist.
-
-    Args:
-        cli_arg: Optional path supplied on the command line. May be a
-            string or any path-like object.
+    The database path is locked to :data:`DEFAULT_DB_PATH` so every
+    command — ``requirements-db-init``, ``requirements-mcp-server``, the
+    Gradio frontend, and the MCP tools — operates on the same file. The
+    path is expanded (``~``) and resolved to absolute form; the file
+    itself does not need to exist.
 
     Returns:
-        An absolute :class:`pathlib.Path`.
+        An absolute :class:`pathlib.Path` for ``data/requirements.db``.
     """
-    if cli_arg is not None:
-        candidate = Path(cli_arg)
-    elif env_value := os.environ.get(ENV_VAR):
-        candidate = Path(env_value)
-    else:
-        candidate = DEFAULT_DB_PATH
-    return candidate.expanduser().resolve()
+    return DEFAULT_DB_PATH.expanduser().resolve()
 
 
 def load_yaml_config(path: Path | str | None = None) -> dict[str, Any]:

@@ -55,15 +55,23 @@ def test_init_db_creates_missing_parent_directory(tmp_path: Path) -> None:
     assert nested.exists()
 
 
-def test_init_db_uses_resolver_when_no_argument(
-    monkeypatch: pytest.MonkeyPatch, temp_db_path: Path
+def test_init_db_uses_fixed_resolver_when_no_argument(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("REQUIREMENTS_DB_PATH", str(temp_db_path))
+    """Without ``db_path``, ``init_db`` resolves to ./data/requirements.db.
+
+    Run inside a tmp working directory so the call doesn't touch the
+    real project DB.
+    """
+    monkeypatch.chdir(tmp_path)
+    # ``REQUIREMENTS_DB_PATH`` is documented but no longer overrides.
+    monkeypatch.setenv("REQUIREMENTS_DB_PATH", str(tmp_path / "ignored.db"))
 
     resolved, _ = init_db()
 
-    assert resolved == temp_db_path.resolve()
-    assert temp_db_path.exists()
+    expected = (tmp_path / "data" / "requirements.db").resolve()
+    assert resolved == expected
+    assert expected.exists()
 
 
 def test_init_db_drop_first_resets_data(temp_db_path: Path) -> None:
