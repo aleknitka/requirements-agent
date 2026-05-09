@@ -8,6 +8,7 @@ to catch widget construction errors and import-time regressions.
 from __future__ import annotations
 
 import gradio as gr
+import pytest
 
 from requirements_mcp.ui import (
     build_audit_tab,
@@ -20,6 +21,7 @@ from requirements_mcp.ui._helpers import (
     lines_to_list,
     list_to_lines,
     safe_strip,
+    selected_row_id,
 )
 
 
@@ -89,3 +91,45 @@ def test_format_diff_renders_each_field() -> None:
 
 def test_format_diff_empty() -> None:
     assert format_diff({}) == "(no field changes)"
+
+
+# ---- selected_row_id ----------------------------------------------------
+
+
+class _FakeSelect:
+    """Stand-in for ``gradio.SelectData`` carrying just the ``index`` attr."""
+
+    def __init__(self, index) -> None:
+        self.index = index
+
+
+def test_selected_row_id_from_list_of_lists() -> None:
+    table = [["REQ-FUN-aaaaaa", "title-1"], ["REQ-USR-bbbbbb", "title-2"]]
+    assert selected_row_id(table, _FakeSelect([1, 0])) == "REQ-USR-bbbbbb"
+
+
+def test_selected_row_id_from_pandas_dataframe() -> None:
+    pd = pytest.importorskip("pandas")
+    df = pd.DataFrame(
+        [["REQ-FUN-aaaaaa", "title-1"], ["REQ-USR-bbbbbb", "title-2"]],
+        columns=["id", "title"],
+    )
+    # Regression for issue #8: clicking a row passed a DataFrame to the
+    # callback and the old ``if not table`` truth-test crashed.
+    assert selected_row_id(df, _FakeSelect([0, 0])) == "REQ-FUN-aaaaaa"
+
+
+def test_selected_row_id_handles_empty_dataframe() -> None:
+    pd = pytest.importorskip("pandas")
+    df = pd.DataFrame([], columns=["id"])
+    assert selected_row_id(df, _FakeSelect([0, 0])) is None
+
+
+def test_selected_row_id_handles_no_selection() -> None:
+    assert selected_row_id([["x"]], _FakeSelect(None)) is None
+    assert selected_row_id(None, _FakeSelect([0, 0])) is None
+    assert selected_row_id([], _FakeSelect([0, 0])) is None
+
+
+def test_selected_row_id_handles_empty_row() -> None:
+    assert selected_row_id([[]], _FakeSelect([0, 0])) is None

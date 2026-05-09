@@ -39,6 +39,7 @@ from requirements_mcp.ui._helpers import (
     list_to_lines,
     rows_to_table,
     safe_strip,
+    selected_row_id,
 )
 
 __all__ = ["build_requirements_tab"]
@@ -182,57 +183,39 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
 
     # ---- Selecting a row populates View and Edit -----------------------------
 
-    def _select_row(evt: gr.SelectData, table: list[list[Any]]) -> tuple:
-        if not table or evt.index is None:
-            empty = (
-                "",  # view_id
-                "_No requirement selected._",
-                [],
-                # edit prefill (10 strings + 2 dropdowns)
-                "",  # e_id
-                "",  # e_title
-                "",  # e_statement
-                "FUN",  # e_type
-                "draft",  # e_status
-                "",  # e_extended
-                "",  # e_users
-                "",  # e_triggers
-                "",  # e_pre
-                "",  # e_post
-                "",  # e_inputs
-                "",  # e_outputs
-                "",  # e_logic
-                "",  # e_excs
-                "",  # e_acc
-            )
-            return empty
-        row_index = evt.index[0]
-        row_id = table[row_index][0]
+    def _empty_select(message: str = "_No requirement selected._") -> tuple:
+        return (
+            "",  # view_id
+            message,
+            [],
+            # edit prefill (10 strings + 2 dropdowns)
+            "",  # e_id
+            "",  # e_title
+            "",  # e_statement
+            "FUN",  # e_type
+            "draft",  # e_status
+            "",  # e_extended
+            "",  # e_users
+            "",  # e_triggers
+            "",  # e_pre
+            "",  # e_post
+            "",  # e_inputs
+            "",  # e_outputs
+            "",  # e_logic
+            "",  # e_excs
+            "",  # e_acc
+        )
+
+    def _select_row(evt: gr.SelectData, table: Any) -> tuple:
+        row_id = selected_row_id(table, evt)
+        if row_id is None:
+            return _empty_select()
         return _load_detail(row_id)
 
     def _load_detail(req_id: str) -> tuple:
         req = tools.get_requirement(session_factory, req_id)
         if req is None:
-            return (
-                "",
-                f"_Requirement `{req_id}` not found._",
-                [],
-                "",
-                "",
-                "",
-                "FUN",
-                "draft",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-            )
+            return _empty_select(f"_Requirement `{req_id}` not found._")
         history = tools.list_requirement_changes(session_factory, req_id)
         history_rows = [
             [

@@ -10,12 +10,15 @@ from __future__ import annotations
 import json
 from typing import Any
 
+import gradio as gr
+
 __all__ = [
     "format_diff",
     "lines_to_list",
     "list_to_lines",
     "rows_to_table",
     "safe_strip",
+    "selected_row_id",
 ]
 
 
@@ -110,3 +113,44 @@ def rows_to_table(rows: list[Any], columns: list[str]) -> list[list[Any]]:
         :class:`gradio.Dataframe`'s ``value``.
     """
     return [[getattr(row, col, None) for col in columns] for row in rows]
+
+
+def selected_row_id(table: Any, evt: gr.SelectData) -> str | None:
+    """Return the id (column 0) of the clicked row, or ``None`` for an empty selection.
+
+    Gradio's :class:`gradio.Dataframe` delivers either a
+    ``pandas.DataFrame`` or a ``list[list]`` to event handlers
+    depending on its configured value type and the Gradio release.
+    Truth-testing a ``DataFrame`` raises
+    ``ValueError: The truth value of a DataFrame is ambiguous``, so
+    callbacks must avoid the natural ``if not table`` shape. This
+    helper accepts both shapes plus ``None`` and reads the id cell with
+    the appropriate accessor.
+
+    Args:
+        table: The current value of the source ``Dataframe`` widget.
+        evt: The :class:`gradio.SelectData` event delivered by the
+            ``select`` callback. ``evt.index`` is normally a 2-tuple
+            ``(row, col)`` but can also be a single integer.
+
+    Returns:
+        The string in column 0 of the clicked row, or ``None`` when
+        the selection is empty (no event index, empty table, or out-of-
+        range row).
+    """
+    if evt.index is None:
+        return None
+    row_index = evt.index[0] if isinstance(evt.index, (list, tuple)) else evt.index
+
+    # pandas.DataFrame branch — detected by attribute, no hard import.
+    if hasattr(table, "iat") and hasattr(table, "empty"):
+        if table.empty or row_index >= len(table):
+            return None
+        return str(table.iat[row_index, 0])
+
+    if not table or row_index >= len(table):
+        return None
+    row = table[row_index]
+    if not row:
+        return None
+    return str(row[0])
