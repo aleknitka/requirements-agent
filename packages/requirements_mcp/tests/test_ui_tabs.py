@@ -11,7 +11,6 @@ import gradio as gr
 import pytest
 
 from requirements_mcp.ui import (
-    build_audit_tab,
     build_issues_tab,
     build_metadata_tab,
     build_requirements_tab,
@@ -45,11 +44,6 @@ def test_requirements_tab_builds(seeded_session_factory) -> None:
 
 def test_issues_tab_builds(seeded_session_factory) -> None:
     scope = _TestableBuilder(build_issues_tab, seeded_session_factory).run()
-    assert isinstance(scope, gr.Blocks)
-
-
-def test_audit_tab_builds(seeded_session_factory) -> None:
-    scope = _TestableBuilder(build_audit_tab, seeded_session_factory).run()
     assert isinstance(scope, gr.Blocks)
 
 

@@ -10,13 +10,11 @@ canonical machine surface is the :func:`gradio.api` registrations in
 :func:`requirements_mcp.app.build_app`.
 """
 
-from requirements_mcp.ui.audit_tab import build_audit_tab
 from requirements_mcp.ui.issues_tab import build_issues_tab
 from requirements_mcp.ui.metadata_tab import build_metadata_tab
 from requirements_mcp.ui.requirements_tab import build_requirements_tab
 
 __all__ = [
-    "build_audit_tab",
     "build_issues_tab",
     "build_metadata_tab",
     "build_requirements_tab",

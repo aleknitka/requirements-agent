@@ -1,17 +1,18 @@
 """Gradio tab for the requirement subsystem.
 
-Layout:
+Layout (all single-column inside one outer ``gr.Tabs``):
 
-* Left panel — search & list. Free-text query, status / type
-  multi-select filters, and a results table. Selecting a row populates
-  the right panel.
-* Right panel — three sub-tabs: **View** (full detail + audit
-  history), **Create** (form to add a new requirement), **Edit**
-  (form prefilled from the selected row).
+* **Search** — text query, status / type filters, lookup-by-id, then
+  results table, then a detail panel with audit history.
+* **Create** — full creation form. After a successful submit every
+  input field is cleared so an accidental double-click cannot create
+  the same requirement twice.
+* **Update** — id input + Load button that prefills the form, then a
+  Save button that writes through and logs the diff.
 
 UI handlers reuse the :mod:`requirements_mcp.tools.requirements`
 wrappers without giving them ``api_name``, so the MCP tool surface
-remains exactly the seventeen registrations declared in
+stays exactly the seventeen registrations declared in
 :func:`requirements_mcp.app.build_app`.
 """
 
@@ -54,6 +55,35 @@ _SEARCH_COLUMNS = [
 ]
 
 
+def _format_summary(req: Any) -> str:
+    """Render a requirement detail summary as Markdown.
+
+    Args:
+        req: A :class:`RequirementOut` (or any object exposing the same
+            attribute names).
+
+    Returns:
+        Markdown text suitable for a :class:`gradio.Markdown` block.
+    """
+    summary_md = (
+        f"### {req.title}\n\n"
+        f"- **id**: `{req.id}`\n"
+        f"- **type**: `{req.type_code}` · **status**: `{req.status_code}` "
+        f"· **version**: {req.version}\n"
+        f"- **author**: {req.author}\n"
+        f"- **created**: {req.date_created.isoformat()}\n"
+        f"- **updated**: {req.date_updated.isoformat()}\n\n"
+        f"**Statement**\n\n{req.requirement_statement}\n\n"
+    )
+    if req.extended_description:
+        summary_md += f"**Extended description**\n\n{req.extended_description}\n\n"
+    if req.acceptance_criteria:
+        summary_md += "**Acceptance criteria**\n" + "".join(
+            f"- {c}\n" for c in req.acceptance_criteria
+        )
+    return summary_md
+
+
 def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
     """Build the Requirements tab in the current Blocks scope.
 
@@ -64,25 +94,27 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
     status_choices = [s.code for s in REQUIREMENT_STATUSES]
     type_choices = [t.code for t in REQUIREMENT_TYPES]
 
-    with gr.Row():
-        with gr.Column(scale=1):
+    with gr.Tabs():
+        # ===== Search ======================================================
+        with gr.Tab("Search"):
             gr.Markdown("### Search")
             search_query = gr.Textbox(
                 label="Free-text query",
                 placeholder="space-separated tokens; AND across them",
             )
+            status_filter = gr.Dropdown(
+                choices=status_choices, label="Status", multiselect=True
+            )
+            type_filter = gr.Dropdown(
+                choices=type_choices, label="Type", multiselect=True
+            )
+            lookup_id = gr.Textbox(
+                label="Lookup by id",
+                placeholder="REQ-<TYPE>-xxxxxx — populates details directly",
+            )
             with gr.Row():
-                status_filter = gr.Dropdown(
-                    choices=status_choices,
-                    label="Status",
-                    multiselect=True,
-                )
-                type_filter = gr.Dropdown(
-                    choices=type_choices,
-                    label="Type",
-                    multiselect=True,
-                )
-            search_button = gr.Button("Search", variant="primary")
+                search_button = gr.Button("Search", variant="primary")
+                lookup_button = gr.Button("Load by id")
             results = gr.Dataframe(
                 headers=_SEARCH_COLUMNS,
                 datatype=["str"] * len(_SEARCH_COLUMNS),
@@ -91,81 +123,80 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
                 wrap=True,
             )
 
-        with gr.Column(scale=2):
-            with gr.Tabs():
-                with gr.Tab("View"):
-                    view_id = gr.Textbox(label="Requirement id", interactive=False)
-                    view_summary = gr.Markdown()
-                    view_history = gr.Dataframe(
-                        headers=["date", "author", "change_description", "diff"],
-                        label="Audit history",
-                        interactive=False,
-                        wrap=True,
-                    )
-                    view_refresh = gr.Button("Reload")
+            gr.Markdown("---")
+            gr.Markdown("### Details")
+            view_id = gr.Textbox(label="Requirement id", interactive=False)
+            view_summary = gr.Markdown("_No requirement selected._")
+            view_history = gr.Dataframe(
+                headers=["date", "author", "change_description", "diff"],
+                label="Audit history",
+                interactive=False,
+                wrap=True,
+            )
+            view_refresh = gr.Button("Reload")
 
-                with gr.Tab("Create"):
-                    c_title = gr.Textbox(label="Title")
-                    c_statement = gr.Textbox(label="Statement", lines=3)
-                    with gr.Row():
-                        c_type = gr.Dropdown(
-                            choices=type_choices, label="Type", value="FUN"
-                        )
-                        c_status = gr.Dropdown(
-                            choices=status_choices,
-                            label="Status",
-                            value="draft",
-                        )
-                        c_author = gr.Textbox(label="Author")
-                    c_extended = gr.Textbox(label="Extended description", lines=2)
-                    with gr.Accordion(
-                        "Structured fields (one item per line)", open=False
-                    ):
-                        c_users = gr.Textbox(label="Users", lines=2)
-                        c_triggers = gr.Textbox(label="Triggers", lines=2)
-                        c_pre = gr.Textbox(label="Preconditions", lines=2)
-                        c_post = gr.Textbox(label="Postconditions", lines=2)
-                        c_inputs = gr.Textbox(label="Inputs", lines=2)
-                        c_outputs = gr.Textbox(label="Outputs", lines=2)
-                        c_logic = gr.Textbox(label="Business logic", lines=2)
-                        c_excs = gr.Textbox(label="Exception handling", lines=2)
-                        c_acc = gr.Textbox(label="Acceptance criteria", lines=2)
-                    c_submit = gr.Button("Create requirement", variant="primary")
-                    c_status_box = gr.Markdown()
+        # ===== Create ======================================================
+        with gr.Tab("Create"):
+            c_title = gr.Textbox(label="Title")
+            c_statement = gr.Textbox(label="Statement", lines=3)
+            with gr.Row():
+                c_type = gr.Dropdown(choices=type_choices, label="Type", value="FUN")
+                c_status = gr.Dropdown(
+                    choices=status_choices, label="Status", value="draft"
+                )
+                c_author = gr.Textbox(label="Author")
+            c_extended = gr.Textbox(label="Extended description", lines=2)
+            with gr.Accordion("Structured fields (one item per line)", open=False):
+                c_users = gr.Textbox(label="Users", lines=2)
+                c_triggers = gr.Textbox(label="Triggers", lines=2)
+                c_pre = gr.Textbox(label="Preconditions", lines=2)
+                c_post = gr.Textbox(label="Postconditions", lines=2)
+                c_inputs = gr.Textbox(label="Inputs", lines=2)
+                c_outputs = gr.Textbox(label="Outputs", lines=2)
+                c_logic = gr.Textbox(label="Business logic", lines=2)
+                c_excs = gr.Textbox(label="Exception handling", lines=2)
+                c_acc = gr.Textbox(label="Acceptance criteria", lines=2)
+            c_submit = gr.Button("Create requirement", variant="primary")
+            c_status_box = gr.Markdown()
 
-                with gr.Tab("Edit"):
-                    e_id = gr.Textbox(
-                        label="Requirement id (set from selected row)",
-                        interactive=False,
-                    )
-                    e_title = gr.Textbox(label="Title")
-                    e_statement = gr.Textbox(label="Statement", lines=3)
-                    with gr.Row():
-                        e_type = gr.Textbox(
-                            label="Type (immutable — encoded in id)",
-                            interactive=False,
-                        )
-                        e_status = gr.Dropdown(choices=status_choices, label="Status")
-                    e_extended = gr.Textbox(label="Extended description", lines=2)
-                    with gr.Accordion(
-                        "Structured fields (one item per line)", open=False
-                    ):
-                        e_users = gr.Textbox(label="Users", lines=2)
-                        e_triggers = gr.Textbox(label="Triggers", lines=2)
-                        e_pre = gr.Textbox(label="Preconditions", lines=2)
-                        e_post = gr.Textbox(label="Postconditions", lines=2)
-                        e_inputs = gr.Textbox(label="Inputs", lines=2)
-                        e_outputs = gr.Textbox(label="Outputs", lines=2)
-                        e_logic = gr.Textbox(label="Business logic", lines=2)
-                        e_excs = gr.Textbox(label="Exception handling", lines=2)
-                        e_acc = gr.Textbox(label="Acceptance criteria", lines=2)
-                    with gr.Row():
-                        e_author = gr.Textbox(label="Editing author")
-                        e_change_desc = gr.Textbox(label="Change description")
-                    e_submit = gr.Button("Save changes", variant="primary")
-                    e_status_box = gr.Markdown()
+        # ===== Update ======================================================
+        with gr.Tab("Update"):
+            gr.Markdown(
+                "### Update requirement\n\n"
+                "Enter a requirement id and click **Load** to prefill the "
+                "form."
+            )
+            with gr.Row():
+                u_id = gr.Textbox(label="Requirement id")
+                u_load = gr.Button("Load")
+            u_load_status = gr.Markdown()
 
-    # ---- Search ---------------------------------------------------------------
+            e_title = gr.Textbox(label="Title")
+            e_statement = gr.Textbox(label="Statement", lines=3)
+            with gr.Row():
+                e_type = gr.Textbox(
+                    label="Type (immutable — encoded in id)",
+                    interactive=False,
+                )
+                e_status = gr.Dropdown(choices=status_choices, label="Status")
+            e_extended = gr.Textbox(label="Extended description", lines=2)
+            with gr.Accordion("Structured fields (one item per line)", open=False):
+                e_users = gr.Textbox(label="Users", lines=2)
+                e_triggers = gr.Textbox(label="Triggers", lines=2)
+                e_pre = gr.Textbox(label="Preconditions", lines=2)
+                e_post = gr.Textbox(label="Postconditions", lines=2)
+                e_inputs = gr.Textbox(label="Inputs", lines=2)
+                e_outputs = gr.Textbox(label="Outputs", lines=2)
+                e_logic = gr.Textbox(label="Business logic", lines=2)
+                e_excs = gr.Textbox(label="Exception handling", lines=2)
+                e_acc = gr.Textbox(label="Acceptance criteria", lines=2)
+            with gr.Row():
+                e_author = gr.Textbox(label="Editing author")
+                e_change_desc = gr.Textbox(label="Change description")
+            e_submit = gr.Button("Save changes", variant="primary")
+            e_status_box = gr.Markdown()
+
+    # ---- Search handlers -----------------------------------------------------
 
     def _do_search(
         query: str, statuses: list[str] | None, types: list[str] | None
@@ -184,41 +215,16 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
         outputs=results,
     )
 
-    # ---- Selecting a row populates View and Edit -----------------------------
-
-    def _empty_select(message: str = "_No requirement selected._") -> tuple:
-        return (
-            "",  # view_id
-            message,
-            [],
-            # edit prefill (10 strings + 2 dropdowns)
-            "",  # e_id
-            "",  # e_title
-            "",  # e_statement
-            "FUN",  # e_type
-            "draft",  # e_status
-            "",  # e_extended
-            "",  # e_users
-            "",  # e_triggers
-            "",  # e_pre
-            "",  # e_post
-            "",  # e_inputs
-            "",  # e_outputs
-            "",  # e_logic
-            "",  # e_excs
-            "",  # e_acc
-        )
-
-    def _select_row(evt: gr.SelectData, table: Any) -> tuple:
-        row_id = selected_row_id(table, evt)
-        if row_id is None:
-            return _empty_select()
-        return _load_detail(row_id)
+    def _empty_detail(message: str = "_No requirement selected._") -> tuple:
+        return ("", message, [])
 
     def _load_detail(req_id: str) -> tuple:
+        req_id = safe_strip(req_id)
+        if not req_id:
+            return _empty_detail()
         req = tools.get_requirement(session_factory, req_id)
         if req is None:
-            return _empty_select(f"_Requirement `{req_id}` not found._")
+            return _empty_detail(f"_Requirement `{req_id}` not found._")
         history = tools.list_requirement_changes(session_factory, req_id)
         history_rows = [
             [
@@ -229,74 +235,39 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
             ]
             for row in history
         ]
-        summary_md = (
-            f"### {req.title}\n\n"
-            f"- **id**: `{req.id}`\n"
-            f"- **type**: `{req.type_code}` · **status**: `{req.status_code}` "
-            f"· **version**: {req.version}\n"
-            f"- **author**: {req.author}\n"
-            f"- **created**: {req.date_created.isoformat()}\n"
-            f"- **updated**: {req.date_updated.isoformat()}\n\n"
-            f"**Statement**\n\n{req.requirement_statement}\n\n"
-            + (
-                f"**Extended description**\n\n{req.extended_description}\n\n"
-                if req.extended_description
-                else ""
-            )
-            + (
-                "**Acceptance criteria**\n"
-                + "".join(f"- {c}\n" for c in req.acceptance_criteria)
-                if req.acceptance_criteria
-                else ""
-            )
-        )
-        return (
-            req.id,
-            summary_md,
-            history_rows,
-            req.id,
-            req.title,
-            req.requirement_statement,
-            req.type_code,
-            req.status_code,
-            req.extended_description,
-            list_to_lines(req.users),
-            list_to_lines(req.triggers),
-            list_to_lines(req.preconditions),
-            list_to_lines(req.postconditions),
-            list_to_lines(req.inputs),
-            list_to_lines(req.outputs),
-            list_to_lines(req.business_logic),
-            list_to_lines(req.exception_handling),
-            list_to_lines(req.acceptance_criteria),
-        )
+        return (req.id, _format_summary(req), history_rows)
 
-    select_outputs = [
-        view_id,
-        view_summary,
-        view_history,
-        e_id,
-        e_title,
-        e_statement,
-        e_type,
-        e_status,
-        e_extended,
-        e_users,
-        e_triggers,
-        e_pre,
-        e_post,
-        e_inputs,
-        e_outputs,
-        e_logic,
-        e_excs,
-        e_acc,
-    ]
-    results.select(_select_row, inputs=results, outputs=select_outputs)
+    detail_outputs = [view_id, view_summary, view_history]
 
-    # Re-fetch detail and history on demand.
-    view_refresh.click(_load_detail, inputs=view_id, outputs=select_outputs)
+    def _on_select(evt: gr.SelectData, table: Any) -> tuple:
+        row_id = selected_row_id(table, evt)
+        if row_id is None:
+            return _empty_detail()
+        return _load_detail(row_id)
 
-    # ---- Create ---------------------------------------------------------------
+    results.select(_on_select, inputs=results, outputs=detail_outputs)
+    view_refresh.click(_load_detail, inputs=view_id, outputs=detail_outputs)
+    lookup_button.click(_load_detail, inputs=lookup_id, outputs=detail_outputs)
+
+    # ---- Create handler ------------------------------------------------------
+
+    _CREATE_DEFAULTS: tuple[Any, ...] = (
+        "",  # c_title
+        "",  # c_statement
+        "FUN",  # c_type
+        "draft",  # c_status
+        "",  # c_author
+        "",  # c_extended
+        "",  # c_users
+        "",  # c_triggers
+        "",  # c_pre
+        "",  # c_post
+        "",  # c_inputs
+        "",  # c_outputs
+        "",  # c_logic
+        "",  # c_excs
+        "",  # c_acc
+    )
 
     def _do_create(
         title: str,
@@ -314,7 +285,7 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
         business_logic: str,
         exception_handling: str,
         acceptance_criteria: str,
-    ) -> str:
+    ) -> tuple:
         try:
             payload = RequirementCreate(
                 title=safe_strip(title),
@@ -334,37 +305,125 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
                 acceptance_criteria=lines_to_list(acceptance_criteria),
             )
         except Exception as exc:  # pragma: no cover — defensive
-            return f"❌ Validation error: {exc}"
+            # On validation error keep the user's typed values so they
+            # can correct without retyping; only the status message
+            # changes.
+            return (
+                title,
+                statement,
+                type_code,
+                status_code,
+                author,
+                extended_description,
+                users,
+                triggers,
+                preconditions,
+                postconditions,
+                inputs_,
+                outputs,
+                business_logic,
+                exception_handling,
+                acceptance_criteria,
+                f"❌ Validation error: {exc}",
+            )
 
         out = tools.create_requirement(session_factory, payload)
-        return (
+        message = (
             f"✅ Created requirement `{out.id}` "
             f"(version {out.version}, status {out.status_code})."
         )
+        # On success, blank the form so a duplicate cannot be created
+        # by an accidental second click.
+        return (*_CREATE_DEFAULTS, message)
 
+    create_inputs = [
+        c_title,
+        c_statement,
+        c_type,
+        c_status,
+        c_author,
+        c_extended,
+        c_users,
+        c_triggers,
+        c_pre,
+        c_post,
+        c_inputs,
+        c_outputs,
+        c_logic,
+        c_excs,
+        c_acc,
+    ]
     c_submit.click(
         _do_create,
-        inputs=[
-            c_title,
-            c_statement,
-            c_type,
-            c_status,
-            c_author,
-            c_extended,
-            c_users,
-            c_triggers,
-            c_pre,
-            c_post,
-            c_inputs,
-            c_outputs,
-            c_logic,
-            c_excs,
-            c_acc,
-        ],
-        outputs=c_status_box,
+        inputs=create_inputs,
+        outputs=[*create_inputs, c_status_box],
     )
 
-    # ---- Edit ----------------------------------------------------------------
+    # ---- Update handlers -----------------------------------------------------
+
+    _UPDATE_BLANK: tuple[Any, ...] = (
+        "",  # e_title
+        "",  # e_statement
+        "FUN",  # e_type
+        "draft",  # e_status
+        "",  # e_extended
+        "",  # e_users
+        "",  # e_triggers
+        "",  # e_pre
+        "",  # e_post
+        "",  # e_inputs
+        "",  # e_outputs
+        "",  # e_logic
+        "",  # e_excs
+        "",  # e_acc
+    )
+
+    def _load_for_update(req_id: str) -> tuple:
+        req_id = safe_strip(req_id)
+        if not req_id:
+            return (*_UPDATE_BLANK, "_Enter a requirement id first._")
+        req = tools.get_requirement(session_factory, req_id)
+        if req is None:
+            return (*_UPDATE_BLANK, f"❌ Requirement `{req_id}` not found.")
+        return (
+            req.title,
+            req.requirement_statement,
+            req.type_code,
+            req.status_code,
+            req.extended_description,
+            list_to_lines(req.users),
+            list_to_lines(req.triggers),
+            list_to_lines(req.preconditions),
+            list_to_lines(req.postconditions),
+            list_to_lines(req.inputs),
+            list_to_lines(req.outputs),
+            list_to_lines(req.business_logic),
+            list_to_lines(req.exception_handling),
+            list_to_lines(req.acceptance_criteria),
+            f"✅ Loaded `{req.id}` (v{req.version}, status {req.status_code}).",
+        )
+
+    update_form_outputs = [
+        e_title,
+        e_statement,
+        e_type,
+        e_status,
+        e_extended,
+        e_users,
+        e_triggers,
+        e_pre,
+        e_post,
+        e_inputs,
+        e_outputs,
+        e_logic,
+        e_excs,
+        e_acc,
+    ]
+    u_load.click(
+        _load_for_update,
+        inputs=u_id,
+        outputs=[*update_form_outputs, u_load_status],
+    )
 
     def _do_edit(
         req_id: str,
@@ -385,7 +444,7 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
         change_description: str,
     ) -> str:
         if not safe_strip(req_id):
-            return "❌ Select a requirement from the search results first."
+            return "❌ Enter a requirement id and click Load first."
         try:
             payload = RequirementUpdate(
                 author=safe_strip(author),
@@ -419,7 +478,7 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
     e_submit.click(
         _do_edit,
         inputs=[
-            e_id,
+            u_id,
             e_title,
             e_statement,
             e_status,
