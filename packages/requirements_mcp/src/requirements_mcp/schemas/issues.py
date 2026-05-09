@@ -152,13 +152,17 @@ class IssueUpdate(BaseModel):
     ``owner`` is special-cased: an explicit ``None`` is a meaningful
     clear (the column is nullable on the ORM). Other ``None`` values
     are filtered out by the service before the diff is computed.
+
+    ``issue_type_code`` is intentionally absent: the type is encoded in
+    the issue's id (``ISSUE-<TYPE>-<6>``) and must not change after
+    creation. ``extra="forbid"`` causes attempts to update it to fail
+    loudly at validation time.
     """
 
     author: str = Field(min_length=1, max_length=255)
     change_description: str = Field(min_length=1)
     title: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None, min_length=1)
-    issue_type_code: IssueTypeCode | None = None
     status_code: IssueStatusCode | None = None
     priority_code: IssuePriorityCode | None = None
     impact: str | None = None

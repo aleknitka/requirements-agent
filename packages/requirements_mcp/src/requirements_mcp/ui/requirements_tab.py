@@ -141,7 +141,10 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
                     e_title = gr.Textbox(label="Title")
                     e_statement = gr.Textbox(label="Statement", lines=3)
                     with gr.Row():
-                        e_type = gr.Dropdown(choices=type_choices, label="Type")
+                        e_type = gr.Textbox(
+                            label="Type (immutable — encoded in id)",
+                            interactive=False,
+                        )
                         e_status = gr.Dropdown(choices=status_choices, label="Status")
                     e_extended = gr.Textbox(label="Extended description", lines=2)
                     with gr.Accordion(
@@ -367,7 +370,6 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
         req_id: str,
         title: str,
         statement: str,
-        type_code: str,
         status_code: str,
         extended_description: str,
         users: str,
@@ -390,7 +392,6 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
                 change_description=safe_strip(change_description) or "edit",
                 title=safe_strip(title) or None,
                 requirement_statement=safe_strip(statement) or None,
-                type_code=cast("RequirementTypeCode | None", type_code or None),
                 status_code=cast("RequirementStatusCode | None", status_code or None),
                 extended_description=safe_strip(extended_description),
                 users=lines_to_list(users),
@@ -421,7 +422,6 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
             e_id,
             e_title,
             e_statement,
-            e_type,
             e_status,
             e_extended,
             e_users,

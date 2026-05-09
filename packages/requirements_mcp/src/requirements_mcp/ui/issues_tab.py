@@ -172,7 +172,10 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
                     e_title = gr.Textbox(label="Title")
                     e_description = gr.Textbox(label="Description", lines=3)
                     with gr.Row():
-                        e_type = gr.Dropdown(choices=type_choices, label="Type")
+                        e_type = gr.Textbox(
+                            label="Type (immutable — encoded in id)",
+                            interactive=False,
+                        )
                         e_status = gr.Dropdown(choices=status_choices, label="Status")
                         e_priority = gr.Dropdown(
                             choices=priority_choices, label="Priority"
@@ -433,7 +436,6 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
         issue_id: str,
         title: str,
         description: str,
-        issue_type: str,
         status: str,
         priority: str,
         owner: str,
@@ -452,7 +454,6 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
                 change_description=safe_strip(change_description) or "edit",
                 title=safe_strip(title) or None,
                 description=safe_strip(description) or None,
-                issue_type_code=cast("IssueTypeCode | None", issue_type or None),
                 status_code=cast("IssueStatusCode | None", status or None),
                 priority_code=cast("IssuePriorityCode | None", priority or None),
                 # owner is special: explicit empty -> None means "clear".
@@ -476,7 +477,6 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
             e_id,
             e_title,
             e_description,
-            e_type,
             e_status,
             e_priority,
             e_owner,

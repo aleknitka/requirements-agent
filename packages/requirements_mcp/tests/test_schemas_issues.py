@@ -111,6 +111,14 @@ class TestIssueUpdate:
         with pytest.raises(ValidationError):
             IssueUpdate(author="alice", change_description="why", priority_code="ZZ")
 
+    def test_rejects_issue_type_code_field(self) -> None:
+        # issue_type_code is intentionally not a field on IssueUpdate: the
+        # type is encoded in the issue id and must be immutable.
+        with pytest.raises(ValidationError):
+            IssueUpdate(  # type: ignore[call-arg]
+                author="alice", change_description="why", issue_type_code="AMB"
+            )
+
 
 class TestIssueUpdateAdd:
     def test_minimal_legal_payload(self) -> None:
