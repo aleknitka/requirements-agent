@@ -122,10 +122,13 @@ def test_parser_accepts_documented_flags() -> None:
 
 
 def test_parser_defaults() -> None:
+    # host and port default to None at the argparse layer; the actual
+    # defaults are applied by ``resolve_host`` / ``resolve_port`` so the
+    # YAML config file and env vars can fill them in.
     args = _build_parser().parse_args([])
     assert args.db is None
     assert args.log_level == "INFO"
     assert args.no_init is False
-    assert args.host == "127.0.0.1"
-    assert args.port == 7860
+    assert args.host is None
+    assert args.port is None
     assert args.share is False

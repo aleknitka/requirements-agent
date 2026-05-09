@@ -31,7 +31,12 @@ import gradio as gr
 from loguru import logger
 from sqlalchemy.orm import Session, sessionmaker
 
-from requirements_mcp.config import resolve_db_path
+from requirements_mcp.config import (
+    load_yaml_config,
+    resolve_db_path,
+    resolve_host,
+    resolve_port,
+)
 from requirements_mcp.db.engine import make_engine, make_session_factory
 from requirements_mcp.db.init import init_db
 from requirements_mcp.logging import configure_logging
@@ -461,14 +466,20 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--host",
-        default="127.0.0.1",
-        help="Address to bind. Default: 127.0.0.1 (loopback).",
+        default=None,
+        help=(
+            "Address to bind. Overrides REQUIREMENTS_HOST and the "
+            "host key in config/default.yaml. Default: 127.0.0.1."
+        ),
     )
     parser.add_argument(
         "--port",
         type=int,
-        default=7860,
-        help="Port to listen on. Default: 7860.",
+        default=None,
+        help=(
+            "Port to listen on. Overrides REQUIREMENTS_PORT and the "
+            "port key in config/default.yaml. Default: 7860."
+        ),
     )
     parser.add_argument(
         "--share",
@@ -504,6 +515,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     configure_logging(name="requirements_mcp", level=args.log_level)
 
+    yaml_config = load_yaml_config()
+    host = resolve_host(args.host, config=yaml_config)
+    port = resolve_port(args.port, config=yaml_config)
+
     resolved = resolve_db_path(args.db)
     if args.no_init:
         logger.info("Skipping init_db (--no-init); using {}", resolved)
@@ -516,13 +531,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     logger.info(
         "Launching {} at http://{}:{} (MCP at /gradio_api/mcp/sse, db={})",
         APP_TITLE,
-        args.host,
-        args.port,
+        host,
+        port,
         resolved,
     )
     app.launch(
-        server_name=args.host,
-        server_port=args.port,
+        server_name=host,
+        server_port=port,
         mcp_server=True,
         share=args.share,
         prevent_thread_lock=False,

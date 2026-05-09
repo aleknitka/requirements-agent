@@ -169,6 +169,12 @@ By default the server binds to `127.0.0.1:7860`. The Gradio UI is at
 through both surfaces, backed by the same Python functions — there is no
 parallel registration.
 
+Host and port are read in priority order from `--host` / `--port`, the
+`REQUIREMENTS_HOST` / `REQUIREMENTS_PORT` environment variables, the
+`host` / `port` keys in `config/default.yaml`, and finally the built-in
+defaults. To run two checkouts on the same machine, edit
+`config/default.yaml` in each one and set a distinct `port:` value.
+
 The UI is organised into three tabs. Both the **Requirements** and **Issues** tabs follow the same single-column inner-tab layout — **Search** / **Create** / **Update** — so the two domains feel symmetric:
 
 - **Requirements**
