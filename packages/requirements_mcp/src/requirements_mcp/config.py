@@ -51,11 +51,14 @@ to keep onboarding and the ``--demo-data`` initialiser unambiguous.
 """
 
 ENV_VAR = "REQUIREMENTS_DB_PATH"
-"""Documented name of the historical override environment variable.
+"""Deprecated: name of the historical override environment variable.
 
-Retained as a module-level constant for backwards compatibility and as
-documentation. Setting this variable has **no** runtime effect — see
-:data:`DEFAULT_DB_PATH`.
+Kept as a module-level string solely so external tooling that reads
+``requirements_mcp.config.ENV_VAR`` does not raise ``ImportError``,
+and as a single place to document the prior behaviour. Setting this
+environment variable has **no** runtime effect today — the database
+path is fixed at :data:`DEFAULT_DB_PATH`. This is a deliberate
+behavioural change, not backwards-compatible support.
 """
 
 DEFAULT_CONFIG_PATH = Path("config") / "default.yaml"
