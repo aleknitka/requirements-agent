@@ -409,7 +409,7 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
                 requirement_statement=safe_strip(statement) or None,
                 type_code=cast("RequirementTypeCode | None", type_code or None),
                 status_code=cast("RequirementStatusCode | None", status_code or None),
-                extended_description=extended_description,
+                extended_description=safe_strip(extended_description),
                 users=lines_to_list(users),
                 triggers=lines_to_list(triggers),
                 preconditions=lines_to_list(preconditions),

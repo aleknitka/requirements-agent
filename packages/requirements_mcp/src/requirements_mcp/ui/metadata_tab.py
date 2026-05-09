@@ -15,13 +15,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from requirements_mcp.tools import issues as issue_tools
 from requirements_mcp.tools import requirements as req_tools
+from requirements_mcp.ui._helpers import rows_to_table
 
 __all__ = ["build_metadata_tab"]
-
-
-def _to_table(rows: list[Any], columns: list[str]) -> list[list[Any]]:
-    """Project Pydantic Out-models to a Dataframe payload."""
-    return [[getattr(row, col, None) for col in columns] for row in rows]
 
 
 def build_metadata_tab(session_factory: sessionmaker[Session]) -> None:
@@ -98,7 +94,7 @@ def build_metadata_tab(session_factory: sessionmaker[Session]) -> None:
         list[list[Any]],
     ]:
         return (
-            _to_table(
+            rows_to_table(
                 req_tools.list_requirement_statuses(session_factory),
                 [
                     "code",
@@ -109,19 +105,19 @@ def build_metadata_tab(session_factory: sessionmaker[Session]) -> None:
                     "description",
                 ],
             ),
-            _to_table(
+            rows_to_table(
                 req_tools.list_requirement_types(session_factory),
                 ["code", "key", "label", "sort_order", "description"],
             ),
-            _to_table(
+            rows_to_table(
                 issue_tools.list_issue_statuses(session_factory),
                 ["code", "label", "is_terminal", "sort_order", "description"],
             ),
-            _to_table(
+            rows_to_table(
                 issue_tools.list_issue_types(session_factory),
                 ["code", "key", "label", "sort_order", "description"],
             ),
-            _to_table(
+            rows_to_table(
                 issue_tools.list_issue_priorities(session_factory),
                 ["code", "label", "severity_order", "sort_order", "description"],
             ),

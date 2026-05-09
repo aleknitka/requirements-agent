@@ -468,9 +468,9 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
                 priority_code=cast("IssuePriorityCode | None", priority or None),
                 # owner is special: explicit empty -> None means "clear".
                 owner=owner_value,
-                impact=impact,
-                risk=risk,
-                proposed_resolution=resolution,
+                impact=safe_strip(impact),
+                risk=safe_strip(risk),
+                proposed_resolution=safe_strip(resolution),
             )
         except Exception as exc:  # pragma: no cover — defensive
             return f"❌ Validation error: {exc}"
