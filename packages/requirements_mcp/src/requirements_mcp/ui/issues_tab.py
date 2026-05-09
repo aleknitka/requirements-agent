@@ -284,10 +284,10 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
         l_id,
     ]
 
-    def _empty_select() -> tuple:
+    def _empty_select(message: str = "_No issue selected._") -> tuple:
         return (
             "",  # view_id
-            "_No issue selected._",
+            message,
             [],
             "",  # e_id
             "",  # e_title
@@ -306,23 +306,7 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
     def _load_detail(issue_id: str) -> tuple:
         issue = tools.get_issue(session_factory, issue_id)
         if issue is None:
-            return (
-                "",
-                f"_Issue `{issue_id}` not found._",
-                [],
-                "",
-                "",
-                "",
-                "AMB",
-                "open",
-                "MED",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-            )
+            return _empty_select(f"_Issue `{issue_id}` not found._")
         history = tools.list_issue_updates(session_factory, issue_id)
         history_rows = [
             [

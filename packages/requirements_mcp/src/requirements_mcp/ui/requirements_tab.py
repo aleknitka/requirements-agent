@@ -183,10 +183,10 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
 
     # ---- Selecting a row populates View and Edit -----------------------------
 
-    def _empty_select() -> tuple:
+    def _empty_select(message: str = "_No requirement selected._") -> tuple:
         return (
             "",  # view_id
-            "_No requirement selected._",
+            message,
             [],
             # edit prefill (10 strings + 2 dropdowns)
             "",  # e_id
@@ -215,26 +215,7 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
     def _load_detail(req_id: str) -> tuple:
         req = tools.get_requirement(session_factory, req_id)
         if req is None:
-            return (
-                "",
-                f"_Requirement `{req_id}` not found._",
-                [],
-                "",
-                "",
-                "",
-                "FUN",
-                "draft",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-            )
+            return _empty_select(f"_Requirement `{req_id}` not found._")
         history = tools.list_requirement_changes(session_factory, req_id)
         history_rows = [
             [

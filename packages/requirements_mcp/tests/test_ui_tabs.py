@@ -129,3 +129,7 @@ def test_selected_row_id_handles_no_selection() -> None:
     assert selected_row_id([["x"]], _FakeSelect(None)) is None
     assert selected_row_id(None, _FakeSelect([0, 0])) is None
     assert selected_row_id([], _FakeSelect([0, 0])) is None
+
+
+def test_selected_row_id_handles_empty_row() -> None:
+    assert selected_row_id([[]], _FakeSelect([0, 0])) is None

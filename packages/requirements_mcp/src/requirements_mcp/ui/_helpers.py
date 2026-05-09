@@ -150,4 +150,7 @@ def selected_row_id(table: Any, evt: gr.SelectData) -> str | None:
 
     if not table or row_index >= len(table):
         return None
-    return str(table[row_index][0])
+    row = table[row_index]
+    if not row:
+        return None
+    return str(row[0])
