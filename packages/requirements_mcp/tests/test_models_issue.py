@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from requirements_mcp.ids import new_issue_id, new_requirement_id
 from requirements_mcp.models import (
     Issue,
     IssueUpdate,
@@ -32,6 +33,8 @@ def _make_issue(**overrides: object) -> Issue:
         created_by="agent",
     )
     defaults.update(overrides)
+    type_code = str(defaults["issue_type_code"])
+    defaults.setdefault("id", new_issue_id(type_code))
     return Issue(**defaults)
 
 
@@ -64,6 +67,7 @@ def test_issue_rejects_unknown_priority(seeded_session: Session) -> None:
 
 def test_requirement_issue_link_round_trip(seeded_session: Session) -> None:
     req = Requirement(
+        id=new_requirement_id("FUN"),
         title="x",
         requirement_statement="x",
         type_code="FUN",

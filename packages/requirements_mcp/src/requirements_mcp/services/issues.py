@@ -18,7 +18,6 @@ ORM class of the same name, so this module imports the ORM class as
 
 from __future__ import annotations
 
-import uuid
 from datetime import datetime, timezone
 from typing import Any, Sequence
 
@@ -26,6 +25,7 @@ from loguru import logger
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from requirements_mcp.ids import new_issue_id
 from requirements_mcp.models import (
     Issue,
     IssuePriority,
@@ -119,7 +119,7 @@ def create_issue(session: Session, payload: IssueCreate) -> Issue:
         The newly inserted (uncommitted) :class:`Issue` instance.
     """
     data = payload.model_dump()
-    issue = Issue(id=str(uuid.uuid4()), **data)
+    issue = Issue(id=new_issue_id(data["issue_type_code"]), **data)
     session.add(issue)
     session.add(
         IssueUpdateRow(

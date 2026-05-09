@@ -16,7 +16,6 @@ requirements with a typed relationship.
 
 from __future__ import annotations
 
-import uuid
 from datetime import datetime
 from typing import Any
 
@@ -30,17 +29,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from requirements_mcp.db.base import Base
-
-
-def _new_id() -> str:
-    """Generate a fresh opaque UUID4 string used as a primary-key value.
-
-    Returns:
-        A 36-character UUID4 string. Mirrors the convention used by
-        :class:`requirements_mcp.models.requirement.Requirement` so all
-        primary keys in the schema look the same.
-    """
-    return str(uuid.uuid4())
+from requirements_mcp.ids import new_issue_update_id
 
 
 class Issue(Base):
@@ -60,7 +49,7 @@ class Issue(Base):
 
     __tablename__ = "issues"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_id)
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String, nullable=False, default="")
     issue_type_code: Mapped[str] = mapped_column(
@@ -118,9 +107,11 @@ class IssueUpdate(Base):
 
     __tablename__ = "issue_updates"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_id)
+    id: Mapped[str] = mapped_column(
+        String(32), primary_key=True, default=new_issue_update_id
+    )
     issue_id: Mapped[str] = mapped_column(
-        String(36),
+        String(32),
         ForeignKey("issues.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -158,12 +149,12 @@ class RequirementIssueLink(Base):
     __tablename__ = "requirement_issues"
 
     requirement_id: Mapped[str] = mapped_column(
-        String(36),
+        String(32),
         ForeignKey("requirements.id", ondelete="CASCADE"),
         primary_key=True,
     )
     issue_id: Mapped[str] = mapped_column(
-        String(36),
+        String(32),
         ForeignKey("issues.id", ondelete="CASCADE"),
         primary_key=True,
     )

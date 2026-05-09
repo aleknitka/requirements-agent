@@ -18,7 +18,6 @@ code.
 
 from __future__ import annotations
 
-import uuid
 from datetime import datetime
 from typing import Any
 
@@ -33,19 +32,8 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from requirements_mcp.db.base import Base
+from requirements_mcp.ids import new_requirement_change_id
 from requirements_mcp.models.types import JSONList
-
-
-def _new_id() -> str:
-    """Generate a fresh opaque UUID4 string used as a primary-key value.
-
-    Returns:
-        A 36-character UUID4 string. Opaque identifiers are preferred
-        over autoincrement integers so that requirement ids can be
-        safely shared across environments without collisions and never
-        leak ordering or row-count information.
-    """
-    return str(uuid.uuid4())
 
 
 class Requirement(Base):
@@ -66,7 +54,7 @@ class Requirement(Base):
 
     __tablename__ = "requirements"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_id)
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     requirement_statement: Mapped[str] = mapped_column(String, nullable=False)
     type_code: Mapped[str] = mapped_column(
@@ -135,9 +123,11 @@ class RequirementChange(Base):
 
     __tablename__ = "requirements_changes"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_id)
+    id: Mapped[str] = mapped_column(
+        String(32), primary_key=True, default=new_requirement_change_id
+    )
     requirement_id: Mapped[str] = mapped_column(
-        String(36),
+        String(32),
         ForeignKey("requirements.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
