@@ -271,7 +271,6 @@ class TestUpdateIssue:
             ("description", "d", "D2"),
             ("status_code", "open", "in_progress"),
             ("priority_code", "MED", "HIG"),
-            ("issue_type_code", "AMB", "RSK"),
             ("impact", "", "broad"),
             ("risk", "", "high"),
             ("proposed_resolution", "", "talk to stakeholder"),

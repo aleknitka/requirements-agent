@@ -69,7 +69,6 @@ requirements-agent/
   compliance/
   config/
   knowledge/
-  db/
   workflows/
 
   pyproject.toml

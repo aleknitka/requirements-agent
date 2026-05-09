@@ -157,7 +157,6 @@ class TestUpdateRequirement:
             ("title", "t", "T2"),
             ("requirement_statement", "s", "S2"),
             ("status_code", "draft", "approved"),
-            ("type_code", "FUN", "NFR"),
             ("extended_description", "", "more detail"),
             ("users", [], ["u1"]),
             ("acceptance_criteria", ["a"], ["a", "b"]),

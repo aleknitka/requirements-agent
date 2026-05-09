@@ -117,13 +117,17 @@ class RequirementUpdate(BaseModel):
     why. The audit row is only written when at least one diffable field
     actually changes; for a no-op update the caller's
     ``change_description`` is discarded.
+
+    ``type_code`` is intentionally absent: the type is encoded in the
+    requirement's id (``REQ-<TYPE>-<6>``) and must not change after
+    creation. ``extra="forbid"`` causes attempts to update it to fail
+    loudly at validation time.
     """
 
     author: str = Field(min_length=1, max_length=255)
     change_description: str = Field(min_length=1)
     title: str | None = Field(default=None, min_length=1, max_length=255)
     requirement_statement: str | None = Field(default=None, min_length=1)
-    type_code: RequirementTypeCode | None = None
     status_code: RequirementStatusCode | None = None
     extended_description: str | None = None
     users: list[str] | None = None

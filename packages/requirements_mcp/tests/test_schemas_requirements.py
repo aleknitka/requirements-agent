@@ -87,9 +87,13 @@ class TestRequirementUpdate:
                 unknown="x",
             )
 
-    def test_rejects_unknown_type_code(self) -> None:
+    def test_rejects_type_code_field(self) -> None:
+        # type_code is intentionally not a field on RequirementUpdate: the
+        # type is encoded in the requirement id and must be immutable.
         with pytest.raises(ValidationError):
-            RequirementUpdate(author="alice", change_description="why", type_code="ZZZ")
+            RequirementUpdate(  # type: ignore[call-arg]
+                author="alice", change_description="why", type_code="FUN"
+            )
 
     def test_rejects_unknown_status_code(self) -> None:
         with pytest.raises(ValidationError):
