@@ -15,7 +15,6 @@ path that mutates a requirement without producing the audit row.
 
 from __future__ import annotations
 
-import uuid
 from datetime import datetime, timezone
 from typing import Any, Sequence
 
@@ -23,6 +22,7 @@ from loguru import logger
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from requirements_mcp.ids import new_requirement_id
 from requirements_mcp.models import (
     Requirement,
     RequirementChange,
@@ -85,10 +85,10 @@ def create_requirement(
         instance with attributes populated.
     """
     data = payload.model_dump()
-    # Assign the UUID id eagerly so the audit row can reference it without
+    # Assign the typed id eagerly so the audit row can reference it without
     # an early ``session.flush()``. Both inserts then happen in the same
     # flush, and FK violations surface at commit time rather than mid-call.
-    requirement = Requirement(id=str(uuid.uuid4()), **data)
+    requirement = Requirement(id=new_requirement_id(data["type_code"]), **data)
     session.add(requirement)
     session.add(
         RequirementChange(

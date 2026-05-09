@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from requirements_mcp.ids import new_requirement_id
 from requirements_mcp.models import Requirement, RequirementChange
 from requirements_mcp.seeds.apply import apply_seeds
 
@@ -35,6 +36,8 @@ def _make_requirement(**overrides: object) -> Requirement:
         acceptance_criteria=["valid login succeeds"],
     )
     defaults.update(overrides)
+    type_code = str(defaults["type_code"])
+    defaults.setdefault("id", new_requirement_id(type_code))
     return Requirement(**defaults)
 
 
