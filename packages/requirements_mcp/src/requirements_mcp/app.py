@@ -61,6 +61,12 @@ from requirements_mcp.schemas.requirements import (
 )
 from requirements_mcp.tools import issues as issue_tools
 from requirements_mcp.tools import requirements as req_tools
+from requirements_mcp.ui import (
+    build_audit_tab,
+    build_issues_tab,
+    build_metadata_tab,
+    build_requirements_tab,
+)
 
 __all__ = ["REGISTERED_TOOLS", "build_app", "main"]
 
@@ -169,10 +175,12 @@ def build_app(session_factory: sessionmaker[Session]) -> gr.Blocks:
     :mod:`requirements_mcp.tools.issues`, with the leading
     ``session_factory`` argument bound away by :func:`_bind`.
 
-    The UI surface in this iteration is intentionally lean — a single
-    "Tools" tab with a short overview and a pointer to the auto-built
-    Gradio API page. Richer per-tab forms can be layered on without
-    touching the API/MCP registration.
+    The UI surface is composed from per-subsystem tab builders in
+    :mod:`requirements_mcp.ui`. Tab handlers reuse the same
+    :mod:`requirements_mcp.tools` wrappers as the API endpoints, but
+    are registered without ``api_name`` so they do not double-publish
+    over MCP. The MCP-tool surface is therefore exactly the seventeen
+    :func:`gradio.api` registrations declared in this function.
 
     Args:
         session_factory: Factory bound to the resolved database.
@@ -184,19 +192,56 @@ def build_app(session_factory: sessionmaker[Session]) -> gr.Blocks:
         gr.Markdown(f"# {APP_TITLE}")
         gr.Markdown(
             "MCP-enabled requirements management. "
-            f"{len(REGISTERED_TOOLS)} tools exposed via this app's "
-            "API and MCP-over-SSE endpoint at `/gradio_api/mcp/sse`. "
-            "See the auto-generated API docs (View API in Gradio's footer) "
-            "for parameter shapes."
+            f"{len(REGISTERED_TOOLS)} tools exposed via the API and "
+            "MCP-over-SSE endpoint at `/gradio_api/mcp/sse`."
         )
 
+        # MCP / API surface: one registration per tool. Tools are NOT
+        # also bound to UI handlers here — UI handlers (created by the
+        # tab builders below) call the same `tools/*` wrappers but do
+        # not get an `api_name`, so they don't re-appear over MCP.
         for fn, public_name in _TOOL_BINDINGS:
             gr.api(
                 _bind(fn, session_factory, name=public_name),
                 api_name=public_name,
             )
 
+        with gr.Tabs():
+            with gr.Tab("Requirements"):
+                build_requirements_tab(session_factory)
+            with gr.Tab("Issues"):
+                build_issues_tab(session_factory)
+            with gr.Tab("Audit"):
+                build_audit_tab(session_factory)
+            with gr.Tab("Metadata"):
+                build_metadata_tab(session_factory)
+
+    # UI button/select handlers default to ``api_visibility="public"`` and
+    # would surface in the API and MCP tool list with auto-generated names.
+    # Mark every endpoint whose ``api_name`` is not in REGISTERED_TOOLS as
+    # private so only the canonical seventeen tools appear in the API
+    # surface and over MCP.
+    _seal_ui_handlers(app)
+
     return app
+
+
+def _seal_ui_handlers(app: gr.Blocks) -> None:
+    """Mark every non-canonical event handler as private.
+
+    Gradio assigns ``api_visibility="public"`` to every ``Button.click``
+    and ``Component.select`` registration by default. Without this pass,
+    the UI handlers built by :mod:`requirements_mcp.ui` would auto-name
+    themselves and appear in ``app.get_api_info()["named_endpoints"]``,
+    inflating the MCP tool list. We walk the registered dependencies
+    and flip everything that doesn't carry one of the canonical tool
+    names to ``"private"``, so the MCP surface remains exactly the
+    seventeen :func:`gradio.api` registrations.
+    """
+    canonical = set(REGISTERED_TOOLS)
+    for dep in app.fns.values():
+        if dep.api_name not in canonical:
+            dep.api_visibility = "private"
 
 
 # Top-level wrappers for each tool. Defined here (rather than directly
