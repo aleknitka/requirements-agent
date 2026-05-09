@@ -145,7 +145,7 @@ uv sync --all-packages
 Initialise a development database:
 
 ```bash
-uv run --package requirements-mcp requirements-db-init --db ./data/requirements.db
+uv run --package requirements-mcp requirements-db-init
 ```
 
 The command creates the schema if missing and seeds the controlled
@@ -153,14 +153,24 @@ vocabularies (requirement statuses and types; issue statuses, types,
 priorities) idempotently. Re-running it is safe — existing rows are left
 untouched, locally-edited descriptions survive.
 
-A `REQUIREMENTS_DB_PATH` environment variable can replace the
-`--db` flag; the default when neither is set is `./data/requirements.db`.
+The database path is fixed at `./data/requirements.db`; there is no
+`--db` flag and the historical `REQUIREMENTS_DB_PATH` environment
+variable is documented for reference but no longer overrides the path.
+
+Add the `--demo-data` flag for a populated playground — ten sample
+requirements, five issues, and three cross-links:
+
+```bash
+uv run --package requirements-mcp requirements-db-init --demo-data
+```
+
+The flag is idempotent (skipped when the database already has
+requirements); combine with `--reset --yes` to wipe and re-populate.
 
 Launch the Gradio + MCP app:
 
 ```bash
-uv run --package requirements-mcp requirements-mcp-server \
-  --db ./data/requirements.db --no-init
+uv run --package requirements-mcp requirements-mcp-server --no-init
 ```
 
 By default the server binds to `127.0.0.1:7860`. The Gradio UI is at
