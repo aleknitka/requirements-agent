@@ -54,6 +54,7 @@ from requirements_mcp.schemas.issues import (
     RequirementIssueLinkCreate,
     RequirementIssueLinkOut,
 )
+from requirements_mcp.schemas.reports import FullReportOut
 from requirements_mcp.schemas.requirements import (
     RequirementChangeOut,
     RequirementCreate,
@@ -65,6 +66,7 @@ from requirements_mcp.schemas.requirements import (
     RequirementUpdate,
 )
 from requirements_mcp.tools import issues as issue_tools
+from requirements_mcp.tools import reports as report_tools
 from requirements_mcp.tools import requirements as req_tools
 from requirements_mcp.constants import APP_TITLE
 from requirements_mcp.ui import (
@@ -95,6 +97,8 @@ REGISTERED_TOOLS: tuple[str, ...] = (
     "add_issue_update",
     "link_issue_to_requirement",
     "unlink_issue_from_requirement",
+    # Reports — MCP only, no UI handler.
+    "get_full_report",
 )
 """Names of every MCP tool exposed by :func:`build_app`.
 
@@ -427,6 +431,32 @@ def _list_issue_priorities(
     return issue_tools.list_issue_priorities(session_factory)
 
 
+def _get_full_report(
+    session_factory: sessionmaker[Session],
+    include_issues: bool = True,
+    include_closed_requirements: bool = True,
+) -> FullReportOut:
+    """Return one JSON snapshot of every requirement, issue, and audit row.
+
+    The default call returns the complete dataset: every requirement
+    (regardless of status), every audit row, every attached issue with
+    its updates, and every unattached issue with its updates. Set
+    ``include_issues=false`` to drop issues entirely or
+    ``include_closed_requirements=false`` to omit terminal-status
+    requirements.
+
+    Output shape is friendly to ReportLab's ``json2pdf`` service:
+    stable snake_case keys, ISO-8601 datetime strings, every key
+    present (empty list rather than ``None``), with a ``summary`` block
+    of pre-computed counts.
+    """
+    return report_tools.get_full_report(
+        session_factory,
+        include_issues=include_issues,
+        include_closed_requirements=include_closed_requirements,
+    )
+
+
 def _build_parser() -> argparse.ArgumentParser:
     """Construct the argument parser for the ``requirements-mcp-server`` command.
 
@@ -561,4 +591,5 @@ _TOOL_BINDINGS: tuple[tuple[Callable[..., object], str], ...] = (
     (_add_issue_update, "add_issue_update"),
     (_link_issue_to_requirement, "link_issue_to_requirement"),
     (_unlink_issue_from_requirement, "unlink_issue_from_requirement"),
+    (_get_full_report, "get_full_report"),
 )

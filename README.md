@@ -175,9 +175,13 @@ uv run --package requirements-mcp requirements-mcp-server --no-init
 
 By default the server binds to `127.0.0.1:7860`. The Gradio UI is at
 `http://127.0.0.1:7860/` and the MCP endpoint (Server-Sent Events) is at
-`http://127.0.0.1:7860/gradio_api/mcp/sse`. All 17 MCP tools are exposed
-through both surfaces, backed by the same Python functions — there is no
-parallel registration.
+`http://127.0.0.1:7860/gradio_api/mcp/sse`. The 17 CRUD-shaped MCP tools
+are exposed through both surfaces backed by the same Python functions
+(no parallel registration). One additional MCP-only tool —
+`get_full_report` — is registered without a UI button and returns a
+single JSON snapshot of every requirement, audit row, attached issue,
+and unattached issue, ready for downstream PDF rendering with ReportLab
+`json2pdf`. Total advertised over MCP: **18 tools**.
 
 Host and port are read in priority order from `--host` / `--port`, the
 `REQUIREMENTS_HOST` / `REQUIREMENTS_PORT` environment variables, the
@@ -196,7 +200,7 @@ The UI is organised into three tabs. Both the **Requirements** and **Issues** ta
 
 The browser title is `<PROJECT_NAME> - requirements db`. `PROJECT_NAME` defaults to `PROJECT` and can be overridden by setting `REQUIREMENTS_PROJECT_NAME` (3–15 chars, `[A-Za-z0-9_-]`) before launch.
 
-UI button click handlers are marked `api_visibility="private"` so they do not appear over MCP — the MCP tool surface stays exactly the canonical 17 tools registered via `gr.api(...)` in `app.py`.
+UI button click handlers are marked `api_visibility="private"` so they do not appear over MCP — the MCP tool surface stays exactly the canonical 18 tools registered via `gr.api(...)` in `app.py` (17 CRUD + `get_full_report`).
 
 `--port`, `--host`, `--log-level`, `--share`, and `--no-init` are
 documented via `requirements-mcp-server --help`.
@@ -251,7 +255,7 @@ requirements-agent/
         seeds/                     # Pydantic seed models + idempotent apply_seeds
         tools/                     # Thin tool wrappers used by app.py
         ui/                        # Per-tab Gradio Blocks builders
-      tests/                       # 230+ unit tests
+      tests/                       # 270+ unit tests
 
   data/                            # SQLite databases (gitignored)
 ```

@@ -26,6 +26,12 @@ from requirements_mcp.schemas.issues import (
     RequirementIssueLinkOut,
     RequirementIssueLinkType,
 )
+from requirements_mcp.schemas.reports import (
+    FullReportOut,
+    IssueInReport,
+    ReportSummary,
+    RequirementInReport,
+)
 from requirements_mcp.schemas.requirements import (
     RequirementChangeOut,
     RequirementCreate,
@@ -40,7 +46,9 @@ from requirements_mcp.schemas.requirements import (
 )
 
 __all__ = [
+    "FullReportOut",
     "IssueCreate",
+    "IssueInReport",
     "IssueOut",
     "IssuePriorityCode",
     "IssuePriorityOut",
@@ -54,8 +62,10 @@ __all__ = [
     "IssueUpdateAdd",
     "IssueUpdateOut",
     "IssueUpdateTypeCode",
+    "ReportSummary",
     "RequirementChangeOut",
     "RequirementCreate",
+    "RequirementInReport",
     "RequirementIssueLinkCreate",
     "RequirementIssueLinkOut",
     "RequirementIssueLinkType",
