@@ -69,7 +69,11 @@ ISSUE_DIFFABLE_FIELDS: tuple[str, ...] = (
 )
 """Issue fields tracked in the audit-log diff.
 
-``date_closed`` is intentionally absent: it is a derived side-effect of
+``issue_type_code`` is intentionally excluded: the type is encoded in
+the issue's primary key (``ISSUE-<TYPE>-<6>``) and changing it would
+desynchronise id and stored type. Type is fixed at creation time.
+
+``date_closed`` is also absent: it is a derived side-effect of
 ``status_code`` transitioning into or out of a terminal state, recorded
 implicitly by the change to ``status_code``.
 """
