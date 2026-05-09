@@ -517,7 +517,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     yaml_config = load_yaml_config()
     host = resolve_host(args.host, config=yaml_config)
-    port = resolve_port(args.port, config=yaml_config)
+    try:
+        port = resolve_port(args.port, config=yaml_config)
+    except ValueError as exc:
+        logger.error("{}", exc)
+        return 1
 
     resolved = resolve_db_path(args.db)
     if args.no_init:

@@ -6,16 +6,23 @@ Three runtime knobs are sourced through this module:
 * the bind host (:func:`resolve_host`),
 * the bind port (:func:`resolve_port`).
 
-Each follows the same priority order:
+The bind host and bind port follow the same four-step priority:
 
 1. an explicit CLI argument (e.g. ``--port``);
-2. the matching environment variable;
+2. the matching environment variable
+   (``REQUIREMENTS_HOST`` / ``REQUIREMENTS_PORT``);
 3. the value from ``config/default.yaml`` if it sets that key;
 4. a built-in fallback.
 
-The YAML file is opt-in: if it is missing, malformed, or simply does
-not declare the key, the resolver falls back to the environment / built-in
-default with a debug log line — startup never crashes for a config-file
+The database path follows a shorter chain — CLI argument >
+``REQUIREMENTS_DB_PATH`` env var > built-in default — and does **not**
+read the YAML file. The expectation is that each checkout points at its
+own database via env var or CLI flag, while ``host`` / ``port`` are the
+knobs that need to differ between concurrent instances on one machine.
+
+The YAML file is opt-in: if it is missing, malformed, unreadable, or
+simply does not declare the key, the resolver falls back to the next
+priority source with a warning — startup never crashes for a config-file
 problem alone. The YAML is searched relative to the current working
 directory under ``./config/default.yaml``; this matches how the project
 is intended to be launched (from the repository root).
@@ -102,8 +109,10 @@ def load_yaml_config(path: Path | str | None = None) -> dict[str, Any]:
     try:
         with target.open("r", encoding="utf-8") as fh:
             data = yaml.safe_load(fh)
-    except yaml.YAMLError as exc:
-        logger.warning("Could not parse {} ({}); ignoring config file.", target, exc)
+    except (yaml.YAMLError, OSError) as exc:
+        logger.warning(
+            "Could not read or parse {} ({}); ignoring config file.", target, exc
+        )
         return {}
     if data is None:
         return {}

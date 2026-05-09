@@ -132,3 +132,13 @@ def test_parser_defaults() -> None:
     assert args.host is None
     assert args.port is None
     assert args.share is False
+
+
+def test_main_exits_cleanly_on_invalid_port(monkeypatch) -> None:
+    """A bad --port value should surface as exit code 1, not a traceback."""
+    from requirements_mcp.app import main
+
+    # No init_db, no DB engine — main() returns 1 from resolve_port before
+    # touching anything else.
+    rc = main(["--no-init", "--port", "99999"])
+    assert rc == 1

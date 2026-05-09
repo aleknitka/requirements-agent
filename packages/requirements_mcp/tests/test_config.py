@@ -159,3 +159,16 @@ def test_resolve_port_invalid_config_falls_through(
 def test_resolve_port_default(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(PORT_ENV_VAR, raising=False)
     assert resolve_port(None, config={}) == DEFAULT_PORT
+
+
+def test_load_yaml_config_ignores_oserror(tmp_path: Path) -> None:
+    cfg_file = tmp_path / "default.yaml"
+    cfg_file.write_text("host: 0.0.0.0\n", encoding="utf-8")
+    cfg_file.chmod(0o000)
+    try:
+        # Either the chmod is honoured (return {}) or the runtime is root
+        # and the read still succeeds — both outcomes are safe.
+        result = load_yaml_config(cfg_file)
+        assert result in ({}, {"host": "0.0.0.0"})
+    finally:
+        cfg_file.chmod(0o644)
