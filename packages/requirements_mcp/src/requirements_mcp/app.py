@@ -61,16 +61,14 @@ from requirements_mcp.schemas.requirements import (
 )
 from requirements_mcp.tools import issues as issue_tools
 from requirements_mcp.tools import requirements as req_tools
+from requirements_mcp.constants import APP_TITLE
 from requirements_mcp.ui import (
-    build_audit_tab,
     build_issues_tab,
     build_metadata_tab,
     build_requirements_tab,
 )
 
 __all__ = ["REGISTERED_TOOLS", "build_app", "main"]
-
-APP_TITLE = "Requirements Agent"
 
 REGISTERED_TOOLS: tuple[str, ...] = (
     # Phase 2 — requirements
@@ -211,8 +209,6 @@ def build_app(session_factory: sessionmaker[Session]) -> gr.Blocks:
                 build_requirements_tab(session_factory)
             with gr.Tab("Issues"):
                 build_issues_tab(session_factory)
-            with gr.Tab("Audit"):
-                build_audit_tab(session_factory)
             with gr.Tab("Metadata"):
                 build_metadata_tab(session_factory)
 

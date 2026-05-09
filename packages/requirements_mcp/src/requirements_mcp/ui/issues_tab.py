@@ -1,12 +1,19 @@
 """Gradio tab for the issue subsystem.
 
-Same shape as the Requirements tab, plus controls for the operations
-unique to issues:
+Mirrors the layout of the Requirements tab: a single outer ``gr.Tabs``
+with **Search**, **Create**, **Update**, plus the issue-specific
+**Add update** and **Link / unlink** sub-tabs that don't exist on the
+requirement side.
 
-* **Add update** — append an action-log entry without changing fields.
-* **Link to requirement** — typed many-to-many link with audit row.
-* **Quick filters** — `Open` and `Blocking` shortcut buttons that
-  bypass the search form.
+* **Search** — text query, status / type / priority filters, owner
+  filter, lookup-by-id, results table, then a detail panel with the
+  audit / action log.
+* **Create** — full creation form. Successful submit blanks every
+  input so an accidental second click cannot re-create the same issue.
+* **Update** — id input + Load button that prefills the form, then a
+  Save button.
+* **Add update** — append an action-log entry to a known issue.
+* **Link / unlink** — typed many-to-many link to a requirement.
 """
 
 from __future__ import annotations
@@ -81,6 +88,38 @@ _UPDATE_KINDS = (
 )
 
 
+def _format_summary(issue: Any) -> str:
+    """Render an issue detail summary as Markdown."""
+    closed_line = (
+        f"- **closed**: {issue.date_closed.isoformat()}\n" if issue.date_closed else ""
+    )
+    owner_line = (
+        f"- **owner**: {issue.owner}\n"
+        if issue.owner
+        else "- **owner**: _(unassigned)_\n"
+    )
+    summary = (
+        f"### {issue.title}\n\n"
+        f"- **id**: `{issue.id}`\n"
+        f"- **type**: `{issue.issue_type_code}` "
+        f"· **status**: `{issue.status_code}` "
+        f"· **priority**: `{issue.priority_code}`\n"
+        + owner_line
+        + f"- **created by**: {issue.created_by}\n"
+        f"- **created**: {issue.date_created.isoformat()}\n"
+        f"- **updated**: {issue.date_updated.isoformat()}\n"
+        + closed_line
+        + f"\n**Description**\n\n{issue.description}\n"
+    )
+    if issue.impact:
+        summary += f"\n**Impact**\n\n{issue.impact}\n"
+    if issue.risk:
+        summary += f"\n**Risk**\n\n{issue.risk}\n"
+    if issue.proposed_resolution:
+        summary += f"\n**Proposed resolution**\n\n{issue.proposed_resolution}\n"
+    return summary
+
+
 def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
     """Build the Issues tab in the current Blocks scope.
 
@@ -91,25 +130,28 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
     type_choices = [t.code for t in ISSUE_TYPES]
     priority_choices = [p.code for p in ISSUE_PRIORITIES]
 
-    with gr.Row():
-        with gr.Column(scale=1):
+    with gr.Tabs():
+        # ===== Search ======================================================
+        with gr.Tab("Search"):
             gr.Markdown("### Search")
             query = gr.Textbox(label="Free-text query", placeholder="tokens (AND)")
-            with gr.Row():
-                status_filter = gr.Dropdown(
-                    choices=status_choices, label="Status", multiselect=True
-                )
-                type_filter = gr.Dropdown(
-                    choices=type_choices, label="Type", multiselect=True
-                )
-                priority_filter = gr.Dropdown(
-                    choices=priority_choices,
-                    label="Priority",
-                    multiselect=True,
-                )
+            status_filter = gr.Dropdown(
+                choices=status_choices, label="Status", multiselect=True
+            )
+            type_filter = gr.Dropdown(
+                choices=type_choices, label="Type", multiselect=True
+            )
+            priority_filter = gr.Dropdown(
+                choices=priority_choices, label="Priority", multiselect=True
+            )
             owner_filter = gr.Textbox(label="Owner (exact match)")
-            search_button = gr.Button("Search", variant="primary")
+            lookup_id = gr.Textbox(
+                label="Lookup by id",
+                placeholder="ISSUE-<TYPE>-xxxxxx — populates details directly",
+            )
             with gr.Row():
+                search_button = gr.Button("Search", variant="primary")
+                lookup_button = gr.Button("Load by id")
                 open_button = gr.Button("Show open")
                 blocking_button = gr.Button("Show blocking")
             results = gr.Dataframe(
@@ -120,113 +162,104 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
                 wrap=True,
             )
 
-        with gr.Column(scale=2):
-            with gr.Tabs():
-                with gr.Tab("View"):
-                    view_id = gr.Textbox(label="Issue id", interactive=False)
-                    view_summary = gr.Markdown()
-                    view_history = gr.Dataframe(
-                        headers=[
-                            "date",
-                            "kind",
-                            "author",
-                            "description",
-                            "diff",
-                        ],
-                        label="Audit / action log",
-                        interactive=False,
-                        wrap=True,
-                    )
-                    view_refresh = gr.Button("Reload")
+            gr.Markdown("---")
+            gr.Markdown("### Details")
+            view_id = gr.Textbox(label="Issue id", interactive=False)
+            view_summary = gr.Markdown("_No issue selected._")
+            view_history = gr.Dataframe(
+                headers=["date", "kind", "author", "description", "diff"],
+                label="Audit / action log",
+                interactive=False,
+                wrap=True,
+            )
+            view_refresh = gr.Button("Reload")
 
-                with gr.Tab("Create"):
-                    c_title = gr.Textbox(label="Title")
-                    c_description = gr.Textbox(label="Description", lines=3)
-                    with gr.Row():
-                        c_type = gr.Dropdown(
-                            choices=type_choices, label="Type", value="AMB"
-                        )
-                        c_status = gr.Dropdown(
-                            choices=status_choices,
-                            label="Status",
-                            value="open",
-                        )
-                        c_priority = gr.Dropdown(
-                            choices=priority_choices,
-                            label="Priority",
-                            value="MED",
-                        )
-                    with gr.Row():
-                        c_created_by = gr.Textbox(label="Raised by")
-                        c_owner = gr.Textbox(
-                            label="Owner (optional)", placeholder="leave empty if none"
-                        )
-                    c_impact = gr.Textbox(label="Impact", lines=2)
-                    c_risk = gr.Textbox(label="Risk", lines=2)
-                    c_resolution = gr.Textbox(label="Proposed resolution", lines=2)
-                    c_submit = gr.Button("Create issue", variant="primary")
-                    c_status_box = gr.Markdown()
+        # ===== Create ======================================================
+        with gr.Tab("Create"):
+            c_title = gr.Textbox(label="Title")
+            c_description = gr.Textbox(label="Description", lines=3)
+            with gr.Row():
+                c_type = gr.Dropdown(choices=type_choices, label="Type", value="AMB")
+                c_status = gr.Dropdown(
+                    choices=status_choices, label="Status", value="open"
+                )
+                c_priority = gr.Dropdown(
+                    choices=priority_choices, label="Priority", value="MED"
+                )
+            with gr.Row():
+                c_created_by = gr.Textbox(label="Raised by")
+                c_owner = gr.Textbox(
+                    label="Owner (optional)", placeholder="leave empty if none"
+                )
+            c_impact = gr.Textbox(label="Impact", lines=2)
+            c_risk = gr.Textbox(label="Risk", lines=2)
+            c_resolution = gr.Textbox(label="Proposed resolution", lines=2)
+            c_submit = gr.Button("Create issue", variant="primary")
+            c_status_box = gr.Markdown()
 
-                with gr.Tab("Edit"):
-                    e_id = gr.Textbox(label="Issue id", interactive=False)
-                    e_title = gr.Textbox(label="Title")
-                    e_description = gr.Textbox(label="Description", lines=3)
-                    with gr.Row():
-                        e_type = gr.Dropdown(choices=type_choices, label="Type")
-                        e_status = gr.Dropdown(choices=status_choices, label="Status")
-                        e_priority = gr.Dropdown(
-                            choices=priority_choices, label="Priority"
-                        )
-                    e_owner = gr.Textbox(
-                        label="Owner",
-                        placeholder="leave empty to clear",
-                    )
-                    e_impact = gr.Textbox(label="Impact", lines=2)
-                    e_risk = gr.Textbox(label="Risk", lines=2)
-                    e_resolution = gr.Textbox(label="Proposed resolution", lines=2)
-                    with gr.Row():
-                        e_author = gr.Textbox(label="Editing author")
-                        e_change_desc = gr.Textbox(label="Change description")
-                    e_submit = gr.Button("Save changes", variant="primary")
-                    e_status_box = gr.Markdown()
+        # ===== Update ======================================================
+        with gr.Tab("Update"):
+            gr.Markdown(
+                "### Update issue\n\n"
+                "Enter an issue id and click **Load** to prefill the form."
+            )
+            with gr.Row():
+                e_id = gr.Textbox(label="Issue id")
+                e_load = gr.Button("Load")
+            e_load_status = gr.Markdown()
 
-                with gr.Tab("Add update"):
-                    u_id = gr.Textbox(
-                        label="Issue id (set from selected row)",
-                        interactive=False,
-                    )
-                    u_kind = gr.Dropdown(
-                        choices=list(_UPDATE_KINDS),
-                        label="Update type",
-                        value="note",
-                    )
-                    u_description = gr.Textbox(label="Description", lines=2)
-                    u_action_taken = gr.Textbox(label="Action taken", lines=2)
-                    u_action_result = gr.Textbox(label="Action result", lines=2)
-                    u_author = gr.Textbox(label="Author")
-                    u_submit = gr.Button("Append update", variant="primary")
-                    u_status_box = gr.Markdown()
+            e_title = gr.Textbox(label="Title")
+            e_description = gr.Textbox(label="Description", lines=3)
+            with gr.Row():
+                e_type = gr.Dropdown(choices=type_choices, label="Type")
+                e_status = gr.Dropdown(choices=status_choices, label="Status")
+                e_priority = gr.Dropdown(choices=priority_choices, label="Priority")
+            e_owner = gr.Textbox(
+                label="Owner",
+                placeholder="leave empty to clear",
+            )
+            e_impact = gr.Textbox(label="Impact", lines=2)
+            e_risk = gr.Textbox(label="Risk", lines=2)
+            e_resolution = gr.Textbox(label="Proposed resolution", lines=2)
+            with gr.Row():
+                e_author = gr.Textbox(label="Editing author")
+                e_change_desc = gr.Textbox(label="Change description")
+            e_submit = gr.Button("Save changes", variant="primary")
+            e_status_box = gr.Markdown()
 
-                with gr.Tab("Link / unlink"):
-                    l_id = gr.Textbox(
-                        label="Issue id (set from selected row)",
-                        interactive=False,
-                    )
-                    l_req_id = gr.Textbox(label="Requirement id")
-                    with gr.Row():
-                        l_type = gr.Dropdown(
-                            choices=list(_LINK_TYPES),
-                            label="Link type",
-                            value="related",
-                        )
-                        l_author = gr.Textbox(label="Author")
-                    l_rationale = gr.Textbox(label="Rationale")
-                    with gr.Row():
-                        l_link_button = gr.Button("Link", variant="primary")
-                        l_unlink_button = gr.Button("Unlink")
-                    l_status_box = gr.Markdown()
+        # ===== Add update ==================================================
+        with gr.Tab("Add update"):
+            u_id = gr.Textbox(label="Issue id")
+            u_kind = gr.Dropdown(
+                choices=list(_UPDATE_KINDS),
+                label="Update type",
+                value="note",
+            )
+            u_description = gr.Textbox(label="Description", lines=2)
+            u_action_taken = gr.Textbox(label="Action taken", lines=2)
+            u_action_result = gr.Textbox(label="Action result", lines=2)
+            u_author = gr.Textbox(label="Author")
+            u_submit = gr.Button("Append update", variant="primary")
+            u_status_box = gr.Markdown()
 
-    # ---- Search ---------------------------------------------------------------
+        # ===== Link / unlink ==============================================
+        with gr.Tab("Link / unlink"):
+            l_id = gr.Textbox(label="Issue id")
+            l_req_id = gr.Textbox(label="Requirement id")
+            with gr.Row():
+                l_type = gr.Dropdown(
+                    choices=list(_LINK_TYPES),
+                    label="Link type",
+                    value="related",
+                )
+                l_author = gr.Textbox(label="Author")
+            l_rationale = gr.Textbox(label="Rationale")
+            with gr.Row():
+                l_link_button = gr.Button("Link", variant="primary")
+                l_unlink_button = gr.Button("Unlink")
+            l_status_box = gr.Markdown()
+
+    # ---- Search handlers -----------------------------------------------------
 
     def _do_search(
         text: str,
@@ -262,51 +295,16 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
     open_button.click(_show_open, outputs=results)
     blocking_button.click(_show_blocking, outputs=results)
 
-    # ---- Selecting a row populates View / Edit / Add update / Link ----------
-
-    select_outputs = [
-        view_id,
-        view_summary,
-        view_history,
-        # Edit prefill
-        e_id,
-        e_title,
-        e_description,
-        e_type,
-        e_status,
-        e_priority,
-        e_owner,
-        e_impact,
-        e_risk,
-        e_resolution,
-        # Sub-tab id pickers
-        u_id,
-        l_id,
-    ]
-
-    def _empty_select(message: str = "_No issue selected._") -> tuple:
-        return (
-            "",  # view_id
-            message,
-            [],
-            "",  # e_id
-            "",  # e_title
-            "",  # e_description
-            "AMB",
-            "open",
-            "MED",
-            "",
-            "",
-            "",
-            "",
-            "",  # u_id
-            "",  # l_id
-        )
+    def _empty_detail(message: str = "_No issue selected._") -> tuple:
+        return ("", message, [])
 
     def _load_detail(issue_id: str) -> tuple:
+        issue_id = safe_strip(issue_id)
+        if not issue_id:
+            return _empty_detail()
         issue = tools.get_issue(session_factory, issue_id)
         if issue is None:
-            return _empty_select(f"_Issue `{issue_id}` not found._")
+            return _empty_detail(f"_Issue `{issue_id}` not found._")
         history = tools.list_issue_updates(session_factory, issue_id)
         history_rows = [
             [
@@ -318,64 +316,34 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
             ]
             for row in history
         ]
-        closed_line = (
-            f"- **closed**: {issue.date_closed.isoformat()}\n"
-            if issue.date_closed
-            else ""
-        )
-        owner_line = (
-            f"- **owner**: {issue.owner}\n"
-            if issue.owner
-            else "- **owner**: _(unassigned)_\n"
-        )
-        summary = (
-            f"### {issue.title}\n\n"
-            f"- **id**: `{issue.id}`\n"
-            f"- **type**: `{issue.issue_type_code}` "
-            f"· **status**: `{issue.status_code}` "
-            f"· **priority**: `{issue.priority_code}`\n"
-            + owner_line
-            + f"- **created by**: {issue.created_by}\n"
-            f"- **created**: {issue.date_created.isoformat()}\n"
-            f"- **updated**: {issue.date_updated.isoformat()}\n"
-            + closed_line
-            + f"\n**Description**\n\n{issue.description}\n"
-            + (f"\n**Impact**\n\n{issue.impact}\n" if issue.impact else "")
-            + (f"\n**Risk**\n\n{issue.risk}\n" if issue.risk else "")
-            + (
-                f"\n**Proposed resolution**\n\n{issue.proposed_resolution}\n"
-                if issue.proposed_resolution
-                else ""
-            )
-        )
-        return (
-            issue.id,
-            summary,
-            history_rows,
-            issue.id,
-            issue.title,
-            issue.description,
-            issue.issue_type_code,
-            issue.status_code,
-            issue.priority_code,
-            issue.owner or "",
-            issue.impact,
-            issue.risk,
-            issue.proposed_resolution,
-            issue.id,  # u_id
-            issue.id,  # l_id
-        )
+        return (issue.id, _format_summary(issue), history_rows)
 
-    def _select_row(evt: gr.SelectData, table: Any) -> tuple:
+    detail_outputs = [view_id, view_summary, view_history]
+
+    def _on_select(evt: gr.SelectData, table: Any) -> tuple:
         row_id = selected_row_id(table, evt)
         if row_id is None:
-            return _empty_select()
+            return _empty_detail()
         return _load_detail(row_id)
 
-    results.select(_select_row, inputs=results, outputs=select_outputs)
-    view_refresh.click(_load_detail, inputs=view_id, outputs=select_outputs)
+    results.select(_on_select, inputs=results, outputs=detail_outputs)
+    view_refresh.click(_load_detail, inputs=view_id, outputs=detail_outputs)
+    lookup_button.click(_load_detail, inputs=lookup_id, outputs=detail_outputs)
 
-    # ---- Create ---------------------------------------------------------------
+    # ---- Create handler ------------------------------------------------------
+
+    _CREATE_DEFAULTS: tuple[Any, ...] = (
+        "",  # c_title
+        "",  # c_description
+        "AMB",  # c_type
+        "open",  # c_status
+        "MED",  # c_priority
+        "",  # c_created_by
+        "",  # c_owner
+        "",  # c_impact
+        "",  # c_risk
+        "",  # c_resolution
+    )
 
     def _do_create(
         title: str,
@@ -388,7 +356,7 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
         impact: str,
         risk: str,
         resolution: str,
-    ) -> str:
+    ) -> tuple:
         try:
             payload = IssueCreate(
                 title=safe_strip(title),
@@ -403,31 +371,94 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
                 created_by=safe_strip(created_by),
             )
         except Exception as exc:  # pragma: no cover — defensive
-            return f"❌ Validation error: {exc}"
+            return (
+                title,
+                description,
+                issue_type,
+                status,
+                priority,
+                created_by,
+                owner,
+                impact,
+                risk,
+                resolution,
+                f"❌ Validation error: {exc}",
+            )
         out = tools.create_issue(session_factory, payload)
-        return (
+        message = (
             f"✅ Created issue `{out.id}` "
             f"({out.issue_type_code} · {out.status_code} · {out.priority_code})."
         )
+        return (*_CREATE_DEFAULTS, message)
 
+    create_inputs = [
+        c_title,
+        c_description,
+        c_type,
+        c_status,
+        c_priority,
+        c_created_by,
+        c_owner,
+        c_impact,
+        c_risk,
+        c_resolution,
+    ]
     c_submit.click(
         _do_create,
-        inputs=[
-            c_title,
-            c_description,
-            c_type,
-            c_status,
-            c_priority,
-            c_created_by,
-            c_owner,
-            c_impact,
-            c_risk,
-            c_resolution,
-        ],
-        outputs=c_status_box,
+        inputs=create_inputs,
+        outputs=[*create_inputs, c_status_box],
     )
 
-    # ---- Edit ----------------------------------------------------------------
+    # ---- Update handlers -----------------------------------------------------
+
+    _UPDATE_BLANK: tuple[Any, ...] = (
+        "",  # e_title
+        "",  # e_description
+        "AMB",  # e_type
+        "open",  # e_status
+        "MED",  # e_priority
+        "",  # e_owner
+        "",  # e_impact
+        "",  # e_risk
+        "",  # e_resolution
+    )
+
+    def _load_for_update(issue_id: str) -> tuple:
+        issue_id = safe_strip(issue_id)
+        if not issue_id:
+            return (*_UPDATE_BLANK, "_Enter an issue id first._")
+        issue = tools.get_issue(session_factory, issue_id)
+        if issue is None:
+            return (*_UPDATE_BLANK, f"❌ Issue `{issue_id}` not found.")
+        return (
+            issue.title,
+            issue.description,
+            issue.issue_type_code,
+            issue.status_code,
+            issue.priority_code,
+            issue.owner or "",
+            issue.impact,
+            issue.risk,
+            issue.proposed_resolution,
+            f"✅ Loaded `{issue.id}` (status `{issue.status_code}`).",
+        )
+
+    update_form_outputs = [
+        e_title,
+        e_description,
+        e_type,
+        e_status,
+        e_priority,
+        e_owner,
+        e_impact,
+        e_risk,
+        e_resolution,
+    ]
+    e_load.click(
+        _load_for_update,
+        inputs=e_id,
+        outputs=[*update_form_outputs, e_load_status],
+    )
 
     def _do_edit(
         issue_id: str,
@@ -444,7 +475,7 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
         change_description: str,
     ) -> str:
         if not safe_strip(issue_id):
-            return "❌ Select an issue from the search results first."
+            return "❌ Enter an issue id and click Load first."
         owner_value: str | None = safe_strip(owner) or None
         try:
             payload = IssueUpdate(
@@ -500,7 +531,7 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
         author: str,
     ) -> str:
         if not safe_strip(issue_id):
-            return "❌ Select an issue from the search results first."
+            return "❌ Provide an issue id."
         try:
             payload = IssueUpdateAdd(
                 update_type_code=cast(IssueUpdateTypeCode, kind),
@@ -540,7 +571,7 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
         author: str,
     ) -> str:
         if not safe_strip(issue_id):
-            return "❌ Select an issue from the search results first."
+            return "❌ Provide an issue id."
         if not safe_strip(requirement_id):
             return "❌ Provide a requirement id."
         try:

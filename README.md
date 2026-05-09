@@ -155,12 +155,16 @@ By default the server binds to `127.0.0.1:7860`. The Gradio UI is at
 through both surfaces, backed by the same Python functions — there is no
 parallel registration.
 
-The UI is organised into four tabs:
+The UI is organised into three tabs. Both the **Requirements** and **Issues** tabs follow the same single-column inner-tab layout — **Search** / **Create** / **Update** — so the two domains feel symmetric:
 
-- **Requirements** — search/filter, view full detail with audit history, create, and edit (with structured-list fields collapsed into an accordion).
-- **Issues** — search/filter (free text + status/type/priority/owner), quick filters for open and blocking issues, view detail with action log, create, edit (clear-owner supported), append action-log entries, and link / unlink to a requirement.
-- **Audit** — paste a requirement or issue id and see the full change history with diffs rendered.
+- **Requirements**
+  - *Search* — free-text query, status / type filters, lookup-by-id; results table; detail panel with audit history below.
+  - *Create* — full creation form. Successful submit blanks every field so an accidental second click cannot create a duplicate.
+  - *Update* — id input + Load button prefills the form, Save writes through and logs the diff.
+- **Issues** — same layout as Requirements, plus issue-specific *Add update* and *Link / unlink* sub-tabs and quick filters for open / blocking issues.
 - **Metadata** — read-only browser of every controlled vocabulary (statuses, types, priorities).
+
+The browser title is `<PROJECT_NAME> - requirements db`. `PROJECT_NAME` defaults to `PROJECT` and can be overridden by setting `REQUIREMENTS_PROJECT_NAME` (3–15 chars, `[A-Za-z0-9_-]`) before launch.
 
 UI button click handlers are marked `api_visibility="private"` so they do not appear over MCP — the MCP tool surface stays exactly the canonical 17 tools registered via `gr.api(...)` in `app.py`.
 
@@ -217,7 +221,7 @@ requirements-agent/
         seeds/                     # Pydantic seed models + idempotent apply_seeds
         tools/                     # Thin tool wrappers used by app.py
         ui/                        # Per-tab Gradio Blocks builders
-      tests/                       # 210+ unit tests
+      tests/                       # 230+ unit tests
 
   data/                            # SQLite databases (gitignored)
 ```
