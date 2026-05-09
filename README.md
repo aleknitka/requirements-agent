@@ -48,15 +48,15 @@ got to where it is.
 │                          │ ─────────────────────────► │                          │
 │       agent_runtime      │                            │     requirements_mcp     │
 │                          │ ◄───────────────────────── │                          │
-│  identity, skills, model │      validated tools        │  Pydantic + SQLAlchemy   │
+│  identity, skills, model │      validated tools       │  Pydantic + SQLAlchemy   │
 │  selection, hooks        │                            │  audit trail, seeds, CLI │
 │                          │                            │  Gradio frontend         │
 └──────────────────────────┘                            └─────────────┬────────────┘
-                                                                       │
-                                                          ┌────────────▼────────────┐
-                                                          │  data/requirements.db   │
-                                                          │  (SQLite, FK-enforced)  │
-                                                          └─────────────────────────┘
+                                                                      │
+                                                         ┌────────────▼────────────┐
+                                                         │  data/requirements.db   │
+                                                         │  (SQLite, FK-enforced)  │
+                                                         └─────────────────────────┘
 ```
 
 The repository is a single Git repo and a `uv` workspace with two packages:
