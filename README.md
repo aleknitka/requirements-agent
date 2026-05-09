@@ -48,15 +48,15 @@ got to where it is.
 │                          │ ─────────────────────────► │                          │
 │       agent_runtime      │                            │     requirements_mcp     │
 │                          │ ◄───────────────────────── │                          │
-│  identity, skills, model │      validated tools        │  Pydantic + SQLAlchemy   │
+│  identity, skills, model │      validated tools       │  Pydantic + SQLAlchemy   │
 │  selection, hooks        │                            │  audit trail, seeds, CLI │
 │                          │                            │  Gradio frontend         │
 └──────────────────────────┘                            └─────────────┬────────────┘
-                                                                       │
-                                                          ┌────────────▼────────────┐
-                                                          │  data/requirements.db   │
-                                                          │  (SQLite, FK-enforced)  │
-                                                          └─────────────────────────┘
+                                                                      │
+                                                         ┌────────────▼────────────┐
+                                                         │  data/requirements.db   │
+                                                         │  (SQLite, FK-enforced)  │
+                                                         └─────────────────────────┘
 ```
 
 The repository is a single Git repo and a `uv` workspace with two packages:
@@ -168,6 +168,12 @@ By default the server binds to `127.0.0.1:7860`. The Gradio UI is at
 `http://127.0.0.1:7860/gradio_api/mcp/sse`. All 17 MCP tools are exposed
 through both surfaces, backed by the same Python functions — there is no
 parallel registration.
+
+Host and port are read in priority order from `--host` / `--port`, the
+`REQUIREMENTS_HOST` / `REQUIREMENTS_PORT` environment variables, the
+`host` / `port` keys in `config/default.yaml`, and finally the built-in
+defaults. To run two checkouts on the same machine, edit
+`config/default.yaml` in each one and set a distinct `port:` value.
 
 The UI is organised into three tabs. Both the **Requirements** and **Issues** tabs follow the same single-column inner-tab layout — **Search** / **Create** / **Update** — so the two domains feel symmetric:
 

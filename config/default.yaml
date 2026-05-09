@@ -1,2 +1,9 @@
 log_level: info
 compliance_mode: false
+
+# HTTP host and port for the Gradio + MCP server. Override on the command
+# line with --host / --port, or via the REQUIREMENTS_HOST / REQUIREMENTS_PORT
+# environment variables, e.g. when running multiple instances on the same
+# machine against different databases.
+host: 127.0.0.1
+port: 7860

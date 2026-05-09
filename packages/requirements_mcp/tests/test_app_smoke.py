@@ -122,10 +122,23 @@ def test_parser_accepts_documented_flags() -> None:
 
 
 def test_parser_defaults() -> None:
+    # host and port default to None at the argparse layer; the actual
+    # defaults are applied by ``resolve_host`` / ``resolve_port`` so the
+    # YAML config file and env vars can fill them in.
     args = _build_parser().parse_args([])
     assert args.db is None
     assert args.log_level == "INFO"
     assert args.no_init is False
-    assert args.host == "127.0.0.1"
-    assert args.port == 7860
+    assert args.host is None
+    assert args.port is None
     assert args.share is False
+
+
+def test_main_exits_cleanly_on_invalid_port(monkeypatch) -> None:
+    """A bad --port value should surface as exit code 1, not a traceback."""
+    from requirements_mcp.app import main
+
+    # No init_db, no DB engine — main() returns 1 from resolve_port before
+    # touching anything else.
+    rc = main(["--no-init", "--port", "99999"])
+    assert rc == 1
