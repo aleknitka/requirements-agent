@@ -238,6 +238,73 @@ def test_default_call_returns_complete_dataset(seeded_session: Session) -> None:
     assert report.summary.included_closed_requirements is True
 
 
+def test_issue_linked_only_to_filtered_requirement_appears_unattached(
+    seeded_session: Session,
+) -> None:
+    """If the closed-req filter hides the only requirement an issue is linked to,
+    the issue must still surface — under ``unattached_issues`` — so the report
+    never silently drops history."""
+    open_req = _make_req(seeded_session, title="open", status="draft")
+    closed_req = _make_req(seeded_session, title="closed", status="verified")
+    orphan_after_filter = _make_issue(seeded_session, title="orphan-after-filter")
+    link_issue_to_requirement(
+        seeded_session,
+        orphan_after_filter,
+        RequirementIssueLinkCreate(
+            requirement_id=closed_req, link_type="related", author="alice"
+        ),
+    )
+    # Sanity: an issue genuinely attached to a visible requirement still nests.
+    truly_attached = _make_issue(seeded_session, title="truly-attached")
+    link_issue_to_requirement(
+        seeded_session,
+        truly_attached,
+        RequirementIssueLinkCreate(
+            requirement_id=open_req, link_type="related", author="alice"
+        ),
+    )
+    seeded_session.commit()
+
+    report = build_full_report(seeded_session, include_closed_requirements=False)
+
+    titles = {r.title for r in report.requirements}
+    assert titles == {"open"}, "closed requirement must be filtered out"
+    nested_titles = {i.title for r in report.requirements for i in r.issues}
+    assert nested_titles == {"truly-attached"}
+    unattached_titles = {i.title for i in report.unattached_issues}
+    assert "orphan-after-filter" in unattached_titles, (
+        "issue linked only to a filtered requirement must surface as unattached"
+    )
+
+
+def test_attached_count_is_distinct_when_issue_linked_to_multiple(
+    seeded_session: Session,
+) -> None:
+    """One issue linked to N requirements counts as 1 in summary totals."""
+    req_a = _make_req(seeded_session, title="A")
+    req_b = _make_req(seeded_session, title="B")
+    issue_id = _make_issue(seeded_session, title="shared")
+    for req_id in (req_a, req_b):
+        link_issue_to_requirement(
+            seeded_session,
+            issue_id,
+            RequirementIssueLinkCreate(
+                requirement_id=req_id, link_type="related", author="alice"
+            ),
+        )
+    seeded_session.commit()
+
+    report = build_full_report(seeded_session)
+
+    # Issue appears under both requirements (the link is meaningful per req).
+    nested_per_req = [len(r.issues) for r in report.requirements]
+    assert sorted(nested_per_req) == [1, 1]
+    # ...but the summary counts the issue once.
+    assert report.summary.attached_issue_count == 1
+    assert report.summary.unattached_issue_count == 0
+    assert report.summary.issue_count == 1
+
+
 def test_uses_demo_data(seeded_session: Session) -> None:
     apply_demo_data(seeded_session)
     seeded_session.commit()

@@ -3,8 +3,8 @@
 Builds a single, consistent snapshot of the database — every
 requirement (by default, including terminal ones) with its audit log
 and the issues linked to it, plus the issues that are not linked to
-any requirement. All reads happen inside the caller's session, so the
-caller controls the transaction boundary.
+any *visible* requirement. All reads happen inside the caller's
+session, so the caller controls the transaction boundary.
 
 Two filter knobs are supported, both default ``True`` (include
 everything):
@@ -15,15 +15,34 @@ everything):
   status is ``is_terminal`` are skipped. Driven by the seed table, not
   a hard-coded list.
 
+When ``include_closed_requirements`` filters out a requirement, any
+issue that was linked *only* to that filtered-out requirement falls
+through into ``unattached_issues`` so the report never silently drops
+a real issue with its history.
+
 Bare call returns the complete dataset.
+
+The implementation is intentionally bulk-friendly:
+
+* ``Requirement.changes`` is loaded with ``selectinload`` in one extra
+  round-trip rather than per-requirement;
+* attached ``(link, issue)`` pairs are pulled with one query keyed by
+  the visible requirement set, with ``Issue.updates`` eager-loaded;
+* unattached issues use the same eager-load.
+
+Sorting is then done in Python from cached priority/status order
+dictionaries — one round-trip apiece — so adding more sort tiers does
+not multiply the database work.
 """
 
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import datetime, timezone
+from typing import Any
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from requirements_mcp.constants import PROJECT_NAME
 from requirements_mcp.models import (
@@ -31,11 +50,9 @@ from requirements_mcp.models import (
     IssuePriority,
     IssueStatus,
     Requirement,
-    RequirementChange,
     RequirementIssueLink,
     RequirementStatus,
 )
-from requirements_mcp.models import IssueUpdate as IssueUpdateRow
 from requirements_mcp.schemas.issues import IssueUpdateOut
 from requirements_mcp.schemas.reports import (
     FullReportOut,
@@ -57,8 +74,9 @@ def _build_issue_in_report(
     """Project an :class:`Issue` ORM row into an :class:`IssueInReport`.
 
     Args:
-        issue: The ORM row. ``issue.updates`` is read; tests must
-            ensure the relationship is loaded or accept the lazy load.
+        issue: ORM row. ``issue.updates`` should already be eager-loaded
+            by the caller (`selectinload`) — the relationship is
+            iterated here.
         link_type: Optional link kind when the issue is nested under a
             requirement. ``None`` for unattached entries.
         rationale: Optional link rationale. ``None`` for unattached.
@@ -70,11 +88,33 @@ def _build_issue_in_report(
     payload = IssueInReport.model_validate(issue)
     payload.link_type = link_type
     payload.rationale = rationale
+    # The Issue.updates relationship is declared with order_by=date,
+    # so the rows arrive sorted; the explicit sort here is defensive
+    # and tie-breaks on id when two updates share a timestamp.
     payload.updates = [
         IssueUpdateOut.model_validate(row)
         for row in sorted(issue.updates, key=lambda u: (u.date, u.id))
     ]
     return payload
+
+
+def _issue_sort_key(
+    issue: Issue,
+    priority_order: dict[str, int],
+    status_order: dict[str, int],
+) -> tuple[Any, ...]:
+    """Sort key matching the SQL ordering used by the previous implementation.
+
+    Tuple, in order: priority severity descending, status sort_order
+    ascending, ``date_updated`` descending, then ``id`` ascending for a
+    stable tiebreaker. Unknown codes sort last, never crash.
+    """
+    return (
+        -priority_order.get(issue.priority_code, 0),
+        status_order.get(issue.status_code, 10**9),
+        -issue.date_updated.timestamp() if issue.date_updated else 0,
+        issue.id,
+    )
 
 
 def build_full_report(
@@ -92,8 +132,10 @@ def build_full_report(
             under requirements and the top-level ``unattached_issues``)
             is left empty. Defaults to ``True``.
         include_closed_requirements: When ``False``, requirements whose
-            status row has ``is_terminal=True`` are omitted. Defaults
-            to ``True``.
+            status row has ``is_terminal=True`` are omitted; any issue
+            linked only to those filtered-out requirements is surfaced
+            under ``unattached_issues`` so it is never silently lost.
+            Defaults to ``True``.
 
     Returns:
         A :class:`FullReportOut` with stable, JSON-friendly fields. Use
@@ -104,50 +146,50 @@ def build_full_report(
         session,
         include_closed_requirements=include_closed_requirements,
     )
-
-    requirement_payloads: list[RequirementInReport] = []
-    attached_count = 0
-    for req in requirements:
-        changes = (
-            session.execute(
-                select(RequirementChange)
-                .where(RequirementChange.requirement_id == req.id)
-                .order_by(RequirementChange.date.asc(), RequirementChange.id.asc())
-            )
-            .scalars()
-            .all()
-        )
-
-        if include_issues:
-            attached = _load_attached_issues(session, req.id)
-            attached_count += len(attached)
-            issue_payloads = [
-                _build_issue_in_report(
-                    issue,
-                    link_type=link_type,
-                    rationale=rationale,
-                )
-                for issue, link_type, rationale in attached
-            ]
-        else:
-            issue_payloads = []
-
-        payload = RequirementInReport.model_validate(req)
-        payload.changes = [RequirementChangeOut.model_validate(c) for c in changes]
-        payload.issues = issue_payloads
-        requirement_payloads.append(payload)
+    visible_req_ids: set[str] = {r.id for r in requirements}
 
     if include_issues:
-        unattached = _load_unattached_issues(session)
-        unattached_payloads = [_build_issue_in_report(issue) for issue in unattached]
+        priority_order = _load_priority_order(session)
+        status_order = _load_status_order(session)
+        attached_by_req = _load_attached_by_requirement(
+            session, visible_req_ids, priority_order, status_order
+        )
+        unattached = _load_unattached_issues(
+            session, visible_req_ids, priority_order, status_order
+        )
     else:
-        unattached_payloads = []
+        attached_by_req = {}
+        unattached = []
+
+    distinct_attached_ids: set[str] = set()
+    requirement_payloads: list[RequirementInReport] = []
+    for req in requirements:
+        nested: list[IssueInReport] = []
+        if include_issues:
+            for issue, link_type, rationale in attached_by_req.get(req.id, []):
+                nested.append(
+                    _build_issue_in_report(
+                        issue, link_type=link_type, rationale=rationale
+                    )
+                )
+                distinct_attached_ids.add(issue.id)
+        payload = RequirementInReport.model_validate(req)
+        # ``Requirement.changes`` is eager-loaded via selectinload above
+        # and the relationship is declared with order_by=date.
+        payload.changes = [RequirementChangeOut.model_validate(c) for c in req.changes]
+        payload.issues = nested
+        requirement_payloads.append(payload)
+
+    unattached_payloads = [_build_issue_in_report(issue) for issue in unattached]
 
     summary = ReportSummary(
         requirement_count=len(requirement_payloads),
-        issue_count=attached_count + len(unattached_payloads),
-        attached_issue_count=attached_count,
+        attached_issue_count=len(distinct_attached_ids),
         unattached_issue_count=len(unattached_payloads),
+        # `issue_count` is the number of *distinct* issues across both
+        # buckets — it is not the sum of nested-list lengths, because
+        # one issue may legitimately appear under multiple requirements.
+        issue_count=len(distinct_attached_ids) + len(unattached_payloads),
         included_issues=include_issues,
         included_closed_requirements=include_closed_requirements,
     )
@@ -166,7 +208,10 @@ def _load_requirements(
     *,
     include_closed_requirements: bool,
 ) -> list[Requirement]:
-    """Load requirements ordered by status sort_order, newest-updated first.
+    """Load requirements ordered by status sort_order, with changes eager-loaded.
+
+    Uses ``selectinload(Requirement.changes)`` so the per-requirement
+    audit log arrives in one extra round-trip rather than N.
 
     Args:
         session: Active session.
@@ -174,11 +219,13 @@ def _load_requirements(
             status is terminal.
 
     Returns:
-        List of :class:`Requirement` ORM rows.
+        List of :class:`Requirement` ORM rows with ``.changes``
+        prefetched.
     """
     stmt = (
         select(Requirement)
         .join(RequirementStatus, RequirementStatus.code == Requirement.status_code)
+        .options(selectinload(Requirement.changes))
         .order_by(
             RequirementStatus.sort_order.asc(),
             Requirement.date_updated.desc(),
@@ -190,60 +237,106 @@ def _load_requirements(
     return list(session.execute(stmt).scalars().all())
 
 
-def _load_attached_issues(
-    session: Session,
-    requirement_id: str,
-) -> list[tuple[Issue, str, str]]:
-    """Return ``(issue, link_type, rationale)`` for issues linked to ``requirement_id``.
+def _load_priority_order(session: Session) -> dict[str, int]:
+    """Return ``{priority_code: severity_order}`` from the seed table."""
+    return {
+        row.code: row.severity_order
+        for row in session.scalars(select(IssuePriority)).all()
+    }
 
-    Sorted by issue priority severity descending, then status sort
-    order, then date_updated descending so the most severe and most
-    recently active items surface first.
+
+def _load_status_order(session: Session) -> dict[str, int]:
+    """Return ``{status_code: sort_order}`` from the issue-status seed table."""
+    return {
+        row.code: row.sort_order for row in session.scalars(select(IssueStatus)).all()
+    }
+
+
+def _load_attached_by_requirement(
+    session: Session,
+    visible_req_ids: set[str],
+    priority_order: dict[str, int],
+    status_order: dict[str, int],
+) -> dict[str, list[tuple[Issue, str, str]]]:
+    """Bulk-load every (issue, link_type, rationale) for the visible requirements.
+
+    Eager-loads ``Issue.updates`` via ``selectinload`` so the per-issue
+    audit log does not trigger N extra queries when the report is
+    rendered. Returns a dict keyed by ``requirement_id`` with each
+    list pre-sorted by :func:`_issue_sort_key`.
 
     Args:
         session: Active session.
-        requirement_id: Primary key of the parent requirement.
+        visible_req_ids: Set of requirement ids that survived the
+            terminal-status filter. Empty when there are no
+            requirements; the function returns an empty dict in that
+            case without issuing the query.
+        priority_order: Map produced by :func:`_load_priority_order`.
+        status_order: Map produced by :func:`_load_status_order`.
 
     Returns:
-        A list of three-tuples ready to be projected via
-        :func:`_build_issue_in_report`.
+        ``{requirement_id: [(issue, link_type, rationale), ...]}`` —
+        ready for direct consumption inside the requirement loop.
     """
+    if not visible_req_ids:
+        return {}
+
     stmt = (
-        select(Issue, RequirementIssueLink.link_type, RequirementIssueLink.rationale)
-        .join(RequirementIssueLink, RequirementIssueLink.issue_id == Issue.id)
-        .join(IssuePriority, IssuePriority.code == Issue.priority_code)
-        .join(IssueStatus, IssueStatus.code == Issue.status_code)
-        .where(RequirementIssueLink.requirement_id == requirement_id)
-        .order_by(
-            IssuePriority.severity_order.desc(),
-            IssueStatus.sort_order.asc(),
-            Issue.date_updated.desc(),
-            Issue.id.asc(),
-        )
+        select(RequirementIssueLink, Issue)
+        .join(Issue, Issue.id == RequirementIssueLink.issue_id)
+        .options(selectinload(Issue.updates))
+        .where(RequirementIssueLink.requirement_id.in_(visible_req_ids))
     )
     rows = session.execute(stmt).all()
-    return [(issue, link_type, rationale) for issue, link_type, rationale in rows]
 
+    grouped: dict[str, list[tuple[Issue, str, str]]] = defaultdict(list)
+    for link, issue in rows:
+        grouped[link.requirement_id].append((issue, link.link_type, link.rationale))
 
-def _load_unattached_issues(session: Session) -> list[Issue]:
-    """Return issues that are not linked to any requirement, severity-first."""
-    # Subquery: every issue id that has at least one link.
-    linked_ids = select(RequirementIssueLink.issue_id).distinct()
-    stmt = (
-        select(Issue)
-        .join(IssuePriority, IssuePriority.code == Issue.priority_code)
-        .join(IssueStatus, IssueStatus.code == Issue.status_code)
-        .where(Issue.id.notin_(linked_ids))
-        .order_by(
-            IssuePriority.severity_order.desc(),
-            IssueStatus.sort_order.asc(),
-            Issue.date_updated.desc(),
-            Issue.id.asc(),
+    for entries in grouped.values():
+        entries.sort(
+            key=lambda tup: _issue_sort_key(tup[0], priority_order, status_order)
         )
-    )
-    return list(session.execute(stmt).scalars().all())
+    return grouped
 
 
-# Suppress unused-import warning: ``IssueUpdateRow`` is imported only
-# so the relationship is registered before lazy access.
-_ = IssueUpdateRow
+def _load_unattached_issues(
+    session: Session,
+    visible_req_ids: set[str],
+    priority_order: dict[str, int],
+    status_order: dict[str, int],
+) -> list[Issue]:
+    """Return issues not linked to any *visible* requirement.
+
+    An issue counts as "unattached" when it has zero links into the
+    visible requirement set. That includes:
+
+    * issues with no rows in ``requirement_issues`` at all, and
+    * issues whose only links point at requirements that were filtered
+      out by ``include_closed_requirements=False``.
+
+    The latter case is what guarantees the report never silently drops
+    an issue and its update history when the closed-requirement filter
+    hides its parent.
+
+    ``Issue.updates`` is eager-loaded via ``selectinload``.
+    """
+    if visible_req_ids:
+        linked_to_visible = (
+            select(RequirementIssueLink.issue_id)
+            .where(RequirementIssueLink.requirement_id.in_(visible_req_ids))
+            .distinct()
+        )
+        stmt = (
+            select(Issue)
+            .options(selectinload(Issue.updates))
+            .where(Issue.id.notin_(linked_to_visible))
+        )
+    else:
+        # No visible requirements at all → every issue is "unattached"
+        # for the purposes of this report.
+        stmt = select(Issue).options(selectinload(Issue.updates))
+
+    rows = list(session.execute(stmt).scalars().all())
+    rows.sort(key=lambda issue: _issue_sort_key(issue, priority_order, status_order))
+    return rows
