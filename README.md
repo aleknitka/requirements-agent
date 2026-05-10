@@ -44,33 +44,43 @@ got to where it is.
 ## Architecture at a glance
 
 ```
-┌──────────────────────────┐        MCP (stdio)         ┌──────────────────────────┐
-│                          │ ─────────────────────────► │                          │
-│       agent_runtime      │                            │     requirements_mcp     │
-│                          │ ◄───────────────────────── │                          │
-│  identity, skills, model │      validated tools       │  Pydantic + SQLAlchemy   │
-│  selection, hooks        │                            │  audit trail, seeds, CLI │
-│                          │                            │  Gradio frontend         │
-└──────────────────────────┘                            └─────────────┬────────────┘
-                                                                      │
-                                                         ┌────────────▼────────────┐
-                                                         │  data/requirements.db   │
-                                                         │  (SQLite, FK-enforced)  │
-                                                         └─────────────────────────┘
+┌──────────────────┐                       ┌──────────────────────────┐
+│  Browser /       │  HTTP (Gradio UI)     │                          │
+│  Operator        │ ────────────────────► │   requirements-mcp       │
+│                  │                       │       server             │
+└──────────────────┘                       │                          │
+                                           │  Pydantic + SQLAlchemy   │
+┌──────────────────┐                       │  audit trail, seeds      │
+│  MCP client      │  MCP-over-SSE         │  one Python function     │
+│  (agent / IDE /  │ ────────────────────► │  per tool, shared by     │
+│   remote tool)   │                       │  both surfaces           │
+└──────────────────┘                       └────────────┬─────────────┘
+                                                        │
+                                            ┌───────────▼───────────┐
+                                            │ data/requirements.db  │
+                                            │  (SQLite, FK on)      │
+                                            └───────────────────────┘
 ```
 
-The repository is a single Git repo and a `uv` workspace with two packages:
+There are two ways to drive the system and they share **one** backend:
 
-- **`packages/agent_runtime/`** — agent identity, skill loading, MCP tool
-  registration, runtime hooks. Owns *how* the agent thinks; owns nothing
-  about persistence.
-- **`packages/requirements_mcp/`** — the system of record. Owns the
-  SQLAlchemy ORM, Pydantic seed models, idempotent database initialiser,
-  audit-trail logic, MCP tool implementations, and the Gradio frontend.
-  Everything that touches the database lives here.
+- **Humans** open the Gradio UI in a browser at
+  `http://127.0.0.1:7860/` and use the Search / Create / Update tabs.
+- **Machines** (the agent, IDE plugins, remote tools) hit the
+  MCP-over-SSE endpoint at
+  `http://127.0.0.1:7860/gradio_api/mcp/sse` and call the same tools.
 
-Root-level files (`agent.yaml`, `SOUL.md`, `RULES.md`, `skills/`, `tools/`,
-`hooks/`, `compliance/`, `memory/`) configure the agent itself.
+Each tool is one plain-Python function in
+[`packages/requirements_mcp`](packages/requirements_mcp/). UI handlers
+and MCP endpoints both call those functions — there is no parallel
+implementation. The repository is a single Git repo with one workspace
+member, `requirements_mcp`, hosting the SQLAlchemy ORM, Pydantic
+schemas, MCP tools, the Gradio UI, and the CLI entry points.
+
+Root-level files (`agent.yaml`, `SOUL.md`, `RULES.md`, `skills/`,
+`tools/`, `hooks/`, `compliance/`, `memory/`) are the file-based
+agentic configuration consumed by an external agent runtime; they are
+not Python packages.
 
 ---
 
@@ -235,11 +245,6 @@ requirements-agent/
   uv.lock
 
   packages/
-    agent_runtime/                 # agent identity & wiring
-      pyproject.toml
-      src/agent_runtime/
-      tests/
-
     requirements_mcp/              # system of record (this is where the work happens)
       pyproject.toml
       src/requirements_mcp/
