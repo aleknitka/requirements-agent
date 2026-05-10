@@ -23,13 +23,11 @@ package = false
 
 [tool.uv.workspace]
 members = [
-    "packages/agent_runtime",
     "packages/requirements_mcp",
 ]
 
 [tool.pytest.ini_options]
 testpaths = [
-    "packages/agent_runtime/tests",
     "packages/requirements_mcp/tests",
 ]
 
@@ -59,6 +57,5 @@ python-version = "3.13"
 
 [tool.ty.src]
 include = [
-    "packages/agent_runtime/src",
     "packages/requirements_mcp/src",
 ]

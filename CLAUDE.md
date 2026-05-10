@@ -75,11 +75,6 @@ requirements-agent/
   uv.lock
 
   packages/
-    agent_runtime/
-      pyproject.toml
-      src/agent_runtime/
-      tests/
-
     requirements_mcp/
       pyproject.toml
       src/requirements_mcp/
@@ -776,7 +771,7 @@ Critical invariant:
 
 ### Repository and Workspace
 
-- The repo contains root-level agentic files and two packages: `agent_runtime` and `requirements_mcp`.
+- The repo contains root-level agentic files and one package: `requirements_mcp`.
 - `uv sync --all-packages` succeeds.
 - `uv.lock` is committed.
 

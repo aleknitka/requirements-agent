@@ -12,26 +12,8 @@ resolution-markers = [
 
 [manifest]
 members = [
-    "agent-runtime",
     "requirements-agent",
     "requirements-mcp",
-]
-
-[[package]]
-name = "agent-runtime"
-version = "0.1.0"
-source = { editable = "packages/agent_runtime" }
-dependencies = [
-    { name = "loguru" },
-    { name = "pydantic" },
-    { name = "pyyaml" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "loguru", specifier = ">=0.7.3" },
-    { name = "pydantic", specifier = ">=2.13.3" },
-    { name = "pyyaml", specifier = ">=6.0" },
 ]
 
 [[package]]

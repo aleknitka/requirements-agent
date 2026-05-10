@@ -19,7 +19,7 @@ repos:
     rev: 1.9.4
     hooks:
       - id: bandit
-        args: [-r, packages/agent_runtime/src, packages/requirements_mcp/src]
+        args: [-r, packages/requirements_mcp/src]
         pass_filenames: false
 
   # ── Type checking (local — no astral-sh/ty-pre-commit repo exists) ─────
@@ -37,7 +37,7 @@ repos:
     rev: 1.7.0
     hooks:
       - id: interrogate
-        args: [-n, packages/agent_runtime/src, packages/requirements_mcp/src]
+        args: [-n, packages/requirements_mcp/src]
         pass_filenames: false
 
   # ── Tests ──────────────────────────────────────────────────────────────
