@@ -63,12 +63,14 @@ def test_ui_handlers_do_not_leak_into_mcp_surface(seeded_session_factory) -> Non
 
 
 def test_registered_tools_count() -> None:
-    assert len(REGISTERED_TOOLS) == 17
-    assert len(set(REGISTERED_TOOLS)) == 17
+    assert len(REGISTERED_TOOLS) == 18
+    assert len(set(REGISTERED_TOOLS)) == 18
 
 
 def test_tool_modules_export_expected_callables() -> None:
-    """The tool modules must export the seventeen functions REGISTERED_TOOLS lists."""
+    """The tool modules must export every callable that REGISTERED_TOOLS lists."""
+    from requirements_mcp.tools import reports as report_tools
+
     requirement_tools = {
         "create_requirement",
         "update_requirement",
@@ -90,11 +92,16 @@ def test_tool_modules_export_expected_callables() -> None:
         "link_issue_to_requirement",
         "unlink_issue_from_requirement",
     }
+    report_tool_names = {"get_full_report"}
     for name in requirement_tools:
         assert callable(getattr(req_tools, name))
     for name in issue_tool_names:
         assert callable(getattr(issue_tools, name))
-    assert requirement_tools | issue_tool_names == set(REGISTERED_TOOLS)
+    for name in report_tool_names:
+        assert callable(getattr(report_tools, name))
+    assert requirement_tools | issue_tool_names | report_tool_names == set(
+        REGISTERED_TOOLS
+    )
 
 
 def test_parser_accepts_documented_flags() -> None:

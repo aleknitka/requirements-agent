@@ -22,6 +22,7 @@ from requirements_mcp.tools.issues import (
     unlink_issue_from_requirement,
     update_issue,
 )
+from requirements_mcp.tools.reports import get_full_report
 from requirements_mcp.tools.requirements import (
     create_requirement,
     get_requirement,
@@ -36,6 +37,7 @@ __all__ = [
     "add_issue_update",
     "create_issue",
     "create_requirement",
+    "get_full_report",
     "get_issue",
     "get_requirement",
     "link_issue_to_requirement",
