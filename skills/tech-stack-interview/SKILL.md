@@ -59,7 +59,6 @@ knowledge/<project>/tech-stack-context.md
 
 - If the project name is unknown, ask once.
 - If the user cannot provide a name, use `project` as the directory.
-- The `<project>` segment must be a filename-safe slug (lower-case, `[a-z0-9_-]+`); fall back to `project` when the supplied name cannot be slugified.
 - Do not overwrite files owned by other skills.
 - If `knowledge/tech-stack-context.md` already exists, ask the user before overwriting; offer to update in place or to refuse.
 - Reference related files rather than duplicating them.
