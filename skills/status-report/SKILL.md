@@ -1,66 +1,107 @@
 ---
 name: status-report
 description: >
-  Generate a project status report — total counts, requirement-type breakdown, FRET
-  coverage percentage, and critical-open list. Use this skill when the user asks for a
-  project summary, status snapshot, or coverage report.
+  Generate a project status report PDF from the requirements MCP. Pulls the
+  full requirements + issues snapshot via the `get_full_report` MCP tool and
+  renders it to a stakeholder-ready PDF via the bundled script.
 license: MIT
-allowed-tools: Read Grep Glob
+allowed-tools: Read Grep Glob Bash
 metadata:
   author: aleksander nitka
-  version: "1.0.0"
+  version: "2.0.0"
   category: requirements
 ---
 
 # Status Report Skill
 
-Reads the live DB state and generates a structured status report with health signal.
+The skill produces a PDF status report of the project. It does not
+re-implement any data access — it consumes the `get_full_report` MCP
+tool exposed by `requirements-mcp-server` and converts its JSON
+payload into a PDF via the bundled `mcp_report_to_pdf.py` script.
 
-## Health signals
-- **GREEN** — no critical open items, few pending actions
-- **AMBER** — some items need follow-up
-- **RED** — significant open issues (>3 critical open, or >5 open decisions)
+## How it works
 
-## Commands
+1. The MCP server's **`get_full_report`** tool returns one JSON
+   document containing:
+   - every requirement, with its audit history,
+   - the issues attached to each requirement (with link metadata and
+     their own update history),
+   - the issues not linked to any requirement,
+   - a `summary` block with pre-computed counts plus an echo of the
+     two filter flags.
+2. `scripts/mcp_report_to_pdf.py` reads that JSON, validates it,
+   maps each requirement / issue into a section of a generic
+   `{title, metadata, sections[…]}` document shape, and renders the
+   PDF with ReportLab Platypus.
+
+The two filter flags supported by `get_full_report` are forwarded
+unchanged in the PDF's *Summary* table:
+
+| Flag | Default | Effect |
+|---|---|---|
+| `include_issues` | `true` | When `false`, every issue list is empty; requirements + audit history still render. |
+| `include_closed_requirements` | `true` | When `false`, requirements in a terminal status are omitted (issues linked only to them surface under *Unattached issues* so nothing is silently lost). |
+
+The default `get_full_report({})` call returns everything.
+
+## Generating a PDF
+
+The script reads its JSON either from a file or from stdin.
 
 ```bash
-# Print report to stdout
-uv run report generate [--project <slug>] [--format json|md]
-
-# Save timestamped STATUS-<timestamp>.md + .json alongside PROJECT.md
-uv run report save [--project <slug>]
-```
-
-## PDF rendering
-
-The MCP server exposes `get_full_report`, which returns one JSON
-snapshot of every requirement, audit row, and attached / unattached
-issue. The PDF renderer is a thin script that consumes that payload:
-
-```bash
-# From a file
+# From a file written out of the MCP client
 uv run python skills/status-report/scripts/mcp_report_to_pdf.py \
     --input report.json --output STATUS.pdf
 
-# From stdin (chain with curl, jq, or any MCP client that prints the
-# get_full_report response)
-get_full_report_output | uv run python \
-    skills/status-report/scripts/mcp_report_to_pdf.py --output STATUS.pdf
+# Piped directly from the MCP client
+mcp-client call get_full_report | \
+    uv run python skills/status-report/scripts/mcp_report_to_pdf.py \
+        --output STATUS.pdf
 ```
 
 When `--output` is omitted the script writes
-`STATUS-<project>-<timestamp>.pdf` to the current directory.
+`STATUS-<project>-<utc-timestamp>Z.pdf` to the current directory.
+The project component is sanitised to a filename-safe slug.
 
-`mcp_report_to_pdf.py` is a single self-contained script: it maps the
-MCP payload onto an internal `{title, metadata, sections}` document
-shape and feeds it to ReportLab Platypus. Tests live at
-`skills/tests/test_mcp_report_to_pdf.py` and are picked up by the
-project-wide `pytest` run.
+## What's in the PDF
 
-## Typical workflow
-1. Run `generate --format md` to review
-2. Run `integrate` in meeting-agent if there are unintegrated meetings first
-3. Run `save` to archive the point-in-time report
-4. Share the .md file with stakeholders
-5. For an executive-facing artefact, dump `get_full_report` and run
-   `mcp_report_to_pdf.py` to attach a PDF.
+- **Cover metadata** — project name, generation timestamp (UTC),
+  per-bucket counts.
+- **Summary section** — totals and filter echoes pulled from the
+  payload's `summary` block.
+- **One section per requirement** — header line with id / type /
+  status / version, full statement, optional extended description,
+  bulleted structured fields (users, triggers, pre/postconditions,
+  inputs, outputs, business logic, exception handling, acceptance
+  criteria), an audit-history table, and a table of linked issues.
+- **One section per unattached issue** — header, description, impact,
+  risk, proposed resolution, and the action log.
+
+Long change descriptions are clamped to 500 characters with an
+ellipsis so a single oversize cell cannot blow up the ReportLab table
+layout. Dynamic text is HTML-escaped before being placed into
+Paragraph markup, so payloads containing `<`, `>`, or `&` render
+safely.
+
+## Failure modes
+
+The script exits non-zero with a clear message when:
+
+- stdin is a TTY and `--input` is omitted,
+- the payload is not valid JSON,
+- the payload is not a JSON object,
+- a top-level field is missing (`project_name`, `summary`,
+  `requirements`, `unattached_issues`) — for example, when a wrapping
+  envelope like `{"data": {...}}` was piped in by mistake,
+- a top-level field exists but carries the wrong type
+  (`summary: []`, `requirements: {}`, …).
+
+## Tests
+
+End-to-end + adapter tests live at
+`skills/tests/test_mcp_report_to_pdf.py` and run as part of the
+project-wide `uv run pytest`. They cover the adapter shape, validation
+errors, slug sanitisation, UTC stamping, XML-unsafe character
+handling, long-cell truncation, and an integration test that builds
+the payload from the live demo data and asserts the generated PDF
+starts with `%PDF`.
