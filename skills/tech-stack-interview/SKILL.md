@@ -217,7 +217,7 @@ I may be misunderstanding this. Earlier we said one thing, but now it sounds dif
 - Record the contradiction as an assumption or issue if unresolved.
 
 ## tech-stack-context.md Template
-To capture answers use template in `assets/template.md`, save it to `knowledge/tech-stack-context.md`. Once created update the `knowledge/index.yaml` with:
+To capture answers use template in `skills/tech-stack-interview/assets/template.md`, save it to `knowledge/tech-stack-context.md`. Once created update the `knowledge/index.yaml` with:
 ```yaml
   - path: tech-stack-context.md
     tags: [tech stack]
