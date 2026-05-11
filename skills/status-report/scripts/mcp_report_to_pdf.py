@@ -25,9 +25,10 @@ Default output path when ``--output`` is omitted is
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -179,7 +180,16 @@ def json_to_pdf(data: dict[str, Any] | str, output_path: str | Path) -> Path:
                     table_data.append(
                         [Paragraph(str(cell), body_style) for cell in row]
                     )
-                table = Table(table_data, repeatRows=1)
+                if not table_data:
+                    continue
+                col_count = len(table_data[0])
+                # Explicit colWidths so Paragraph cells word-wrap rather
+                # than collapse to the longest single word.
+                table = Table(
+                    table_data,
+                    repeatRows=1,
+                    colWidths=[doc.width / col_count] * col_count,
+                )
                 table.setStyle(
                     TableStyle(
                         [
@@ -202,11 +212,28 @@ def json_to_pdf(data: dict[str, Any] | str, output_path: str | Path) -> Path:
                 story.append(Paragraph(str(block), body_style))
                 story.append(Spacer(1, 0.3 * cm))
 
+    if not story:
+        # ReportLab raises ``LayoutError: Empty story`` otherwise; fall
+        # back to a single placeholder paragraph so the PDF is still
+        # well-formed.
+        story.append(Paragraph("No content to display.", body_style))
     doc.build(story)
     return output_path
 
 
 # ---- MCP-payload → document adapter -------------------------------------
+
+
+def _e(value: Any) -> str:
+    """Coerce ``value`` to a string and HTML-escape it for ReportLab ``Paragraph``.
+
+    Paragraph parses an XML-like subset and crashes on unescaped ``<``,
+    ``>``, or ``&`` in user-controlled text. Every dynamic value that
+    ends up inside a markup string must go through this helper.
+    """
+    if value is None:
+        return ""
+    return html.escape(str(value), quote=False)
 
 
 def _format_datetime(value: str | None) -> str:
@@ -271,20 +298,20 @@ def _requirement_blocks(req: dict[str, Any]) -> list[dict[str, Any]]:
     blocks: list[dict[str, Any]] = []
 
     header_line = (
-        f"<b>{req.get('id', '')}</b> — "
-        f"type <i>{req.get('type_code', '')}</i> · "
-        f"status <i>{req.get('status_code', '')}</i> · "
-        f"version {req.get('version', '')}"
+        f"<b>{_e(req.get('id'))}</b> — "
+        f"type <i>{_e(req.get('type_code'))}</i> · "
+        f"status <i>{_e(req.get('status_code'))}</i> · "
+        f"version {_e(req.get('version'))}"
     )
     blocks.append(_paragraph(header_line))
 
     statement = req.get("requirement_statement") or ""
     if statement:
-        blocks.append(_paragraph(f"<b>Statement.</b> {statement}"))
+        blocks.append(_paragraph(f"<b>Statement.</b> {_e(statement)}"))
 
     extended = req.get("extended_description") or ""
     if extended:
-        blocks.append(_paragraph(f"<b>Extended.</b> {extended}"))
+        blocks.append(_paragraph(f"<b>Extended.</b> {_e(extended)}"))
 
     structured_pairs: list[tuple[str, list[str]]] = [
         ("Users", req.get("users", [])),
@@ -300,15 +327,15 @@ def _requirement_blocks(req: dict[str, Any]) -> list[dict[str, Any]]:
     for label, values in structured_pairs:
         if values:
             blocks.append(_paragraph(f"<b>{label}.</b>"))
-            blocks.append(_bullets(values))
+            blocks.append(_bullets(_e(v) for v in values))
 
     changes = req.get("changes", []) or []
     if changes:
         rows = [
             [
-                _format_datetime(c.get("date")),
-                c.get("author", ""),
-                c.get("change_description", ""),
+                _e(_format_datetime(c.get("date"))),
+                _e(c.get("author") or ""),
+                _e(c.get("change_description") or ""),
             ]
             for c in changes
         ]
@@ -319,11 +346,11 @@ def _requirement_blocks(req: dict[str, Any]) -> list[dict[str, Any]]:
     if issues:
         rows = [
             [
-                issue.get("id", ""),
-                issue.get("priority_code", ""),
-                issue.get("status_code", ""),
-                issue.get("link_type", "") or "",
-                issue.get("title", ""),
+                _e(issue.get("id") or ""),
+                _e(issue.get("priority_code") or ""),
+                _e(issue.get("status_code") or ""),
+                _e(issue.get("link_type") or ""),
+                _e(issue.get("title") or ""),
             ]
             for issue in issues
         ]
@@ -336,18 +363,18 @@ def _issue_blocks(issue: dict[str, Any]) -> list[dict[str, Any]]:
     """Render one unattached issue as a flat list of blocks."""
     blocks: list[dict[str, Any]] = []
     header_line = (
-        f"<b>{issue.get('id', '')}</b> — "
-        f"type <i>{issue.get('issue_type_code', '')}</i> · "
-        f"status <i>{issue.get('status_code', '')}</i> · "
-        f"priority <i>{issue.get('priority_code', '')}</i>"
+        f"<b>{_e(issue.get('id'))}</b> — "
+        f"type <i>{_e(issue.get('issue_type_code'))}</i> · "
+        f"status <i>{_e(issue.get('status_code'))}</i> · "
+        f"priority <i>{_e(issue.get('priority_code'))}</i>"
     )
     if issue.get("title"):
-        header_line += f"<br/><b>{issue['title']}</b>"
+        header_line += f"<br/><b>{_e(issue['title'])}</b>"
     blocks.append(_paragraph(header_line))
 
     description = issue.get("description") or ""
     if description:
-        blocks.append(_paragraph(description))
+        blocks.append(_paragraph(_e(description)))
 
     for label, key in (
         ("Impact", "impact"),
@@ -356,16 +383,16 @@ def _issue_blocks(issue: dict[str, Any]) -> list[dict[str, Any]]:
     ):
         value = issue.get(key) or ""
         if value:
-            blocks.append(_paragraph(f"<b>{label}.</b> {value}"))
+            blocks.append(_paragraph(f"<b>{label}.</b> {_e(value)}"))
 
     updates = issue.get("updates", []) or []
     if updates:
         rows = [
             [
-                _format_datetime(u.get("date")),
-                u.get("update_type_code", ""),
-                u.get("author", ""),
-                u.get("description", ""),
+                _e(_format_datetime(u.get("date"))),
+                _e(u.get("update_type_code") or ""),
+                _e(u.get("author") or ""),
+                _e(u.get("description") or ""),
             ]
             for u in updates
         ]
@@ -399,7 +426,7 @@ def mcp_report_to_doc(report: dict[str, Any]) -> dict[str, Any]:
         title = req.get("title") or req.get("id") or "Requirement"
         sections.append(
             {
-                "heading": f"Requirement — {title}",
+                "heading": f"Requirement — {_e(title)}",
                 "content": _requirement_blocks(req),
             }
         )
@@ -424,7 +451,7 @@ def mcp_report_to_doc(report: dict[str, Any]) -> dict[str, Any]:
             title = issue.get("title") or issue.get("id") or "Issue"
             sections.append(
                 {
-                    "heading": f"Issue — {title}",
+                    "heading": f"Issue — {_e(title)}",
                     "content": _issue_blocks(issue),
                 }
             )
@@ -437,10 +464,10 @@ def mcp_report_to_doc(report: dict[str, Any]) -> dict[str, Any]:
         )
 
     return {
-        "title": f"{project_name} — Project Status Report",
+        "title": f"{_e(project_name)} — Project Status Report",
         "metadata": {
-            "Project": project_name,
-            "Generated at": generated_at,
+            "Project": _e(project_name),
+            "Generated at": _e(generated_at),
             "Requirements": summary.get("requirement_count", 0),
             "Issues (total)": summary.get("issue_count", 0),
             "Attached": summary.get("attached_issue_count", 0),
@@ -467,8 +494,20 @@ def render(report: dict[str, Any], output_path: str | Path) -> Path:
 
 
 def _read_input(path: Path | None) -> dict[str, Any]:
-    """Load the MCP report JSON from ``path`` or from stdin if ``None``."""
-    raw = sys.stdin.read() if path is None else path.read_text(encoding="utf-8")
+    """Load the MCP report JSON from ``path`` or from stdin if ``None``.
+
+    When ``path`` is ``None`` and stdin is a terminal, fail loudly with
+    a usage hint instead of blocking on a read that will never come.
+    """
+    if path is None:
+        if sys.stdin.isatty():
+            raise SystemExit(
+                "Error: no --input file and stdin is a terminal. "
+                "Pass --input PATH or pipe JSON in."
+            )
+        raw = sys.stdin.read()
+    else:
+        raw = path.read_text(encoding="utf-8")
     if not raw.strip():
         raise SystemExit("Error: empty MCP report payload on input.")
     try:
@@ -478,9 +517,13 @@ def _read_input(path: Path | None) -> dict[str, Any]:
 
 
 def _default_output(report: dict[str, Any]) -> Path:
-    """Pick a sensible default output path when ``--output`` is omitted."""
+    """Pick a sensible default output path when ``--output`` is omitted.
+
+    Uses a UTC timestamp so two operators running the script at the
+    same time on different machines produce reproducible filenames.
+    """
     project = str(report.get("project_name") or "report").lower()
-    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%SZ")
     return Path(f"STATUS-{project}-{stamp}.pdf")
 
 

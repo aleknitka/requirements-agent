@@ -164,6 +164,62 @@ def test_render_writes_pdf(tmp_path: Path) -> None:
     assert len(data) > 1000
 
 
+def test_render_handles_xml_unsafe_characters(tmp_path: Path) -> None:
+    """Project/title text containing &, <, > must not crash Paragraph."""
+    payload = {
+        "generated_at": "2026-05-11T12:00:00+00:00",
+        "project_name": "A & B <Co>",
+        "summary": {
+            "requirement_count": 1,
+            "issue_count": 0,
+            "attached_issue_count": 0,
+            "unattached_issue_count": 0,
+            "included_issues": True,
+            "included_closed_requirements": True,
+        },
+        "requirements": [
+            {
+                **_SAMPLE_REPORT["requirements"][0],
+                "title": "needs <fix> & care",
+                "requirement_statement": "uses A & B <tag> properly",
+                "issues": [],
+            }
+        ],
+        "unattached_issues": [],
+    }
+    out = tmp_path / "escape.pdf"
+    render(payload, out)
+    assert out.read_bytes().startswith(b"%PDF")
+
+
+def test_default_output_uses_utc_stamp() -> None:
+    """The default filename stamp must be UTC, suffixed with 'Z'."""
+    from mcp_report_to_pdf import _default_output
+
+    name = _default_output({"project_name": "DEMO"}).name
+    assert name.startswith("STATUS-demo-")
+    assert name.endswith("Z.pdf"), name
+
+
+def test_read_input_rejects_tty(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No --input + stdin is a TTY should fail loud, not hang."""
+    from mcp_report_to_pdf import _read_input
+
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    with pytest.raises(SystemExit) as exc_info:
+        _read_input(None)
+    assert "stdin is a terminal" in str(exc_info.value)
+
+
+def test_renderer_handles_empty_story(tmp_path: Path) -> None:
+    """A doc with no title/metadata/sections must still produce a PDF."""
+    from mcp_report_to_pdf import json_to_pdf
+
+    out = tmp_path / "empty.pdf"
+    json_to_pdf({}, out)
+    assert out.read_bytes().startswith(b"%PDF")
+
+
 def test_render_with_live_demo_data(tmp_path: Path) -> None:
     """Render demo data through the live service to catch shape drift."""
     pytest.importorskip("sqlalchemy")
