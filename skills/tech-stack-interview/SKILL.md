@@ -16,7 +16,7 @@ metadata:
 This skill guides an AI agent through a structured interview for gathering enterprise technology context when onboarding a new project.
 The goal is to understand the environment the project must live in, not to design the solution yet.
 The output should help a newcomer understand systems, data, integrations, access, delivery, governance, risks, and practical constraints.
-The agent must produce `knowledge/tech-stack-context.md`.
+The agent must produce `knowledge/<project>/tech-stack-context.md` so multiple projects can coexist without overwriting one another.
 The interview should be Socratic, practical, and sceptical without becoming adversarial.
 
 ## When To Use This Skill
@@ -49,17 +49,19 @@ The interview should be Socratic, practical, and sceptical without becoming adve
 - Do not collect customer personal records.
 - Do not collect employee private information.
 - Do not suggest external AI use with internal data unless policy allows it.
-- Escalate privacy, security, or compliance uncertainty into `ISSUES.md`.
+- Escalate privacy, security, or compliance uncertainty by creating an issue via the requirements MCP (`create_issue` tool, type `RSK` or `BLK`) so the risk lands in the tracked issue system, not in a loose file.
 
 ## Required Outputs
 
 ```text
-knowledge/tech-stack-context.md
+knowledge/<project>/tech-stack-context.md
 ```
 
 - If the project name is unknown, ask once.
-- If the user cannot provide a name, use `project`.
+- If the user cannot provide a name, use `project` as the directory.
+- The `<project>` segment must be a filename-safe slug (lower-case, `[a-z0-9_-]+`); fall back to `project` when the supplied name cannot be slugified.
 - Do not overwrite files owned by other skills.
+- If `knowledge/<project>/tech-stack-context.md` already exists, ask the user before overwriting; offer to update in place or to refuse.
 - Reference related files rather than duplicating them.
 
 ## Interview Scope
@@ -217,16 +219,16 @@ I may be misunderstanding this. Earlier we said one thing, but now it sounds dif
 - Record the contradiction as an assumption or issue if unresolved.
 
 ## tech-stack-context.md Template
-To capture answers use template in `skills/tech-stack-interview/assets/template.md`, save it to `knowledge/tech-stack-context.md`. Once created update the `knowledge/index.yaml` with:
+To capture answers use the template at `skills/tech-stack-interview/assets/template.md`, save it to `knowledge/<project>/tech-stack-context.md`. Once created, update `knowledge/index.yaml` **idempotently** — add the entry only if it is not already there, and update it in place when it is. Do not append a duplicate row on a re-run:
 ```yaml
-  - path: tech-stack-context.md
+  - path: <project>/tech-stack-context.md
     tags: [tech stack]
     priority: medium
     always_load: false
 ```
 
 ## Completion Criteria
-- `tech-stack-context.md` exists.
+- `knowledge/<project>/tech-stack-context.md` exists.
 - The document is useful to a newcomer.
 - Main systems, data stores, and integration patterns are identified.
 - Access model, delivery process, governance path, and security constraints are described.
