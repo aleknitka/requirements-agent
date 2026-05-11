@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -236,23 +237,52 @@ def _e(value: Any) -> str:
     return html.escape(str(value), quote=False)
 
 
-def _format_datetime(value: str | None) -> str:
-    """Render an ISO-8601 timestamp as ``YYYY-MM-DD HH:MM UTC``.
+def _format_datetime(value: str | datetime | None) -> str:
+    """Render an ISO-8601 timestamp or ``datetime`` as ``YYYY-MM-DD HH:MM UTC``.
+
+    Accepts both string and ``datetime`` inputs so the adapter works
+    against the wire-format JSON *and* the in-process Pydantic model
+    (whose Python-mode ``model_dump()`` returns ``datetime`` objects).
+    Timestamps carrying a non-UTC offset are converted to UTC before
+    the label is applied — naive datetimes are *assumed* to be UTC.
 
     Args:
-        value: ISO-8601 string from the MCP payload, or ``None``.
+        value: ISO-8601 string, :class:`datetime.datetime`, or ``None``.
 
     Returns:
         A human-friendly string, or ``"—"`` when ``value`` is empty
         or unparseable.
     """
-    if not value:
+    if value is None or value == "":
         return "—"
-    try:
-        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
-        return value
+    if isinstance(value, datetime):
+        dt = value
+    else:
+        try:
+            dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            return str(value)
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(timezone.utc)
     return dt.strftime("%Y-%m-%d %H:%M UTC")
+
+
+_MAX_CELL_LENGTH = 500
+"""Soft cap on text-cell length in audit/action tables.
+
+ReportLab's ``Table`` does not split rows across pages, so an oversize
+cell can trigger ``LayoutError`` on long change notes. Truncating with
+an ellipsis keeps the report printable; full text is still on screen
+in the UI and over the MCP endpoint.
+"""
+
+
+def _cell_text(value: Any, limit: int = _MAX_CELL_LENGTH) -> str:
+    """Coerce ``value`` to a string, truncate beyond ``limit`` chars."""
+    text = "" if value is None else str(value)
+    if len(text) <= limit:
+        return text
+    return text[: limit - 1].rstrip() + "…"
 
 
 def _bullets(items: Iterable[str]) -> dict[str, Any]:
@@ -335,7 +365,7 @@ def _requirement_blocks(req: dict[str, Any]) -> list[dict[str, Any]]:
             [
                 _e(_format_datetime(c.get("date"))),
                 _e(c.get("author") or ""),
-                _e(c.get("change_description") or ""),
+                _e(_cell_text(c.get("change_description"))),
             ]
             for c in changes
         ]
@@ -392,13 +422,42 @@ def _issue_blocks(issue: dict[str, Any]) -> list[dict[str, Any]]:
                 _e(_format_datetime(u.get("date"))),
                 _e(u.get("update_type_code") or ""),
                 _e(u.get("author") or ""),
-                _e(u.get("description") or ""),
+                _e(_cell_text(u.get("description"))),
             ]
             for u in updates
         ]
         blocks.append(_paragraph("<b>Action log</b>"))
         blocks.append(_table(["Date", "Kind", "Author", "Note"], rows))
     return blocks
+
+
+_REQUIRED_REPORT_KEYS = ("project_name", "summary", "requirements", "unattached_issues")
+
+
+def _validate_report(report: Any) -> None:
+    """Sanity-check that ``report`` looks like a ``get_full_report`` payload.
+
+    Fails fast on the common foot-guns:
+
+    * the payload is not a JSON object;
+    * a wrapping envelope was forwarded (e.g. ``{"data": {...}}``);
+    * the file was simply empty (``{}``).
+
+    Raises:
+        ValueError: when the shape is obviously wrong. Callers convert
+            this to a clean ``SystemExit`` at the CLI boundary.
+    """
+    if not isinstance(report, dict):
+        raise ValueError(
+            f"Expected the report to be a JSON object, got {type(report).__name__}."
+        )
+    missing = [k for k in _REQUIRED_REPORT_KEYS if k not in report]
+    if missing:
+        raise ValueError(
+            "Payload is missing required keys "
+            f"({', '.join(missing)}). "
+            "Did you pass a get_full_report response (and not a wrapping envelope)?"
+        )
 
 
 def mcp_report_to_doc(report: dict[str, Any]) -> dict[str, Any]:
@@ -410,11 +469,17 @@ def mcp_report_to_doc(report: dict[str, Any]) -> dict[str, Any]:
     ``paragraph`` / ``bullets`` / ``table``.
 
     Args:
-        report: Parsed JSON from the MCP tool.
+        report: Parsed JSON from the MCP tool. Validated against
+            :data:`_REQUIRED_REPORT_KEYS` before adaptation.
 
     Returns:
         A document dict ready for :func:`json_to_pdf`.
+
+    Raises:
+        ValueError: When ``report`` does not look like a
+            ``get_full_report`` payload — see :func:`_validate_report`.
     """
+    _validate_report(report)
     project_name = report.get("project_name", "PROJECT")
     generated_at = _format_datetime(report.get("generated_at"))
     summary = report.get("summary", {})
@@ -516,13 +581,31 @@ def _read_input(path: Path | None) -> dict[str, Any]:
         raise SystemExit(f"Error: input is not valid JSON: {exc}") from exc
 
 
+_SLUG_RE = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def _safe_slug(value: str, fallback: str = "report") -> str:
+    """Reduce ``value`` to a filename-safe slug.
+
+    Drops path separators and any character outside ``[A-Za-z0-9._-]``
+    so a malicious ``project_name`` (e.g. ``../etc/passwd``) cannot
+    escape the current directory when used to compute the default
+    output filename. Falls back to ``fallback`` if the result is empty.
+    """
+    cleaned = _SLUG_RE.sub("-", value).strip("-._").lower()
+    return cleaned or fallback
+
+
 def _default_output(report: dict[str, Any]) -> Path:
     """Pick a sensible default output path when ``--output`` is omitted.
 
     Uses a UTC timestamp so two operators running the script at the
     same time on different machines produce reproducible filenames.
+    The project component is run through :func:`_safe_slug` so an
+    attacker-controlled ``project_name`` cannot cause the script to
+    write outside the current directory.
     """
-    project = str(report.get("project_name") or "report").lower()
+    project = _safe_slug(str(report.get("project_name") or "report"))
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%SZ")
     return Path(f"STATUS-{project}-{stamp}.pdf")
 
@@ -553,7 +636,13 @@ def main(argv: list[str] | None = None) -> int:
 
     report = _read_input(args.input)
     output_path = args.output or _default_output(report)
-    pdf_path = render(report, output_path)
+    try:
+        pdf_path = render(report, output_path)
+    except ValueError as exc:
+        # ``mcp_report_to_doc`` raises on a payload that doesn't look
+        # like a get_full_report response — surface the message and
+        # exit non-zero rather than producing an empty PDF.
+        raise SystemExit(f"Error: {exc}") from exc
     print(f"Wrote {pdf_path}")
     return 0
 

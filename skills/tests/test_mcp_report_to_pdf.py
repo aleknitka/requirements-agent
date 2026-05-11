@@ -220,6 +220,89 @@ def test_renderer_handles_empty_story(tmp_path: Path) -> None:
     assert out.read_bytes().startswith(b"%PDF")
 
 
+# ---- Codex feedback -----------------------------------------------------
+
+
+def test_format_datetime_converts_non_utc_offset_to_utc() -> None:
+    """`+02:00` must be converted to UTC before the label is applied."""
+    from mcp_report_to_pdf import _format_datetime
+
+    assert _format_datetime("2026-05-11T12:00:00+02:00") == "2026-05-11 10:00 UTC"
+
+
+def test_format_datetime_accepts_datetime_objects() -> None:
+    """Pydantic Python-mode dumps deliver datetime objects, not strings."""
+    from datetime import datetime, timezone
+
+    from mcp_report_to_pdf import _format_datetime
+
+    dt = datetime(2026, 5, 11, 12, 0, tzinfo=timezone.utc)
+    assert _format_datetime(dt) == "2026-05-11 12:00 UTC"
+
+
+def test_mcp_report_to_doc_rejects_non_dict() -> None:
+    """A non-dict payload must fail loud, not silently render an empty PDF."""
+    with pytest.raises(ValueError):
+        mcp_report_to_doc([])  # type: ignore[arg-type]
+
+
+def test_mcp_report_to_doc_rejects_empty_dict() -> None:
+    with pytest.raises(ValueError):
+        mcp_report_to_doc({})
+
+
+def test_mcp_report_to_doc_rejects_wrapped_envelope() -> None:
+    """``{"data": {...}}`` is a common bystander shape — must fail."""
+    with pytest.raises(ValueError):
+        mcp_report_to_doc({"data": _SAMPLE_REPORT})
+
+
+def test_default_output_sanitises_project_slug() -> None:
+    """``project_name`` must not leak path separators into the filename."""
+    from mcp_report_to_pdf import _default_output
+
+    path = _default_output({"project_name": "../../etc/passwd"})
+    # Whole name has no path separators left; parent is cwd.
+    assert "/" not in path.name
+    assert ".." not in path.name
+    assert path.name.startswith("STATUS-")
+
+
+def test_default_output_falls_back_when_slug_empty() -> None:
+    from mcp_report_to_pdf import _default_output
+
+    path = _default_output({"project_name": "///"})
+    assert path.name.startswith("STATUS-report-")
+
+
+def test_long_audit_text_is_truncated_in_table(tmp_path: Path) -> None:
+    """Oversized audit descriptions must not blow up ReportLab Tables."""
+    long_text = "x" * 5000
+    payload = {
+        **_SAMPLE_REPORT,
+        "requirements": [
+            {
+                **_SAMPLE_REPORT["requirements"][0],
+                "changes": [
+                    {
+                        "id": "REQ-UPDATE-x",
+                        "requirement_id": "REQ-USR-aaaaaa",
+                        "change_description": long_text,
+                        "diff": {},
+                        "author": "alice",
+                        "date": "2026-05-01T10:00:00+00:00",
+                    },
+                ],
+                "issues": [],
+            },
+        ],
+        "unattached_issues": [],
+    }
+    out = tmp_path / "long.pdf"
+    render(payload, out)
+    assert out.read_bytes().startswith(b"%PDF")
+
+
 def test_render_with_live_demo_data(tmp_path: Path) -> None:
     """Render demo data through the live service to catch shape drift."""
     pytest.importorskip("sqlalchemy")
