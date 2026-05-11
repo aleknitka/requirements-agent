@@ -3,7 +3,7 @@ name: tech-stack-interview
 description: >
   Gathers information about the key technological platforms and applications used in the organisation.
 license: MIT
-allowed-tools: Read Grep Glob Bash
+allowed-tools: Read Grep Glob Bash Write Edit
 metadata:
   author: aleksander nitka
   version: "2.0.0"

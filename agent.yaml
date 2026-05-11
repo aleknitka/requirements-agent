@@ -14,12 +14,8 @@ model:
     temperature: 0.1
     top_p: 0.9
   skills:
-    - project-init
-    - project-update
-    - refine-requirements
-    - review-requirements
     - status-report
-    - meeting-agent
+    - tech-stack-interview
 tools: []
 delegation:
   mode: auto
