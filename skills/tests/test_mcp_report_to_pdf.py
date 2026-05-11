@@ -288,6 +288,84 @@ def test_main_rejects_list_payload(
     assert "Error" in str(exc_info.value)
 
 
+# ---- Codex round 3 ------------------------------------------------------
+
+
+def test_validate_rejects_missing_summary_keys() -> None:
+    """A drifted summary block (missing a count) must fail fast."""
+    bad = {**_SAMPLE_REPORT, "summary": {"requirement_count": 1}}
+    with pytest.raises(ValueError, match="summary is missing"):
+        mcp_report_to_doc(bad)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("requirement_count", "not-int"),
+        ("issue_count", True),  # bool must be rejected even though it's an int
+        ("included_issues", 0),  # int is not bool
+    ],
+)
+def test_validate_rejects_summary_wrong_types(field: str, value: object) -> None:
+    bad = {
+        **_SAMPLE_REPORT,
+        "summary": {**_SAMPLE_REPORT["summary"], field: value},
+    }
+    with pytest.raises(ValueError, match="summary has fields of the wrong type"):
+        mcp_report_to_doc(bad)
+
+
+@pytest.mark.parametrize("list_field", ["requirements", "unattached_issues"])
+def test_validate_rejects_non_dict_list_entries(list_field: str) -> None:
+    """``{"requirements": ["bad"]}`` used to crash inside the adapter."""
+    bad = {**_SAMPLE_REPORT, list_field: ["not-a-dict"]}
+    with pytest.raises(ValueError, match="must contain JSON objects only"):
+        mcp_report_to_doc(bad)
+
+
+def test_long_linked_issue_title_is_truncated(tmp_path: Path) -> None:
+    """Long issue titles in the linked-issues table must not blow up rendering."""
+    long_title = "T" * 5000
+    payload = {
+        **_SAMPLE_REPORT,
+        "requirements": [
+            {
+                **_SAMPLE_REPORT["requirements"][0],
+                "issues": [
+                    {
+                        **_SAMPLE_REPORT["requirements"][0]["issues"][0],
+                        "title": long_title,
+                    }
+                ],
+            },
+        ],
+        "unattached_issues": [],
+    }
+    out = tmp_path / "long_title.pdf"
+    render(payload, out)
+    assert out.read_bytes().startswith(b"%PDF")
+
+
+def test_renderer_no_header_does_not_repeat_first_row(tmp_path: Path) -> None:
+    """A table block without headers must not set repeatRows=1."""
+    from mcp_report_to_pdf import json_to_pdf
+
+    doc = {
+        "title": "Test",
+        "sections": [
+            {
+                "heading": "x",
+                "content": [
+                    {"type": "table", "headers": [], "rows": [["a", "b"], ["c", "d"]]},
+                ],
+            }
+        ],
+    }
+    out = tmp_path / "noheader.pdf"
+    json_to_pdf(doc, out)
+    assert out.read_bytes().startswith(b"%PDF")
+
+
 def test_default_output_sanitises_project_slug() -> None:
     """``project_name`` must not leak path separators into the filename."""
     from mcp_report_to_pdf import _default_output

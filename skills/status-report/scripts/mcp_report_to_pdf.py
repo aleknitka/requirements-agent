@@ -173,7 +173,8 @@ def json_to_pdf(data: dict[str, Any] | str, output_path: str | Path) -> Path:
                 headers = block.get("headers", []) or []
                 rows = block.get("rows", []) or []
                 table_data: list[list[Any]] = []
-                if headers:
+                has_header = bool(headers)
+                if has_header:
                     table_data.append(
                         [Paragraph(str(cell), body_style) for cell in headers]
                     )
@@ -185,10 +186,12 @@ def json_to_pdf(data: dict[str, Any] | str, output_path: str | Path) -> Path:
                     continue
                 col_count = len(table_data[0])
                 # Explicit colWidths so Paragraph cells word-wrap rather
-                # than collapse to the longest single word.
+                # than collapse to the longest single word. ``repeatRows``
+                # is conditional: setting it to 1 with no real header
+                # would repeat the first data row on every page.
                 table = Table(
                     table_data,
-                    repeatRows=1,
+                    repeatRows=1 if has_header else 0,
                     colWidths=[doc.width / col_count] * col_count,
                 )
                 table.setStyle(
@@ -380,7 +383,7 @@ def _requirement_blocks(req: dict[str, Any]) -> list[dict[str, Any]]:
                 _e(issue.get("priority_code") or ""),
                 _e(issue.get("status_code") or ""),
                 _e(issue.get("link_type") or ""),
-                _e(issue.get("title") or ""),
+                _e(_cell_text(issue.get("title"))),
             ]
             for issue in issues
         ]
@@ -439,6 +442,16 @@ _REQUIRED_REPORT_KEYS: tuple[tuple[str, type], ...] = (
 )
 
 
+_REQUIRED_SUMMARY_KEYS: tuple[tuple[str, type], ...] = (
+    ("requirement_count", int),
+    ("issue_count", int),
+    ("attached_issue_count", int),
+    ("unattached_issue_count", int),
+    ("included_issues", bool),
+    ("included_closed_requirements", bool),
+)
+
+
 def _validate_report(report: Any) -> None:
     """Sanity-check that ``report`` looks like a ``get_full_report`` payload.
 
@@ -448,8 +461,15 @@ def _validate_report(report: Any) -> None:
     * a wrapping envelope was forwarded (e.g. ``{"data": {...}}``);
     * the file was simply empty (``{}``);
     * a top-level field exists but carries the wrong *type* (e.g.
-      ``summary: []`` or ``requirements: {}``), which would otherwise
-      crash later with ``AttributeError`` instead of a clean exit.
+      ``summary: []`` or ``requirements: {}``);
+    * the ``summary`` block is missing required count / flag fields,
+      or carries them with the wrong type — without this check, a
+      drifted upstream payload would silently render a plausible but
+      incorrect report with default ``0`` counts and ``yes`` flags;
+    * an entry in ``requirements`` or ``unattached_issues`` is not a
+      JSON object — without this check, ``{"requirements": ["x"]}``
+      would pass top-level validation and crash later inside the
+      adapter on ``"x".get(...)``.
 
     Raises:
         ValueError: when the shape is obviously wrong. Callers convert
@@ -476,6 +496,41 @@ def _validate_report(report: Any) -> None:
             "Payload has top-level fields of the wrong type: "
             + "; ".join(type_mismatches)
         )
+
+    # Summary fields are individually checked: a drifted upstream
+    # payload that drops a count must fail fast instead of rendering
+    # a confidently-wrong "0".
+    summary = report["summary"]
+    summary_missing = [k for k, _ in _REQUIRED_SUMMARY_KEYS if k not in summary]
+    if summary_missing:
+        raise ValueError(
+            f"summary is missing required keys ({', '.join(summary_missing)})."
+        )
+    summary_mismatches = [
+        f"summary.{name} should be a {expected.__name__} "
+        f"(got {type(summary[name]).__name__})"
+        for name, expected in _REQUIRED_SUMMARY_KEYS
+        # ``bool`` is a subclass of ``int`` in Python; reject that here.
+        if not isinstance(summary[name], expected)
+        or (expected is int and isinstance(summary[name], bool))
+    ]
+    if summary_mismatches:
+        raise ValueError(
+            "summary has fields of the wrong type: " + "; ".join(summary_mismatches)
+        )
+
+    for list_field in ("requirements", "unattached_issues"):
+        bad_entries = [
+            (i, type(entry).__name__)
+            for i, entry in enumerate(report[list_field])
+            if not isinstance(entry, dict)
+        ]
+        if bad_entries:
+            details = ", ".join(f"index {i}: {kind}" for i, kind in bad_entries)
+            raise ValueError(
+                f"{list_field} must contain JSON objects only (offending entries: "
+                f"{details})."
+            )
 
 
 def mcp_report_to_doc(report: dict[str, Any]) -> dict[str, Any]:
