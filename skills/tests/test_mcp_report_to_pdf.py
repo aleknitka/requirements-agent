@@ -257,6 +257,37 @@ def test_mcp_report_to_doc_rejects_wrapped_envelope() -> None:
         mcp_report_to_doc({"data": _SAMPLE_REPORT})
 
 
+@pytest.mark.parametrize(
+    "broken_field,value",
+    [
+        ("summary", []),
+        ("requirements", {}),
+        ("unattached_issues", "not-a-list"),
+        ("project_name", 123),
+    ],
+)
+def test_mcp_report_to_doc_rejects_wrong_top_level_types(
+    broken_field: str, value: object
+) -> None:
+    """Wrong-type top-level fields must be caught at validation, not at .get()."""
+    payload = {**_SAMPLE_REPORT, broken_field: value}
+    with pytest.raises(ValueError):
+        mcp_report_to_doc(payload)
+
+
+def test_main_rejects_list_payload(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A bad pipe delivering ``[]`` must SystemExit, not AttributeError."""
+    from mcp_report_to_pdf import main
+
+    bad_input = tmp_path / "bad.json"
+    bad_input.write_text("[]", encoding="utf-8")
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--input", str(bad_input)])
+    assert "Error" in str(exc_info.value)
+
+
 def test_default_output_sanitises_project_slug() -> None:
     """``project_name`` must not leak path separators into the filename."""
     from mcp_report_to_pdf import _default_output

@@ -431,7 +431,12 @@ def _issue_blocks(issue: dict[str, Any]) -> list[dict[str, Any]]:
     return blocks
 
 
-_REQUIRED_REPORT_KEYS = ("project_name", "summary", "requirements", "unattached_issues")
+_REQUIRED_REPORT_KEYS: tuple[tuple[str, type], ...] = (
+    ("project_name", str),
+    ("summary", dict),
+    ("requirements", list),
+    ("unattached_issues", list),
+)
 
 
 def _validate_report(report: Any) -> None:
@@ -441,7 +446,10 @@ def _validate_report(report: Any) -> None:
 
     * the payload is not a JSON object;
     * a wrapping envelope was forwarded (e.g. ``{"data": {...}}``);
-    * the file was simply empty (``{}``).
+    * the file was simply empty (``{}``);
+    * a top-level field exists but carries the wrong *type* (e.g.
+      ``summary: []`` or ``requirements: {}``), which would otherwise
+      crash later with ``AttributeError`` instead of a clean exit.
 
     Raises:
         ValueError: when the shape is obviously wrong. Callers convert
@@ -451,12 +459,22 @@ def _validate_report(report: Any) -> None:
         raise ValueError(
             f"Expected the report to be a JSON object, got {type(report).__name__}."
         )
-    missing = [k for k in _REQUIRED_REPORT_KEYS if k not in report]
+    missing = [k for k, _ in _REQUIRED_REPORT_KEYS if k not in report]
     if missing:
         raise ValueError(
             "Payload is missing required keys "
             f"({', '.join(missing)}). "
             "Did you pass a get_full_report response (and not a wrapping envelope)?"
+        )
+    type_mismatches = [
+        f"{name} should be a {expected.__name__} (got {type(report[name]).__name__})"
+        for name, expected in _REQUIRED_REPORT_KEYS
+        if not isinstance(report[name], expected)
+    ]
+    if type_mismatches:
+        raise ValueError(
+            "Payload has top-level fields of the wrong type: "
+            + "; ".join(type_mismatches)
         )
 
 
@@ -635,13 +653,20 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     report = _read_input(args.input)
+    # Validate before deriving the default output path: otherwise a
+    # non-dict payload (e.g. ``[]`` from a bad pipe) would crash inside
+    # ``_default_output`` with a confusing AttributeError instead of
+    # the clean SystemExit we want.
+    try:
+        _validate_report(report)
+    except ValueError as exc:
+        raise SystemExit(f"Error: {exc}") from exc
     output_path = args.output or _default_output(report)
     try:
         pdf_path = render(report, output_path)
     except ValueError as exc:
-        # ``mcp_report_to_doc`` raises on a payload that doesn't look
-        # like a get_full_report response — surface the message and
-        # exit non-zero rather than producing an empty PDF.
+        # Defensive: mcp_report_to_doc re-runs _validate_report, but
+        # surface any later ValueError the same way.
         raise SystemExit(f"Error: {exc}") from exc
     print(f"Wrote {pdf_path}")
     return 0
