@@ -346,6 +346,54 @@ def test_long_linked_issue_title_is_truncated(tmp_path: Path) -> None:
     assert out.read_bytes().startswith(b"%PDF")
 
 
+def test_validate_requires_generated_at() -> None:
+    """The metadata block always renders a timestamp; payload must supply it."""
+    bad = {k: v for k, v in _SAMPLE_REPORT.items() if k != "generated_at"}
+    with pytest.raises(ValueError, match="generated_at"):
+        mcp_report_to_doc(bad)
+
+
+@pytest.mark.parametrize("field", ["users", "acceptance_criteria", "changes", "issues"])
+def test_validate_requires_requirement_list_fields(field: str) -> None:
+    """Structured fields must be lists, not strings or dicts."""
+    bad_req = {**_SAMPLE_REPORT["requirements"][0], field: "not-a-list"}
+    bad = {**_SAMPLE_REPORT, "requirements": [bad_req]}
+    with pytest.raises(ValueError, match="should be a list"):
+        mcp_report_to_doc(bad)
+
+
+@pytest.mark.parametrize("field", ["changes", "issues"])
+def test_validate_requires_dict_entries_in_requirement_lists(field: str) -> None:
+    """Each entry in changes/issues must be a JSON object."""
+    bad_req = {**_SAMPLE_REPORT["requirements"][0], field: ["bad"]}
+    bad = {**_SAMPLE_REPORT, "requirements": [bad_req]}
+    with pytest.raises(ValueError, match="must contain JSON objects only"):
+        mcp_report_to_doc(bad)
+
+
+def test_validate_requires_dict_entries_in_nested_issue_updates() -> None:
+    """Nested issue.updates list must contain dicts."""
+    bad_issue = {
+        **_SAMPLE_REPORT["requirements"][0]["issues"][0],
+        "updates": [None],
+    }
+    bad_req = {**_SAMPLE_REPORT["requirements"][0], "issues": [bad_issue]}
+    bad = {**_SAMPLE_REPORT, "requirements": [bad_req]}
+    with pytest.raises(ValueError, match="must contain JSON objects only"):
+        mcp_report_to_doc(bad)
+
+
+def test_validate_requires_dict_entries_in_unattached_issue_updates() -> None:
+    """Unattached issue.updates list must contain dicts."""
+    bad_issue = {
+        **_SAMPLE_REPORT["unattached_issues"][0],
+        "updates": ["x"],
+    }
+    bad = {**_SAMPLE_REPORT, "unattached_issues": [bad_issue]}
+    with pytest.raises(ValueError, match="must contain JSON objects only"):
+        mcp_report_to_doc(bad)
+
+
 def test_renderer_no_header_does_not_repeat_first_row(tmp_path: Path) -> None:
     """A table block without headers must not set repeatRows=1."""
     from mcp_report_to_pdf import json_to_pdf

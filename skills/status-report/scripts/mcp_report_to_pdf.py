@@ -436,6 +436,7 @@ def _issue_blocks(issue: dict[str, Any]) -> list[dict[str, Any]]:
 
 _REQUIRED_REPORT_KEYS: tuple[tuple[str, type], ...] = (
     ("project_name", str),
+    ("generated_at", str),
     ("summary", dict),
     ("requirements", list),
     ("unattached_issues", list),
@@ -450,6 +451,49 @@ _REQUIRED_SUMMARY_KEYS: tuple[tuple[str, type], ...] = (
     ("included_issues", bool),
     ("included_closed_requirements", bool),
 )
+
+
+_REQUIREMENT_LIST_FIELDS: tuple[str, ...] = (
+    "users",
+    "triggers",
+    "preconditions",
+    "postconditions",
+    "inputs",
+    "outputs",
+    "business_logic",
+    "exception_handling",
+    "acceptance_criteria",
+    "changes",
+    "issues",
+)
+"""Fields on a requirement entry that the adapter iterates over."""
+
+_ISSUE_LIST_FIELDS: tuple[str, ...] = ("updates",)
+"""Fields on an issue entry that the adapter iterates over."""
+
+
+def _assert_dict_entries(items: list[Any], path: str) -> None:
+    """Raise ``ValueError`` when any entry of ``items`` is not a dict.
+
+    ``path`` is the dotted location for the error message
+    (e.g. ``"requirements[3].changes"``).
+    """
+    bad = [
+        (i, type(entry).__name__)
+        for i, entry in enumerate(items)
+        if not isinstance(entry, dict)
+    ]
+    if bad:
+        details = ", ".join(f"index {i}: {kind}" for i, kind in bad)
+        raise ValueError(
+            f"{path} must contain JSON objects only (offending entries: {details})."
+        )
+
+
+def _assert_list(value: Any, path: str) -> None:
+    """Raise ``ValueError`` when ``value`` is not a list."""
+    if not isinstance(value, list):
+        raise ValueError(f"{path} should be a list (got {type(value).__name__}).")
 
 
 def _validate_report(report: Any) -> None:
@@ -520,17 +564,38 @@ def _validate_report(report: Any) -> None:
         )
 
     for list_field in ("requirements", "unattached_issues"):
-        bad_entries = [
-            (i, type(entry).__name__)
-            for i, entry in enumerate(report[list_field])
-            if not isinstance(entry, dict)
-        ]
-        if bad_entries:
-            details = ", ".join(f"index {i}: {kind}" for i, kind in bad_entries)
-            raise ValueError(
-                f"{list_field} must contain JSON objects only (offending entries: "
-                f"{details})."
-            )
+        _assert_dict_entries(report[list_field], list_field)
+
+    # Walk every requirement: structured-list fields must be lists,
+    # and every change / linked-issue entry must be a dict so the
+    # adapter's `c.get(...)` / `issue.get(...)` reads don't crash.
+    for i, req in enumerate(report["requirements"]):
+        for field in _REQUIREMENT_LIST_FIELDS:
+            if field in req:
+                _assert_list(req[field], f"requirements[{i}].{field}")
+        for sub_field in ("changes", "issues"):
+            if sub_field in req:
+                _assert_dict_entries(req[sub_field], f"requirements[{i}].{sub_field}")
+        # Nested issue.updates is iterated as part of attached-issue
+        # rendering, so it gets the same treatment.
+        for j, nested_issue in enumerate(req.get("issues", []) or []):
+            for field in _ISSUE_LIST_FIELDS:
+                if field in nested_issue:
+                    _assert_list(
+                        nested_issue[field],
+                        f"requirements[{i}].issues[{j}].{field}",
+                    )
+                    _assert_dict_entries(
+                        nested_issue[field],
+                        f"requirements[{i}].issues[{j}].{field}",
+                    )
+
+    # Same walk for unattached issues.
+    for i, issue in enumerate(report["unattached_issues"]):
+        for field in _ISSUE_LIST_FIELDS:
+            if field in issue:
+                _assert_list(issue[field], f"unattached_issues[{i}].{field}")
+                _assert_dict_entries(issue[field], f"unattached_issues[{i}].{field}")
 
 
 def mcp_report_to_doc(report: dict[str, Any]) -> dict[str, Any]:
