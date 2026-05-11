@@ -31,8 +31,35 @@ uv run report generate [--project <slug>] [--format json|md]
 uv run report save [--project <slug>]
 ```
 
+## PDF rendering
+
+The MCP server exposes `get_full_report`, which returns one JSON
+snapshot of every requirement, audit row, and attached / unattached
+issue. The PDF renderer is a thin script that consumes that payload:
+
+```bash
+# From a file
+uv run python skills/status-report/scripts/mcp_report_to_pdf.py \
+    --input report.json --output STATUS.pdf
+
+# From stdin (chain with curl, jq, or any MCP client that prints the
+# get_full_report response)
+get_full_report_output | uv run python \
+    skills/status-report/scripts/mcp_report_to_pdf.py --output STATUS.pdf
+```
+
+When `--output` is omitted the script writes
+`STATUS-<project>-<timestamp>.pdf` to the current directory.
+
+The script lives next to `json_to_pdf.py`, which is the generic
+ReportLab-based renderer that consumes a `{title, metadata, sections}`
+document. `mcp_report_to_pdf.py` is the adapter that maps the MCP
+payload onto that shape.
+
 ## Typical workflow
 1. Run `generate --format md` to review
 2. Run `integrate` in meeting-agent if there are unintegrated meetings first
 3. Run `save` to archive the point-in-time report
 4. Share the .md file with stakeholders
+5. For an executive-facing artefact, dump `get_full_report` and run
+   `mcp_report_to_pdf.py` to attach a PDF.
