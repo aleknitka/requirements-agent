@@ -334,7 +334,7 @@
 - Audit requirements:
 - Restrictions on automated decisions:
 
-## 16. Unknowns
+## 15. Unknowns
 
 | Unknown | Why It Matters | Who Might Know | Where To Check | Could Block Project? | Issue Needed? |
 |---|---|---|---|---|---|
