@@ -1,16 +1,12 @@
-"""Tests for ``mcp_report_to_pdf``.
+"""Tests for ``skills/status-report/scripts/mcp_report_to_pdf``.
 
 Two layers of coverage:
 
 * ``mcp_report_to_doc`` is pure data adaptation, tested directly with a
   small fixture payload.
-* ``render`` end-to-end check: builds a ``get_full_report`` against the
-  live ``apply_demo_data`` content and asserts the produced PDF is a
+* ``render`` end-to-end: build a ``get_full_report`` against the live
+  ``apply_demo_data`` content and assert the produced PDF is a
   non-empty file beginning with ``%PDF``.
-
-The end-to-end test imports from :mod:`requirements_mcp` which is on
-the workspace's import path during ``uv run pytest``. Skipped
-otherwise.
 """
 
 from __future__ import annotations
@@ -20,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-_SCRIPT_DIR = Path(__file__).resolve().parent
+_SCRIPT_DIR = Path(__file__).resolve().parents[1] / "status-report" / "scripts"
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
@@ -133,8 +129,6 @@ def test_mcp_report_to_doc_has_summary_and_requirement_sections() -> None:
     headings = [s["heading"] for s in doc["sections"]]
     assert headings[0] == "Summary"
     assert "Requirement — Login" in headings
-    # First unattached issue uses the umbrella heading; further issues
-    # get an "Issue — <title>" heading.
     assert "Unattached issues" in headings
 
 
@@ -170,8 +164,7 @@ def test_render_writes_pdf(tmp_path: Path) -> None:
     assert len(data) > 1000
 
 
-@pytest.mark.parametrize("with_demo", [True])
-def test_render_with_live_demo_data(tmp_path: Path, with_demo: bool) -> None:
+def test_render_with_live_demo_data(tmp_path: Path) -> None:
     """Render demo data through the live service to catch shape drift."""
     pytest.importorskip("sqlalchemy")
     pytest.importorskip("requirements_mcp")
@@ -186,9 +179,8 @@ def test_render_with_live_demo_data(tmp_path: Path, with_demo: bool) -> None:
     engine = make_engine(resolved)
     factory = make_session_factory(engine)
     with factory() as session:
-        if with_demo:
-            apply_demo_data(session)
-            session.commit()
+        apply_demo_data(session)
+        session.commit()
         report = build_full_report(session)
 
     payload = report.model_dump(mode="json")

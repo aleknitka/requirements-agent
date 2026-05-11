@@ -51,10 +51,11 @@ get_full_report_output | uv run python \
 When `--output` is omitted the script writes
 `STATUS-<project>-<timestamp>.pdf` to the current directory.
 
-The script lives next to `json_to_pdf.py`, which is the generic
-ReportLab-based renderer that consumes a `{title, metadata, sections}`
-document. `mcp_report_to_pdf.py` is the adapter that maps the MCP
-payload onto that shape.
+`mcp_report_to_pdf.py` is a single self-contained script: it maps the
+MCP payload onto an internal `{title, metadata, sections}` document
+shape and feeds it to ReportLab Platypus. Tests live at
+`skills/tests/test_mcp_report_to_pdf.py` and are picked up by the
+project-wide `pytest` run.
 
 ## Typical workflow
 1. Run `generate --format md` to review

@@ -30,6 +30,7 @@ members = [
 [tool.pytest.ini_options]
 testpaths = [
     "packages/requirements_mcp/tests",
+    "skills/tests",
 ]
 
 [dependency-groups]

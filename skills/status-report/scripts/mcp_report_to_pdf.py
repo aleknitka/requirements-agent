@@ -2,11 +2,10 @@
 
 The MCP server's ``get_full_report`` tool returns a structured snapshot
 of every requirement, audit row, attached issue, and unattached issue.
-This script reads that JSON (from a file or stdin), adapts it into the
-generic document shape that
-:func:`skills.status_report.scripts.json_to_pdf.json_to_pdf` understands
-(``title`` / ``metadata`` / ``sections`` with ``paragraph`` / ``bullets``
-/ ``table`` blocks), and writes the PDF to disk.
+This script reads that JSON (from a file or stdin), maps it onto a
+generic document shape (``title`` / ``metadata`` / ``sections`` with
+``paragraph`` / ``bullets`` / ``table`` blocks), and renders the PDF
+with ReportLab Platypus.
 
 Usage::
 
@@ -18,6 +17,9 @@ Usage::
     curl -s http://127.0.0.1:7860/gradio_api/.../get_full_report \\
         | uv run python skills/status-report/scripts/mcp_report_to_pdf.py \\
             --output STATUS.pdf
+
+Default output path when ``--output`` is omitted is
+``STATUS-<project>-<timestamp>.pdf`` in the current working directory.
 """
 
 from __future__ import annotations
@@ -29,19 +31,182 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable
 
-# The renderer lives next to this script. Use a path-based import so
-# the script is runnable as a standalone CLI without making
-# ``skills/status-report`` a Python package.
-_SCRIPT_DIR = Path(__file__).resolve().parent
-if str(_SCRIPT_DIR) not in sys.path:
-    sys.path.insert(0, str(_SCRIPT_DIR))
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import cm
+from reportlab.platypus import (
+    ListFlowable,
+    ListItem,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
 
-from json_to_pdf import json_to_pdf  # noqa: E402
+__all__ = [
+    "json_to_pdf",
+    "main",
+    "mcp_report_to_doc",
+    "render",
+]
 
-__all__ = ["mcp_report_to_doc", "main", "render"]
+
+# ---- Generic ReportLab renderer ------------------------------------------
 
 
-# ---- Adapter --------------------------------------------------------------
+def json_to_pdf(data: dict[str, Any] | str, output_path: str | Path) -> Path:
+    """Build a PDF from a generic document dict.
+
+    Supported document shape::
+
+        {
+            "title": "Report title",
+            "metadata": {"Author": "Jane Doe", "Date": "2026-05-09"},
+            "sections": [
+                {
+                    "heading": "Introduction",
+                    "content": [
+                        {"type": "paragraph", "text": "Some text here."},
+                        {"type": "bullets", "items": ["one", "two"]},
+                        {
+                            "type": "table",
+                            "headers": ["Name", "Value"],
+                            "rows": [["A", 10], ["B", 20]],
+                        },
+                    ],
+                },
+            ],
+        }
+
+    Args:
+        data: Dict or JSON string describing the document.
+        output_path: Where to save the generated PDF.
+
+    Returns:
+        :class:`pathlib.Path` to the generated PDF.
+    """
+    if isinstance(data, str):
+        data = json.loads(data)
+
+    output_path = Path(output_path)
+
+    doc = SimpleDocTemplate(
+        str(output_path),
+        pagesize=A4,
+        rightMargin=2 * cm,
+        leftMargin=2 * cm,
+        topMargin=2 * cm,
+        bottomMargin=2 * cm,
+    )
+
+    styles = getSampleStyleSheet()
+    title_style = styles["Title"]
+    heading_style = styles["Heading1"]
+    body_style = styles["BodyText"]
+    metadata_key_style = ParagraphStyle(
+        "MetadataKey",
+        parent=body_style,
+        fontName="Helvetica-Bold",
+    )
+
+    story: list[Any] = []
+
+    title = data.get("title")
+    if title:
+        story.append(Paragraph(str(title), title_style))
+        story.append(Spacer(1, 0.5 * cm))
+
+    metadata = data.get("metadata")
+    if isinstance(metadata, dict) and metadata:
+        metadata_rows = [
+            [
+                Paragraph(str(key), metadata_key_style),
+                Paragraph(str(value), body_style),
+            ]
+            for key, value in metadata.items()
+        ]
+        metadata_table = Table(metadata_rows, colWidths=[4 * cm, 11 * cm])
+        metadata_table.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ]
+            )
+        )
+        story.append(metadata_table)
+        story.append(Spacer(1, 0.7 * cm))
+
+    for section in data.get("sections", []) or []:
+        heading = section.get("heading")
+        if heading:
+            story.append(Paragraph(str(heading), heading_style))
+            story.append(Spacer(1, 0.25 * cm))
+
+        for block in section.get("content", []) or []:
+            block_type = block.get("type")
+
+            if block_type == "paragraph":
+                text = block.get("text", "")
+                story.append(Paragraph(str(text), body_style))
+                story.append(Spacer(1, 0.3 * cm))
+
+            elif block_type == "bullets":
+                bullet_items = [
+                    ListItem(Paragraph(str(item), body_style))
+                    for item in block.get("items", []) or []
+                ]
+                story.append(
+                    ListFlowable(
+                        bullet_items,
+                        bulletType="bullet",
+                        leftIndent=18,
+                    )
+                )
+                story.append(Spacer(1, 0.3 * cm))
+
+            elif block_type == "table":
+                headers = block.get("headers", []) or []
+                rows = block.get("rows", []) or []
+                table_data: list[list[Any]] = []
+                if headers:
+                    table_data.append(
+                        [Paragraph(str(cell), body_style) for cell in headers]
+                    )
+                for row in rows:
+                    table_data.append(
+                        [Paragraph(str(cell), body_style) for cell in row]
+                    )
+                table = Table(table_data, repeatRows=1)
+                table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                            ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                            ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                            ("TOPPADDING", (0, 0), (-1, -1), 4),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                        ]
+                    )
+                )
+                story.append(table)
+                story.append(Spacer(1, 0.4 * cm))
+
+            else:
+                # Fallback for unknown block kinds — keep going.
+                story.append(Paragraph(str(block), body_style))
+                story.append(Spacer(1, 0.3 * cm))
+
+    doc.build(story)
+    return output_path
+
+
+# ---- MCP-payload → document adapter -------------------------------------
 
 
 def _format_datetime(value: str | None) -> str:
@@ -212,17 +377,16 @@ def _issue_blocks(issue: dict[str, Any]) -> list[dict[str, Any]]:
 def mcp_report_to_doc(report: dict[str, Any]) -> dict[str, Any]:
     """Adapt the MCP ``get_full_report`` payload to the renderer's shape.
 
-    Output dict matches the structure consumed by
-    :func:`json_to_pdf.json_to_pdf`: a top-level ``title``,
-    ``metadata``, and ``sections`` array of ``{heading, content[]}``
-    where each ``content`` block is one of ``paragraph`` /
-    ``bullets`` / ``table``.
+    Output dict matches the structure consumed by :func:`json_to_pdf`:
+    a top-level ``title``, ``metadata``, and ``sections`` array of
+    ``{heading, content[]}`` where each ``content`` block is one of
+    ``paragraph`` / ``bullets`` / ``table``.
 
     Args:
         report: Parsed JSON from the MCP tool.
 
     Returns:
-        A document dict ready for :func:`json_to_pdf.json_to_pdf`.
+        A document dict ready for :func:`json_to_pdf`.
     """
     project_name = report.get("project_name", "PROJECT")
     generated_at = _format_datetime(report.get("generated_at"))
@@ -299,16 +463,12 @@ def render(report: dict[str, Any], output_path: str | Path) -> Path:
     Returns:
         The :class:`pathlib.Path` of the generated PDF.
     """
-    doc = mcp_report_to_doc(report)
-    return json_to_pdf(doc, output_path)
+    return json_to_pdf(mcp_report_to_doc(report), output_path)
 
 
 def _read_input(path: Path | None) -> dict[str, Any]:
     """Load the MCP report JSON from ``path`` or from stdin if ``None``."""
-    if path is None:
-        raw = sys.stdin.read()
-    else:
-        raw = path.read_text(encoding="utf-8")
+    raw = sys.stdin.read() if path is None else path.read_text(encoding="utf-8")
     if not raw.strip():
         raise SystemExit("Error: empty MCP report payload on input.")
     try:
