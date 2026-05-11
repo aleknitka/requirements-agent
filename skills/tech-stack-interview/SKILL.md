@@ -16,7 +16,7 @@ metadata:
 This skill guides an AI agent through a structured interview for gathering enterprise technology context when onboarding a new project.
 The goal is to understand the environment the project must live in, not to design the solution yet.
 The output should help a newcomer understand systems, data, integrations, access, delivery, governance, risks, and practical constraints.
-The agent must produce `knowledge/<project>/tech-stack-context.md` so multiple projects can coexist without overwriting one another.
+The agent must produce `knowledge/tech-stack-context.md` so multiple projects can coexist without overwriting one another.
 The interview should be Socratic, practical, and sceptical without becoming adversarial.
 
 ## When To Use This Skill
@@ -54,7 +54,7 @@ The interview should be Socratic, practical, and sceptical without becoming adve
 ## Required Outputs
 
 ```text
-knowledge/<project>/tech-stack-context.md
+knowledge/tech-stack-context.md
 ```
 
 - If the project name is unknown, ask once.
@@ -218,16 +218,16 @@ I may be misunderstanding this. Earlier we said one thing, but now it sounds dif
 - Record the contradiction as an assumption or issue if unresolved.
 
 ## tech-stack-context.md Template
-To capture answers use the template at `skills/tech-stack-interview/assets/template.md`, save it to `knowledge/<project>/tech-stack-context.md`. Once created, update `knowledge/index.yaml` **idempotently** — add the entry only if it is not already there, and update it in place when it is. Do not append a duplicate row on a re-run:
+To capture answers use the template at `skills/tech-stack-interview/assets/template.md`, save it to `knowledge/tech-stack-context.md`. Once created, update `knowledge/index.yaml` **idempotently** — add the entry only if it is not already there, and update it in place when it is. Do not append a duplicate row on a re-run:
 ```yaml
-  - path: <project>/tech-stack-context.md
+  - path: tech-stack-context.md
     tags: [tech stack]
     priority: medium
     always_load: false
 ```
 
 ## Completion Criteria
-- `knowledge/<project>/tech-stack-context.md` exists.
+- `knowledge/tech-stack-context.md` exists.
 - The document is useful to a newcomer.
 - Main systems, data stores, and integration patterns are identified.
 - Access model, delivery process, governance path, and security constraints are described.
