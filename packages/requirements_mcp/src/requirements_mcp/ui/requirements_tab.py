@@ -137,14 +137,19 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
 
         # ===== Create ======================================================
         with gr.Tab("Create"):
-            c_title = gr.Textbox(label="Title")
-            c_statement = gr.Textbox(label="Statement", lines=3)
+            c_title = gr.Textbox(label="Title", info="Required")
+            c_statement = gr.Textbox(label="Statement", lines=3, info="Required")
             with gr.Row():
-                c_type = gr.Dropdown(choices=type_choices, label="Type", value="FUN")
-                c_status = gr.Dropdown(
-                    choices=status_choices, label="Status", value="draft"
+                c_type = gr.Dropdown(
+                    choices=type_choices, label="Type", value="FUN", info="Required"
                 )
-                c_author = gr.Textbox(label="Author")
+                c_status = gr.Dropdown(
+                    choices=status_choices,
+                    label="Status",
+                    value="draft",
+                    info="Required",
+                )
+                c_author = gr.Textbox(label="Author", info="Required")
             c_extended = gr.Textbox(label="Extended description", lines=2)
             with gr.Accordion("Structured fields (one item per line)", open=False):
                 c_users = gr.Textbox(label="Users", lines=2)
@@ -167,7 +172,7 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
                 "form."
             )
             with gr.Row():
-                u_id = gr.Textbox(label="Requirement id")
+                u_id = gr.Textbox(label="Requirement id", info="Required")
                 u_load = gr.Button("Load")
             u_load_status = gr.Markdown()
 
@@ -191,8 +196,8 @@ def build_requirements_tab(session_factory: sessionmaker[Session]) -> None:
                 e_excs = gr.Textbox(label="Exception handling", lines=2)
                 e_acc = gr.Textbox(label="Acceptance criteria", lines=2)
             with gr.Row():
-                e_author = gr.Textbox(label="Editing author")
-                e_change_desc = gr.Textbox(label="Change description")
+                e_author = gr.Textbox(label="Editing author", info="Required")
+                e_change_desc = gr.Textbox(label="Change description", info="Required")
             e_submit = gr.Button("Save changes", variant="primary")
             e_status_box = gr.Markdown()
 

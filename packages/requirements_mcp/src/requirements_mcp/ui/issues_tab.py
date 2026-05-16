@@ -176,18 +176,26 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
 
         # ===== Create ======================================================
         with gr.Tab("Create"):
-            c_title = gr.Textbox(label="Title")
-            c_description = gr.Textbox(label="Description", lines=3)
+            c_title = gr.Textbox(label="Title", info="Required")
+            c_description = gr.Textbox(label="Description", lines=3, info="Required")
             with gr.Row():
-                c_type = gr.Dropdown(choices=type_choices, label="Type", value="AMB")
+                c_type = gr.Dropdown(
+                    choices=type_choices, label="Type", value="AMB", info="Required"
+                )
                 c_status = gr.Dropdown(
-                    choices=status_choices, label="Status", value="open"
+                    choices=status_choices,
+                    label="Status",
+                    value="open",
+                    info="Required",
                 )
                 c_priority = gr.Dropdown(
-                    choices=priority_choices, label="Priority", value="MED"
+                    choices=priority_choices,
+                    label="Priority",
+                    value="MED",
+                    info="Required",
                 )
             with gr.Row():
-                c_created_by = gr.Textbox(label="Raised by")
+                c_created_by = gr.Textbox(label="Raised by", info="Required")
                 c_owner = gr.Textbox(
                     label="Owner (optional)", placeholder="leave empty if none"
                 )
@@ -204,7 +212,7 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
                 "Enter an issue id and click **Load** to prefill the form."
             )
             with gr.Row():
-                e_id = gr.Textbox(label="Issue id")
+                e_id = gr.Textbox(label="Issue id", info="Required")
                 e_load = gr.Button("Load")
             e_load_status = gr.Markdown()
 
@@ -225,37 +233,39 @@ def build_issues_tab(session_factory: sessionmaker[Session]) -> None:
             e_risk = gr.Textbox(label="Risk", lines=2)
             e_resolution = gr.Textbox(label="Proposed resolution", lines=2)
             with gr.Row():
-                e_author = gr.Textbox(label="Editing author")
-                e_change_desc = gr.Textbox(label="Change description")
+                e_author = gr.Textbox(label="Editing author", info="Required")
+                e_change_desc = gr.Textbox(label="Change description", info="Required")
             e_submit = gr.Button("Save changes", variant="primary")
             e_status_box = gr.Markdown()
 
         # ===== Add update ==================================================
         with gr.Tab("Add update"):
-            u_id = gr.Textbox(label="Issue id")
+            u_id = gr.Textbox(label="Issue id", info="Required")
             u_kind = gr.Dropdown(
                 choices=list(_UPDATE_KINDS),
                 label="Update type",
                 value="note",
+                info="Required",
             )
-            u_description = gr.Textbox(label="Description", lines=2)
+            u_description = gr.Textbox(label="Description", lines=2, info="Required")
             u_action_taken = gr.Textbox(label="Action taken", lines=2)
             u_action_result = gr.Textbox(label="Action result", lines=2)
-            u_author = gr.Textbox(label="Author")
+            u_author = gr.Textbox(label="Author", info="Required")
             u_submit = gr.Button("Append update", variant="primary")
             u_status_box = gr.Markdown()
 
         # ===== Link / unlink ==============================================
         with gr.Tab("Link / unlink"):
-            l_id = gr.Textbox(label="Issue id")
-            l_req_id = gr.Textbox(label="Requirement id")
+            l_id = gr.Textbox(label="Issue id", info="Required")
+            l_req_id = gr.Textbox(label="Requirement id", info="Required")
             with gr.Row():
                 l_type = gr.Dropdown(
                     choices=list(_LINK_TYPES),
                     label="Link type",
                     value="related",
+                    info="Required",
                 )
-                l_author = gr.Textbox(label="Author")
+                l_author = gr.Textbox(label="Author", info="Required")
             l_rationale = gr.Textbox(label="Rationale")
             with gr.Row():
                 l_link_button = gr.Button("Link", variant="primary")
